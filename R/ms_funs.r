@@ -1,7 +1,7 @@
 ## Functions for reading multisite data (both Markus/Rachel's and Jay's)
 ## Mon 10 Sep 2001
 
-library(bbmisc)                         #for plotCI() from Ben Bolker
+library(bbgraphics)                         #for plotCI() from Ben Bolker
 
 ## todo -- are the cell positions inverted?
 
@@ -76,7 +76,8 @@ mm.readpos.compare <- function(NCells, boxes, posfile) {
 plot.mm.pos <- function(x, use.rownames=F) {
   ## Show the layout of Markus' electrodes within the array.
   range <- c(-300,300)
-  plot(x[,1], x[,2], xlim=range, ylim=range, xlab="", ylab="", type="n")
+  plot(x[,1], x[,2], asp=1,
+       xlim=range, ylim=range, xlab="", ylab="", type="n")
   if (use.rownames)
     text(x[,1], x[,2], rownames(x))
   else
@@ -119,11 +120,12 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
     levels(cut(0, mm.distance.breaks, right=F, include.lowest=T))
 
   dists.bins   <- bin.distances(dists, mm.distance.breaks)
-  corr.indexes <- make.corr.indexes(res$spikes)
-
+  corr.indexes.dt <- 0.05
+  corr.indexes <- make.corr.indexes(res$spikes, corr.indexes.dt)
   res$dists <- dists
   res$dists.bins <- dists.bins
   res$corr.indexes <- corr.indexes
+  res$corr.indexes.dt <- corr.indexes.dt
   corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))  
   corr.id.means <- corr.get.means(corr.id)
   res$corr.id <- corr.id
@@ -352,6 +354,11 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   ## check that the spikes are monotonic.
   check.spikes.monotonic(allspikes)
   bursts <- lapply(allspikes, function(x) spikes.to.bursts(x, mm.burst.sep))
+
+  ## Check that the number of spikes matches the number we return in "spikes"
+  if (NSpikes != sum(sapply(allspikes,length)))
+    stop("NSpikes and actual number of spikes differ")
+
   
   res <- list (NFiles=NFiles, NBoxes=NBoxes, NRecords = NRecords,
                NSpikes=NSpikes, NEvents=NEvents,
@@ -603,7 +610,9 @@ plot.corr.index <- function(x, identify=F, ...) {
     xlabel <- paste("distance (um) [scale=",x$scale,"]",sep='')
 
   plot.default(dists, corrs, xlab=xlabel,
-               ylab="correlation index", main=x$file, ...)
+               ylab="correlation index",
+               main=paste(x$file, "dt:", x$corr.indexes.dt),
+               ...)
 
   if (identify) {
     labels1 <- outer(seq(1, x$NCells), seq(1,x$NCells), FUN="paste")
@@ -681,12 +690,6 @@ summary.mm.s <- function(x) {
 ## Jay's functions.
 ######################################################################
 
-## Load the C functions for computing correlograms.  Reload them if
-## this file is loaded more than once, just in case they have changed.
-ms.so.location <- "/home/stephen/ms/jay/count_overlap.so"
-if (is.loaded(symbol.C("count_overlap")))
-  dyn.unload(ms.so.location)
-dyn.load(ms.so.location);
 
 jay.read.spikes <- function(filename, scale=100) {
   ## Read in Jay's data set.  Scale gives the distance in um between
@@ -762,7 +765,8 @@ jay.read.spikes <- function(filename, scale=100) {
     levels(cut(0, jay.distance.breaks, right=F, include.lowest=T))
 
   dists.bins   <- bin.distances(dists, jay.distance.breaks)
-  corr.indexes <- make.corr.indexes(spikes)
+  corr.indexes.dt <- 0.05               #time window for coincident spikes
+  corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
 
   corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
   corr.id.means <- corr.get.means(corr.id)
@@ -777,6 +781,7 @@ jay.read.spikes <- function(filename, scale=100) {
               scale=scale,
               dists=dists, dists.bins=dists.bins,
               corr.indexes=corr.indexes,
+              corr.indexes.dt=corr.indexes.dt,
               corr.id=corr.id,
               corr.id.means=corr.id.means,
               distance.breaks=jay.distance.breaks,
@@ -844,11 +849,29 @@ plot.jay.pos <- function(x, use.rownames=F) {
   ## within the structure.
 
   range <- c(0, max(x))                 #should be a useful default range.
-  plot(x[,1], x[,2], xlim=range, ylim=range, xlab="", ylab="", type="n")
+  plot(x[,1], x[,2], asp=1, xlim=range, ylim=range, xlab="", ylab="", type="n")
   if (use.rownames)
     text(x[,1], x[,2], rownames(x))
   else
     text(x[,1], x[,2])
+}
+
+
+fourplot <- function(s) {
+  old.par <- par(no.readonly = TRUE)
+  on.exit(par(old.par))
+  
+  par(mfrow=c(2,2))
+  plot(s$pos)                             #show layout of electrodes.
+  plot.meanfiringrate(s)
+  plot(s)                                 #plot the spikes.
+  plot.corr.index(s, identify=F,col="red")
+  plotCI(s$corr.id.means[,1], s$corr.id.means[,2], s$corr.id.means[,3],
+         xlab="distance", ylab="correlation index", log="",
+         main=paste(s$file, "mean and sd of each distance"),
+         pch=19,add=T)
+  corr.do.fit(s$corr.id,plot=T)
+  
 }
 
 
@@ -885,13 +908,13 @@ make.distances <- function(posns)
   dists
 }
 
-make.corr.indexes <- function(spikes)
+make.corr.indexes <- function(spikes, dt)
 {
   ## Return the correlation index values for each pair of spikes.
   ## The matrix returned is upper triangular.
   ## SPIKES should be a list of length N, N is the number of cells.
+  ## "dt" is the maximum time for seeing whether two spikes are coincident.
   n <- length(spikes)
-  dt <- 0.05
   Tmax <- max(unlist(spikes))           #time of last spike.
   corrs <- array(0, dim=c(n,n))
   for ( a in 1:(n-1)) {
@@ -1100,8 +1123,13 @@ make.mi <- function(s) {
   if (identical(all.equal(sum(abs(apply(p.t.cond.r, 1, sum))),1),FALSE))
     stop("at least one p(t|r) does not sum to 1")
 
+
+  ## TODO: Note: p log(p) should be zero when p=0, whereas at the moment it
+  ## will be -Inf... and hence NA.  yuck!
+
+  
   (mi <- sum(p.r * apply(p.t.cond.r, 1,
-                         function(x) { sum(x * log2(x/p.t)) })) )
+                         function(x) { sum(x * my.log2(x/p.t)) })) )
 
   
   m <- l$m;
@@ -1118,6 +1146,17 @@ make.mi <- function(s) {
               p.t.cond.r=p.t.cond.r,
               l=l,
               p.t=p.t)
+  res
+}
+
+
+my.log2 <- function(x) {
+  ## Take log2(), but change any NaN to 0, since p log p  is defined as 0
+  ## when p=0.
+  res <- log2(x)
+  bad <- which(is.infinite(res))
+  if (any(bad))
+    res[bad] <- 0
   res
 }
 
@@ -1149,6 +1188,7 @@ show.prob.t.r <- function(s,comment="")  {
          ylab=expression(paste("p(", Delta,"t|r)")),
          main=paste(s$distance.breaks.strings[i], "um, n=",s$mi$l$nhists[i]),
          )
+    lines( timebin.times[c(1,timebin.n)], c(1/timebin.n, 1/timebin.n),lty=3)
   }
   plot(timebin.times, s$mi$p.t, main="p(t)",
        xlab="time (s)", ylab="p(t)")
@@ -1181,11 +1221,14 @@ hist.ab <- function(ta, tb, tmax, nbins) {
           as.double(tmax),
           res = integer(nbins),
           as.integer(nbins))
-  z$res
+
+  counts <- z$res
+  names(counts) <- hist.make.labels(0, tmax, nbins)
+  counts
+  
 }
 
 histbi.ab <- function(ta, tb, tmax, nbins) {
-
   ## C routine to bin the overlap time between two spikes into a
   ## histogram up to +/- tmax.  This is a bidirectional version of
   ## hist.ab, so the sign of time difference matters and the histogram
@@ -1199,9 +1242,72 @@ histbi.ab <- function(ta, tb, tmax, nbins) {
           as.double(tmax),
           res = integer(nbins),
           as.integer(nbins))
-  z$res
+
+  counts <- z$res
+  names(counts) <- hist.make.labels(-tmax, tmax, nbins)
+  counts
 }
 
+hist.make.labels <- function(tmin, tmax, nbins) {
+  ## Make the labels for the histogram bins.  Each histogram is of the form
+  ## [low, high), except for the last bin, which is [low,high].
+  breaks <- seq(from=tmin, to=tmax, length=nbins+1)
+  dig.lab <- 3
+  for (dig in dig.lab:12) {
+    ch.br <- formatC(breaks, dig = dig, wid = 1)
+    if (ok <- all(ch.br[-1] != ch.br[-(nbins+1)])) 
+      break
+  }
+  labels <- paste("[", ch.br[-(nbins+1)],",", ch.br[-1], ")",sep="")
+  substring(labels[nbins], nchar(labels[nbins])) <- "]"
+
+  labels
+}
+
+
+
+test.histograms.versus.r <- function() {
+  ## Test how well my histograms perform against R's binning methods.
+  ## Generate some random data points and see how my binning compares to
+  ## the binning produced by R's table facility.
+  ## If everything goes okay, it should just produce "99" loops.
+  min.t <- -2.0; max.t <- 2.0; nbins <- 100
+  for (i in 1:99) {
+
+    ## Generate some random data.
+    r <- rnorm(90000)
+    r <- c(r, (numeric(102) + min.t), (numeric(102) + max.t))
+
+    ## In this case, we will assume that all values should fit within the
+    ## bounds of the histogram, i.e. we do not need to sort the data.
+    
+    ## method 1: clip any value outside boundary to boundary value.
+    r <- pmin(max.t, pmax(min.t, r))
+
+    ## method 2: reject any value outside boundary.
+    ##valid <- which((r >= min.t) & (r <= max.t)); r<- r[valid]
+
+    ## count the number of elements that should be binned.
+    count <-  count.nab(c(0), r,max.t)
+
+    ## t1 - table from R.
+    t1 <- table(cut(r, breaks=seq(from=min.t,to=max.t, length=(2*nbins)+1),
+                    right=F,include.lowest=T))
+    t2 <- histbi.ab(c(0), r, tmax=max.t, nbins=2*nbins)
+    t3 <- hist.ab(c(0), r,  tmax=max.t, nbins=nbins)
+
+
+    stopifnot(all.equal.numeric(t1,t2))
+    stopifnot(all.equal.numeric(sum(t1), count))
+    bi.cols <- cbind( nbins:1, (nbins+1):(2*nbins))
+    bi.sums <- apply(matrix(t2[bi.cols], ncol=2), 1, sum)
+    stopifnot(all.equal.numeric(t3, bi.sums))
+
+    print(i)
+  }
+  print("all okay")
+}
+  
 test.hist.ab <- function() {
   ## Test function to check how hist.ab() compares to R's hist/cut().
 
@@ -1315,6 +1421,211 @@ test.count.hist2.nab <- function(s) {
   NULL
 }
 
+
+
+xcorr.plot <-  function(spikes.a, spikes.b,
+                        plot.label,
+                        xcorr.maxt=4, bi= TRUE,
+                        nbins=100,
+                        autocorr=FALSE, page.label= date()) {
+  
+  ## xcorr.maxt -- maximum time for binning; range will be [-maxt, maxt]
+  ## bi -- TRUE if we want to separately show the negative and positive
+  ## parts of the correlogram.
+  ## xcorr.maxt is the maximum time to extend the cross-correlation out to.
+  ## Assumes that the spikes are stored in the "s" data structure...
+  ## bit naughty.
+  ## page.label() is the label to use at the bottom of the page.
+
+  if (bi) {
+    x <- histbi.ab(spikes.a, spikes.b, xcorr.maxt, nbins)
+  } else {
+    x <-   hist.ab(spikes.a, spikes.b, xcorr.maxt, nbins)
+  }
+  
+  if (autocorr) {
+    ## We are doing auto-correlation, so subtract Ncells from zero bin.
+    ## This is to stop counting the time from one spike to itself.
+    zero.bin <- floor((nbins/2)+1)
+    x[zero.bin] <- x[zero.bin] - length(spikes.a)
+    if (x[zero.bin] < 0)
+      stop(paste("zero.bin cannot be reduced below zero",
+                 x[zero.bin], length(spikes.a)))
+  }
+
+  
+  dt.wid <- (2*xcorr.maxt)/nbins        #width (in seconds) of one bin.
+
+  ## Normalize to spikes/sec, by dividing the bin count by (Numspikes*bin)
+  ## where Numspikes is the number of spikes in the train, and bin is the
+  ## time width of each bin.  (From the Neuroexplorer manual.)
+  x <- x/ (length(spikes.a) * dt.wid)
+
+  ##  In contrast, if "probability" is required, the normalisation is that
+  ## bin counts are dvided by the number of spikes in the spike train.
+  max.val <- signif(max(x),2)
+
+  ## Poisson rate is simply the mean firing rate of the other cell.
+  ## This calculated as the number of spikes divided by the time of
+  ## the last spike.
+  ## TODO: rate might be better counted as:
+  ##   num of spikes / (time of last spike - time of first spike)
+
+  nspikes.b <- length(spikes.b)
+  poisson.rate <- nspikes.b/ spikes.b[nspikes.b]
+  
+  ## Plot the histogram.  type "l" is line, "h" for impulses.
+  ## No axes are added here.
+  plot(x, ylim=c(0,max.val), type="l",
+       xlab="", ylab="", xaxt="n",yaxt="n")
+
+  lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="red")
+
+  ## Now annotate the plot with some info.  Plot the info as a central
+  ## "tic mark" along the x-axis (which goes from 1 to nbins)
+  axis(1, (nbins/2),
+       labels=c(paste(plot.label, " max", max.val,
+         ##"", signif(poisson.rate,2),
+         sep="")))
+  mtext(page.label, side=1,outer=T)        #inefficient, but hey...
+
+}
+
+xcorr.plot.old <-  function(cellpair, xcorr.maxt=4, bi= TRUE,
+                        autocorr=FALSE, page.label= date()) {
+  ## cellpairs -- matrix of which cells to compare.
+  ## xcorr.maxt -- maximum time for binning; range will be [-maxt, maxt]
+  ## bi -- TRUE if we want to separately show the negative and positive
+  ## parts of the correlogram.
+  ## xcorr.maxt is the maximum time to extend the cross-correlation out to.
+  ## Assumes that the spikes are stored in the "s" data structure...
+  ## bit naughty.
+  ## page.label() is the label to use at the bottom of the page.
+
+  cell1 <- cellpair[1]
+  cell2 <- cellpair[2]
+  dist <- cellpair[3]
+
+  nbins <- 200
+  if (bi) {
+    x <- histbi.ab(corr.s$spikes[[cell1]], corr.s$spikes[[cell2]],
+                   xcorr.maxt, nbins)
+  } else {
+    x <- hist.ab(corr.s$spikes[[cell1]], corr.s$spikes[[cell2]],
+                 xcorr.maxt, nbins)
+  }
+
+  
+  if (autocorr && (cell1==cell2)) {
+    ## We are doing auto-correlation, so subtract Ncells from zero bin.
+    ## This is to stop cuonting the time from one spike to itself.
+    ## The second test is probably redundant.
+    zero.bin <- floor((nbins/2)+1)
+    x[zero.bin] <- x[zero.bin] - length(corr.s$spikes[[cell1]])
+    if (x[zero.bin] < 0)
+      stop(paste("zero.bin cannot be reduced below zero",
+                 x[zero.bin], length(corr.s$spikes[[cell1]])))
+  }
+  
+  dt.wid <- (2*xcorr.maxt)/nbins        #width (in seconds) of one bin.
+
+  ## Normalize to spikes/sec, by dividing the bin count by (Numspikes*bin)
+  ## where Numspikes is the number of spikes in the train, and bin is the
+  ## time width of each bin.  (From Jay's Neuroexplorer manual.)
+  x <- x/ (length(s$spikes[[cell1]]) * dt.wid)
+
+  ##  In contrast, if "probability" is required, the normalisationi s that
+  ## bin counts are dvided by the number of spikes in the spike train.
+  max.val <- signif(max(x),2)
+
+  nspikes.2 <- length(s$spikes[[cell2]])
+  poisson.rate <- nspikes.2/(s$spikes[[cell2]][nspikes.2])
+  
+  ## Plot the histogram as impulses, without any axes.
+  plot(x, ylim=c(0,max.val), type="l",
+       xlab="",ylab="",xaxt="n",yaxt="n")
+
+  lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="red")
+  ## Now annotate the plot with some info.  Plot the info as a central
+  ## "tic mark" along the x-axis (which goes from 1 to nbins)
+  axis(1, (nbins/2),
+       labels=c(paste(cell1,":",cell2," ", "max", max.val,
+         " d ", dist,
+         ##"", signif(poisson.rate,2),
+         sep="")))
+  mtext(page.label, side=1,outer=T)        #inefficient, but hey...
+
+  ##   axis(2,c((0+max.val)/2),
+  ##        ##labels=c(paste(l1,cell2,sep=":"), max.val))
+  ##        labels=c(paste(cell1,":",cell2," ", max.val, sep="")))
+
+}
+
+
+autocorrplots <- function(corr.s, psfile, tmax=4, nbins=100) {
+  ## todo: need legend.
+  xcorr.label <- paste(corr.s$file, date(), "tmax [s]", tmax, "nbins", nbins)
+
+  postscript(file=psfile)
+  par(oma=c(1,0,0,0), mar=c(1.5,1, 0,0)+0.2, tcl=-0.2, mgp=c(0,0,0))
+  par(mfrow=c(xcorr.nrows, xcorr.ncols))
+
+  spikes <- corr.s$spikes
+  
+  for (i in 1:corr.s$NCells) {
+    xcorr.plot( spikes[[i]], spikes[[i]],
+               plot.label=paste(i, ":", i, sep=""),
+               xcorr.maxt=tmax, bi=TRUE,
+               nbins=nbins,
+               autocorr=T,
+               page.label=xcorr.label)
+  }
+  dev.off()                               #finish writing postscript file.
+}
+
+
+
+
+crosscorrplots <- function(corr.s, psfile, tmax=4, nbins=100) {
+
+  d <- corr.s$dists;
+  d[lower.tri(d, diag=TRUE)] <- NA
+  cellpairs <- which(d>=0, arr.ind=T)
+  orders <- order(d[cellpairs])
+  d2 <- cbind(cellpairs, d[cellpairs])
+  ## Now sort them according to smallest distance first.
+  cellpairs.ordered <- d2[orders,]
+
+  ## Use the dists.bins matrix to determine when we need to emit a blank
+  ## plot.
+  b <- s$dists.bins;  b[lower.tri(b, diag=TRUE)] <- NA
+  breaks <- cumsum(table(b))
+  
+  ## plot to add to the file.
+  xcorr.label <- paste(corr.s$file, date(), "tmax [s]", tmax, "nbins", nbins)
+
+  postscript(file=psfile)
+  par(oma=c(1,0,0,0), mar=c(1.5,1, 0,0)+0.2, tcl=-0.2, mgp=c(0,0,0))
+  par(mfrow=c(xcorr.nrows, xcorr.ncols))
+
+  spikes <- corr.s$spikes
+
+  n.spikepairs <- dim(cellpairs.ordered)[1]
+  for (n in 1:n.spikepairs) {
+    i <- cellpairs.ordered[n,1]
+    j <- cellpairs.ordered[n,2]
+    d <- cellpairs.ordered[n,3]
+    xcorr.plot( spikes[[i]], spikes[[j]],
+               plot.label=paste(i, ":", j, " d ", d, sep=""),
+               xcorr.maxt=tmax, bi=TRUE,
+               nbins=nbins,
+               page.label=xcorr.label)
+
+    if (any(breaks == n))               #if this is the end of a distance bin
+      plot.new()                        #then make a blank plot.
+  }    
+  dev.off()                               #finish writing postscript file.
+}
 
 check.spikes.monotonic <- function(spikes) {
   ## Check to see that all spike times are monotonically increasing.
@@ -1522,6 +1833,3 @@ op.picture <- function(pos, rates, iteration) {
   
   fname
 }
-
-  
-
