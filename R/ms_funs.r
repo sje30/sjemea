@@ -908,7 +908,7 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
 
   ## Mon 25 Nov 2002: explore longer timescales?
   corr.indexes.dt <- 0.05               #time window for coincident spikes
-  ##corr.indexes.dt <- 1.00
+  ##corr.indexes.dt <- 10.00 # try longer, such as 1s, 5s or 10s.
   if (length(spikes) > 1) {
     corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
     corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
