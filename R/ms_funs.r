@@ -1585,9 +1585,6 @@ check.similarity <- function(s, tmax=0.001) {
   results
 }
 
-
-
-
 xcorr.plot <-  function(spikes.a, spikes.b,
                         plot.label,
                         xcorr.maxt=4, bi= TRUE,
@@ -1660,7 +1657,8 @@ xcorr.plot <-  function(spikes.a, spikes.b,
 
   if ( identical(all.equal.numeric(screen.layout[1:2],
                                    screen.layout[3:4]), TRUE)
-      && (names(dev.cur()) == "X11") && pause)
+      && ( (names(dev.cur()) == "X11") || (names(dev.cur()) == "windows"))
+      && pause)
     ## If we are using a display and the last plot has just been shown,
     ## wait for the user to press RETURN before displaying next page.
     readline("Press return to see next page of plots.")
