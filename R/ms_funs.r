@@ -624,7 +624,7 @@ plot.corr.index <- function(s, identify=F, ...) {
     xlabel <- paste("distance (um) [scale=",s$scale,"]",sep='')
 
   plot.default(dists, corrs, xlab=xlabel,
-               ylab="correlation index",
+               ylab="correlation index", bty="n",
                main=paste(s$file, "dt:", s$corr.indexes.dt),
                ...)
 
@@ -636,19 +636,23 @@ plot.corr.index <- function(s, identify=F, ...) {
                   
 }
 
-
-  
-plot.mm.s <- function(s, whichcells=1:s$NCells, mintime=0,
-                     maxtime=max(unlist(s$spikes), na.rm=T),
-                      show.bursts=F, ...) {
+plot.mm.s <- function(s, whichcells=1:s$NCells,
+                      mintime=min(unlist(s$spikes), na.rm=T),
+                      maxtime=max(unlist(s$spikes), na.rm=T),
+                      label.cells = FALSE,
+                      show.bursts = FALSE,
+                      ...) {
   ## Plot the spikes.
   ## WHICHCELLS is a list of cell numbers to plot; the default is to plot
   ## all of the cells.
   ## The MINTIME and MAXTIME is the time range for which we want to
   ## plot spikes.  When evaluating maxtime, some cells may have no
   ## spikes; their lists get converted to NA in unlist() so those NA
-  ## values need removing.
+  ## values need removing.  By default, MINTIME will be the time of the
+  ## first spike, and MAXTIME will be the time of the last spike.
   ## If SHOW.BURSTS is true, we plots the bursts rather than the spikes.
+  ## If LABELS.CELLS is true, we write the cell number of each spike train
+  ## in the y-axis.
 
   N <- length(whichcells)
   ticpercell <- 1/N; deltay <- ticpercell * 0.8;
@@ -658,50 +662,32 @@ plot.mm.s <- function(s, whichcells=1:s$NCells, mintime=0,
     spikes <- s$bursts
   else
     spikes <- s$spikes
-  
-  plot( c(mintime, maxtime), c(0,1), , type='n',
+
+  plot( c(mintime, maxtime), c(0,1), type='n',
+       yaxt="n",
        main=s$file,xlab="time (s)", ylab="spikes of cell", ...)
 
   ymin <- 0
   for (cell in whichcells) {
-
     ts <- spikes[[cell]]
     n <- length(ts)
-    xs <- double(n*3)
-    ymax <- ymin + deltay
-
-    ## NA items allow for breaks in the lines:
-    ##
-    ## x1   y
-    ## x1   y+dy
-    ## NA   NA
-    ## x2   y
-    ## x2   y+dy
-    ## NA   NA
+    ys <- numeric(n) + ymin
     
-    xs[ seq(from=1, by=3, length=n) ] <- ts
-    xs[ seq(from=2, by=3, length=n) ] <- ts
-    xs[ seq(from=3, by=3, length=n) ] <- NA
-
-    ys <- double(n*3)
-    ys[ seq(from=1, by=3, length=n) ] <- ymin
-    ys[ seq(from=2, by=3, length=n) ] <- ymax
-    ys[ seq(from=3, by=3, length=n) ] <- NA
-    lines(xs, ys)
+    segments(ts, ys, ts, ys+deltay)
     ymin <- ymin + yminadd
   }
 
-  allys <- seq(from=0, by=yminadd, length=N)
-  allxs <- 0
-  text(allxs, allys, whichcells)
-  ##dev.copy2eps(file=paste(cellname, ".ps", sep=''))
+  if (label.cells) {
+    mtext(whichcells, side=2, adj=allys)
+  }
+
 }
 
 
 
-summary.mm.s <- function(s) {
-  cat(paste("Spike data:", s$file, "\n"))
-  cat(paste("NCells", s$NCells, "\n"))
+summary.mm.s <- function(object, ...) {
+  cat(paste("Spike data:", object$file, "\n"))
+  cat(paste("NCells", object$NCells, "\n"))
 }
 
 ######################################################################
@@ -709,7 +695,8 @@ summary.mm.s <- function(s) {
 ######################################################################
 
 
-jay.read.spikes <- function(filename, scale=100, ids=NULL) {
+jay.read.spikes <- function(filename, scale=100, ids=NULL,
+                            min.time=NULL, max.time=NULL) {
   ## Read in Jay's data set.  Scale gives the distance in um between
   ## adjacent channels.  This is 100um by default.  This can be
   ## changed to cope with the developmental changes in retina.  IDS is
@@ -748,6 +735,12 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL) {
   }
 
   spikes <- apply(times, 1, jay.filter.for.na)
+
+  if (!is.null(max.time))
+    spikes <- lapply(spikes, jay.filter.for.max, max=max.time)
+
+  if (!is.null(min.time))
+    spikes <- lapply(spikes, jay.filter.for.min, min=min.time)
 
   if (!is.null(ids) ) {
     spikes <- spikes[ids];
@@ -828,6 +821,26 @@ jay.filter.for.na <- function(x) {
   if (any(x.na))
     x[1:x.na[1]-1]
   else
+    x
+}
+
+jay.filter.for.max <- function(x, max) {
+  ## Any times greater than MAX are removed.
+  x.high <- which(x>max)
+  if (any(x.high))
+    x[1:x.high[1]-1]
+  else
+    x
+}
+
+jay.filter.for.min <- function(x, min) {
+  ## Any times less than MIN are removed.
+  x.low <- which(x<min)
+  if (any(x.low)) {
+    first.x <- x.low[length(x.low)]+1
+    last.x <- length(x)
+    x[first.x:last.x]
+  } else
     x
 }
 
@@ -944,12 +957,13 @@ make.corr.indexes <- function(spikes, dt) {
   ## This is defined in the 1991 Meister paper.
   n <- length(spikes)
   Tmax <- max(unlist(spikes))           #time of last spike.
+  Tmin <- min(unlist(spikes))           #time of first spike.
   corrs <- array(0, dim=c(n,n))
   for ( a in 1:(n-1)) {
     n1 <- length(spikes[[a]])
     for (b in (a+1):n) {
       n2 <- length(spikes[[b]])
-      corrs[a,b] <-  (count.nab(spikes[[a]], spikes[[b]],dt) * Tmax) /
+      corrs[a,b] <-  (count.nab(spikes[[a]], spikes[[b]],dt) * (Tmax-Tmin)) /
         (n1 * n2 * (2*dt))
     }
   }
@@ -1372,7 +1386,6 @@ test.count.hist.nab <- function(s) {
   
   n <- s$NCells
   dt <- 0.05
-  Tmax <- max(unlist(spikes))           #time of last spike.
   counts <- array(0, dim=c(n,n))
   for ( a in 1:(n-1)) {
     n1 <- s$nspikes[a]
@@ -1404,7 +1417,6 @@ test.count.hist2.nab <- function(s) {
   n <- s$NCells
   dt <- 0.05
   nbins <- 10
-  Tmax <- max(unlist(spikes))           #time of last spike.
   counts <- array(0, dim=c(n,n))
 
   ## which bins go together for the same absolute time delay.
@@ -1707,7 +1719,7 @@ make.spikes.to.frate <- function(spikes,
                                  time.interval=1, #time bin of 1sec.
                                  frate.min=0,
                                  frate.max=20,
-                                 time.low=0,
+                                 time.low=floor(min(unlist(spikes))),
                                  clip=FALSE,
                                  time.high=ceiling(max(unlist(spikes)))
                                  ) {
