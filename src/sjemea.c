@@ -79,7 +79,6 @@ void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
    * histogram is [0,T], where T=*PDT.
    */
   
-  int count=0;
   int sa, sb, low;
   Sfloat alow, ahigh, dt, delta_t, bin_wid, max_val;
   int na, nb;
@@ -128,7 +127,6 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
    * histogram is [-T,T] where T=*PDT.
    */
 
-  int count=0;
   int sa, sb, low;
   Sfloat alow, ahigh, dt, delta_t, bin_wid, min_val, max_val;
   int na, nb;
