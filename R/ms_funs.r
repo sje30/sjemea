@@ -2244,7 +2244,9 @@ colour.com <- function(com) {
 }
 
 plot.mscom <- function(x, s, colour=T, show.title=T,
-                       label.cells=NULL, ...) {
+                       label.cells=NULL,
+                       ##border=FALSE,
+                       rel.cex=1, ...) {
   ## Plot the centre-of-mass using COLOUR if TRUE.
   ## S is optional, but if given, we get to see electrode positions
   ## and the name of the file.
@@ -2290,9 +2292,10 @@ plot.mscom <- function(x, s, colour=T, show.title=T,
       } else {
         lines(c, col=col.num)
       }
-      ##text(c[1,1], c[1,2], "*", cex=3)
+      ##text(c[1,1], c[1,2], "*", cex=3*rel.cex)
       ## Draw the starting point and add a bit of jitter.
-      text(c[1,1]+(20*runif(1)), c[1,2]+(20*runif(1)), "*", cex=3)
+      text(c[1,1]+(20*runif(1)), c[1,2]+(20*runif(1)), "*",
+           cex=3*rel.cex)
     }
     ## draw electrode positions if we have them.
     if(!missing(s)) {
@@ -2301,12 +2304,13 @@ plot.mscom <- function(x, s, colour=T, show.title=T,
       if (!is.null(x$active))
         electrode.cols[x$active] <- 1   #black for the active ones.
 
-      points(s$pos, pch=21, bg=electrode.cols, cex=0.9, lwd=0.4)
+      points(s$pos, pch=21, bg=electrode.cols, cex=rel.cex*0.9,
+             lwd=0.4)
     }
     if (!is.null(label.cells)) {
       text(as.numeric(label.cells[,1]),
            as.numeric(label.cells[,2]),
-           labels=label.cells[,3], cex=1)
+           labels=label.cells[,3], cex=rel.cex*1)
     }
 
   } else {
