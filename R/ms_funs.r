@@ -1326,7 +1326,8 @@ corr.do.fit <- function(id, plot=TRUE, show.ci=FALSE, ...) {
     if (show.ci) {
       ## Confidence intervals will show mean, so don't need
       ## to do both matlines and curve.
-      matlines(expt.new$x, exp(expt.clim), lty=c(1,2,2),col="red")
+      matlines(expt.new$x, exp(expt.clim), lty=c(1,2,2),
+               col="black")
     } else {
       curve(exp(fit$coeff[1]) * exp(x * fit$coeff[2]), add = TRUE,
             from=0, ...)
@@ -2010,8 +2011,7 @@ make.movieframes <- function (x, beg=1,
                               outputdir=dirname(tempfile()),
                               prefix="mea",
                               seconds=TRUE,
-                              delete.first=FALSE,
-                              delete.frames=TRUE) {
+                              delete.first=FALSE) {
 
   ## Loop over each frame, making a PNG (mono) file.
   ## The frame number normally has leading zeros (e.g. 00050 rather than
@@ -2049,9 +2049,11 @@ make.movieframes <- function (x, beg=1,
     file <- paste(outputdir, "/", prefix,
                   formatC(i,width=5,flag="0"),
                   ".png", sep='')
+                  ##".ppm", sep='')
     ## Depending on whether we are colour coding or radius coding, change
     ## the device -- this will keep the files small.
     dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "pngmono"))
+    ##dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "ppm"))
   }
 }
 
@@ -2310,7 +2312,7 @@ plot.mscom <- function(x, s, colour=TRUE, show.title=TRUE,
       ##text(c[1,1], c[1,2], "*", cex=3*rel.cex)
       ## Draw the starting point and add a bit of jitter.
       text(c[1,1]+(20*runif(1)), c[1,2]+(20*runif(1)), "*",
-           cex=3*rel.cex)
+           col=col.num, cex=3*rel.cex)
     }
     ## draw electrode positions if we have them.
     if(!missing(s)) {
@@ -2639,9 +2641,12 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=FALSE,
       if (show.com) {
         com <- centre.of.mass(s, frame.num, frame.num, seconds=FALSE)
         if(any(com$active))
+          ## for retreat, colour them green.
           ##points(com$com, pch=19, col="green")
           ##points(com$com, pch=21, lwd=0.5, bg="grey")
-          points(com$com, pch=21, lwd=0.5, bg="white")
+          ## use a triangle for COM, so distinct from open circles
+          ## used in other centre of mass plots.
+          points(com$com, pch=23, lwd=0.5, bg="white")
       }
     }
   } else {
