@@ -2168,9 +2168,68 @@ isi <- function(train) {
 ## This variable stores the maximum firing rate.  Any firing rate bigger
 ## than this value is set to this value; this prevents the circles from
 ## overlapping on the plots.
+
+## This is a simple linear scale.
 jay.ms.max.firingrate <- 10
 
 plot.rate.mslayout <- function(s, frame.num) {
+  ## New version, fixed for Jay's dimensions.
+  ## Plot the given frame number in the multisite layout.
+  ## The biggest character size is set by jay.ms.max.firingrate.
+
+  no.small.dots <- FALSE;               #set this to TRUE/FALSE
+  
+  max.rad <- 50                         #half electrode-spacing.
+  ## if electrodes are 100um, each circle can be no bigger than 50um radius,
+  ## else they will overlap.
+  
+  ## Get the firing rates, and set optional upper limit on firing rate.
+  rates <- pmin(s$rates$rates[frame.num,],jay.ms.max.firingrate)
+  
+  ## Convert the firing rate into a radius, using a linear scale.
+  radii <- rates * max.rad / jay.ms.max.firingrate
+  
+  
+  ## If the radius is zero, R (on unix) still draws a v. small circle
+  ## -- is this a bug?  Anyway, replacing zeros (or small values)
+  ## with NAs does the trick if you don't want small circles (but they
+  ## act as electrode positions which is handy).
+
+
+  draw.anything <- TRUE                 #flag - do not change.
+  
+  if (no.small.dots) {
+    min.radius <- 0.01                  #min firing rate in Hz.
+    small.cells <- which(radii < min.radius)
+    if (any(small.cells))
+      radii[small.cells] <- NA
+
+    if (length(small.cells) == s$NCells) {
+      ## nothing to draw.
+      draw.anything <- FALSE
+    }
+      
+  }
+
+
+  if (draw.anything)
+    symbols( s$pos[,1], s$pos[,2],
+            fg="black", bg="black",
+            circles=radii,
+            xaxt="n", yaxt="n", xlab='', ylab='',
+            inches=FALSE,
+            xlim=c(0, 800), ylim=c(0,800),
+            main=formatC(s$rates$times[frame.num], digits=1, format="f"))
+  else
+    ## nothing to draw, so just draw outline.
+    plot( NA, NA,
+         xaxt="n", yaxt="n", xlab='', ylab='',
+         xlim=c(0, 800), ylim=c(0,800),
+         main=formatC(s$rates$times[frame.num], digits=1, format="f"))
+}
+
+
+plot.rate.mslayout.old <- function(s, frame.num) {
   ## Plot the given frame number in the multisite layout.
   ## If you want to plot circles rather than disks, change "pch=19"
   ## to "pch=21".  Do `help("points")' for a summary of plot types.
