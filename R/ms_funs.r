@@ -694,6 +694,69 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
 
 }
 
+draw.spikes <- function (t, tmin, tmax,
+                         ht=1, spike.ht, label, xscale) {
+
+  ## Compulsory args:
+  ## T is the set of spike times.
+  ## TMIN, TMAX are the min and max times to show.
+  ##
+  ## HT is the overall ht of the plot.  SPIKE.HT is then the height
+  ## of each spike.  (spike.ht should be less than ht.)
+  ## LABEL is an optional label to put at the top of each plot.
+  ## If XSCALE is given, it should be a vector (lo, hi) indicating the
+  ## the scalebar to add -- this is just reusing the x-axis.  Alternatively
+  ## if XSCALE is NULL, no scalebar is drawn.
+  
+  if (missing(spike.ht))
+    spike.ht <- 0.7 * ht                #spike ht should be 90% of total ht.
+
+
+  y.low <- 0.1                          # min y-value, should be [0,1].
+
+  ## throw out spikes outside range [tmin, tmax]
+  reject.spikes <-  (t < tmin) | (t > tmax)
+  if (any(reject.spikes))
+    t <- t[-reject.spikes]
+  else
+    cat("no spikes outside [tmin,tmax]\n")
+  ## set up the plot region, but don't draw any points.
+  plot( c(tmin, tmax), c(0, ht),
+       bty="n",                         #switch off border
+       xlab="", ylab="",                #no labelling of axes.
+       xaxt="n", yaxt="n",              #no automatic axes.
+       xlim=c(tmin, tmax), ylim=c(0, ht),
+       type="n")
+
+
+  ## We can manually add x and y tics, just for checks...
+  if (missing(xscale))
+    ## probably don't want xaxis in final version.
+    axis(1, at=c(tmin, tmax))             #x-axis
+  else {
+    ## assume xscale is a 2-d vector providing start and stop time of
+    ## scalebar.  tck is the tick length.  labels=FALSE prevents
+    ## number labelling of the plot.
+    if (!is.null(xscale)) {
+      stopifnot(length(xscale)==2)
+      axis(1, at=c(xscale[1], xscale[2]), labels=FALSE, tck=0)
+    }
+  }
+  
+  ##axis(2, at=c(0, ht))                  #y-axis
+
+  ## for each spike at time t, we draw a line from the point (t,0)
+  ## to (t,spike.ht).
+  y1 <- y.low + seq(0, by=0, along=t) # vector of zeros, of same length as t.
+  y2 <- y1 + spike.ht
+  segments(t, y1, t, y2)
+
+  ## optionally label the plot.
+  if (!missing(label))
+    mtext(label, side=3, adj = 0.02)    #draw label on top axis.
+  
+}
+
 
 
 summary.mm.s <- function(object, ...) {
@@ -2140,3 +2203,5 @@ op.picture <- function(pos, rates, iteration) {
   
   fname
 }
+
+
