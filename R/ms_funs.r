@@ -1683,6 +1683,8 @@ make.animated.gif <- function (x, beg=1,
   ## when creating the animated gif.
   ##
   ## DELAY is the delay (an integer) in 100ths of a second.
+  ## WARNING: this works only on Linux, as it requires a ocuple of
+  ## external unix programs.!
 
   for (i in beg:end) {
     plot.rate.mslayout(x, i)
@@ -1704,14 +1706,64 @@ make.animated.gif <- function (x, beg=1,
 
 }
 
+make.movieframes <- function (x, beg=1,
+                               end=dim(x$rates$rates)[1],
+                              outputdir=dirname(tempfile()),
+                              prefix="mea",
+                              delete.first=FALSE,
+                              delete.frames=TRUE) {
 
-show.movie <- function(x, beg=1, end=dim(x$rates$rates)[1],delay=0.03) {
+  ## Loop over each frame, making a PNG (mono) file.
+  ## The frame number normally has leading zeros (e.g. 00050 rather than
+  ## 50) so that the frames are ordered correctly by the * wildcard.
+  ## OUTPUTDIR is the directory where the files are to be stored.  This
+  ## should not end in a forward slash (/).
+  ## If delete.first is true, we delete all the png files in the output
+  ## directory before making any new images.
+
+  if (substring(outputdir, first=nchar(outputdir))=="/")
+    stop(paste("outputdir should not end in slash", outputdir))
+  
+  if (delete.first) {
+    ## Delete all movie files before making new set.
+    unlink(paste(outputdir, "/", prefix, "*.png",sep=""))
+  }
+  
+  for (i in beg:end) {
+    plot.rate.mslayout(x, i)
+    file <- paste(outputdir, "/", prefix,
+                  formatC(i,width=5,flag="0"),
+                  ".png", sep='')
+    dev2bitmap(file=file, type="pngmono")
+  }
+}
+
+
+show.movie <- function(x, beg=1, end=dim(x$rates$rates)[1],
+                       seconds=F,
+                       delay=0.03) {
   ## Show a movie within R.
   ## x is the spikes data structure.
   ## first is the number of the first frame.
   ## last is the number of the last frame (defaults to the number of
   ## frames to show).
+  ## If seconds is true, beg and end are taken to be time in seconds, rather
+  ## than frame numbers.  
   ## delay gives the delay in seconds between frames.
+  if (seconds) {
+    frames <- which(x$rates$times >= beg)
+    if (length(frames) >1)
+      beg <- frames[1]
+    else
+      ##stop(paste("beginning time (",beg,") is too late",sep=""))
+      beg <- 1
+    frames <- which(x$rates$times >= end)
+    if (length(frames) >1)
+      end <- frames[1]
+    else
+      ##stop(paste("end time (",beg,") is too late",sep=""))
+      end <- length(x$rates$rates)
+  }
   for (f in beg:end) {
     plot.rate.mslayout(x, f)
     Sys.sleep(delay)
@@ -1728,7 +1780,9 @@ make.spikes.to.frate <- function(spikes,
                                  time.high=ceiling(max(unlist(spikes)))
                                  ) {
   ## Convert the spikes for each cell into a firing rate (in Hz)
-
+  ## We count the number of spikes within time bins of duration
+  ## time.interval (measured in seconds).
+  ##
   ## Currently cannot specify time.low or time.high as less than the
   ## range of spike times else you get an error from hist().  The
   ## default anyway is to do all the spikes within a data file.
@@ -1742,6 +1796,12 @@ make.spikes.to.frate <- function(spikes,
     h$counts/time.interval                #convert to firing rate (in Hz)
   }
   time.breaks <- seq(from=time.low, to=time.high, by=time.interval)
+  if (time.breaks[length(time.breaks)] < time.high) {
+    ## extra time bin needs adding.
+    ## e.g seq(1,6, by = 3) == 1 4, so we need to add 7 ourselves.
+    time.breaks <- c(time.breaks,
+                     time.breaks[length(time.breaks)]+time.interval)
+  }
   rates1 <- lapply(spikes, spikes.to.rates, breaks=time.breaks,
                    time.interval=time.interval)
 
@@ -1775,8 +1835,8 @@ plot.meanfiringrate <- function(s) {
   ## rates <- make.spikes.to.frate(js, ...)
   ## setrates(js) <- rates
   
-  s$rates <- value$rates
-  s$times <- value$times
+  s$rates$rates <- value$rates
+  s$rates$times <- value$times
   s
 }
 
@@ -1784,8 +1844,6 @@ plot.meanfiringrate <- function(s) {
 ## than this value is set to this value; this prevents the circles from
 ## overlapping on the plots.
 jay.ms.max.firingrate <- 10
-
-
 
 plot.rate.mslayout <- function(s, frame.num) {
   ## Plot the given frame number in the multisite layout.
@@ -1796,7 +1854,8 @@ plot.rate.mslayout <- function(s, frame.num) {
   
   plot(s$pos[,1], s$pos[,2], pch=19, xaxt="n", yaxt="n",
        cex=pmin(s$rates$rates[frame.num,],jay.ms.max.firingrate),
-       xlab='', ylab='', main=frame.num)
+       xlab='', ylab='',
+       main=formatC(s$rates$times[frame.num], digits=1, format="f"))
 }
 
 
