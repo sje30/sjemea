@@ -721,6 +721,9 @@ jay.read.spikes <- function(filename, scale=100) {
   pos <- cbind(cols, rows)
   class(pos) <- "jay.pos"
 
+  ## temporary test: shuffle electrode positions.
+  ## pos <- pos[sample(1:num.channels),]
+  
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
 
@@ -759,6 +762,21 @@ jay.read.spikes <- function(filename, scale=100) {
 
 }
 
+shuffle.spike.times <- function (s, noise.sd) {
+  ## Return new copy of s, with spike trains shuffled to add noise
+  ## with sd of noise.sd
+  spikes <- s$spikes
+
+  add.noise <- function(x, my.sd) {
+    n <- length(x)
+    x2 <- sort(x + rnorm(n, sd=my.sd))
+  }
+  spikes2 <- lapply(spikes, add.noise, noise.sd)
+  check.spikes.monotonic(spikes2)
+  s2 <- s                               #make a copy of s
+  s2$spikes <- spikes2
+  s2
+}
 
 bin.distances <- function(dists, breaks) {
   ## DISTS is a upper NxN array.
@@ -925,7 +943,7 @@ prob.t.cond.r <- function(spikes, distance.bins, tmax,n.timebins)
   ## For each cell pair, compute the histogram of time differences between
   ## spikes, and bin it according to the distance between the cell pair.
   for (a in 1:(n-1)) {
-    print(a)
+    ##print(a)
     n.a <- s$nspikes[a]
     for (b in (a+1):n) {
       n.b <- s$nspikes[b]
@@ -1018,6 +1036,32 @@ histbi.ab <- function(ta, tb, tmax, nbins) {
           res = integer(nbins),
           as.integer(nbins))
   z$res
+}
+
+test.hist.ab <- function() {
+  ## Test function to check how hist.ab() compares to R's hist/cut().
+
+  ## If we say spike train A has one spike at time 0, the histogram
+  ## produced for comparing spike train A, B will be the same as
+  ## binning the spike times of B.
+  ## Here we want times in [0,1] to be binned into 4 bins.
+  a <- c(0)
+
+  ## either generate random data, or test boundary's explicitly.  Here
+  ## the crucial test is whether 0.5 falls in bin 2 or 3.
+
+  ## The histograms produced by my C-code are [low,high), i.e. closed
+  ## on the left, open on the right.  To get the same behaviour in cut()
+  ## we need to right=F.
+  b <- c(0.1,0.2, 0.4, 0.5, 0.9)
+  ##b <- runif(100)
+  h <- hist.ab(a, sort(b), 1.0, 4)
+  x <- table(cut(b, breaks=c(0,0.25,0.5,0.75,1.0),right=F,include.lowest=T))
+
+  print(h)
+  print(x)
+  sum(abs(x-h))                         #should be zero.
+  
 }
 
 test.count.hist.nab <- function(s) {
@@ -1116,7 +1160,7 @@ check.spikes.monotonic <- function(spikes) {
   results <- sapply( spikes, function(x) { any(diff(x) <0)})
   if (any(results)) {
     stop(paste("Spikes are not ordered in increasing time",
-               which(results),"\n"))
+               paste(which(results),collapse=" "),"\n"))
   }
 }
   
@@ -1370,15 +1414,18 @@ make.mi <- function(s) {
 }
 
 
-show.distns <- function(s)  {
+show.distns <- function(s,comment="")  {
   ## Show the distributions...
   ## make.mi() must have been done first...
+
+  op <- par(no.readonly = TRUE)
   nbins <- length(s$distance.breaks) -1
   if (nbins == 7)
     par(mfrow=c(4,2))                   # jay
   else 
     par(mfrow=c(4,3))                   # MM
-  
+  par(mar=c(4,4,2,2))                   #reduce each margin a bit.
+  par(oma=c(1,0,0,0))                   #outer margin, 1 line at bottom.
   for (i in 1:nbins) {
     plot(timebin.times, s$mi$p.t.cond.r[i,],
          ##main=paste(s$file,"r bin",i),
@@ -1389,4 +1436,7 @@ show.distns <- function(s)  {
   }
   plot(timebin.times, s$mi$p.t, main="p(t) [uncorrected]",
        xlab="time (s)", ylab="p(t)")
+  mtext(paste(s$file, date(), "MI",signif(s$mi$mi,4),comment),side=1, outer=T)
+
+  par(op)                               #restore old params.
 }
