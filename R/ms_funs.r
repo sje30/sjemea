@@ -693,7 +693,7 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
          xaxt="n",
          xaxs="i", yaxs="i",
          xlab="", ylab="", ...)
-    mtext(main, side=3, adj=0, line=1)
+    mtext(main, side=3, adj=0, line=0.5)
     
   } else {
     plot( c(mintime, maxtime), c(0,1), type='n',
