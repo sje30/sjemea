@@ -1301,11 +1301,12 @@ corr.get.means <- function(id) {
   means
 }
 
-corr.do.fit <- function(id, plot=T, ...) {
+corr.do.fit <- function(id, plot=T, show.ci=FALSE, ...) {
   ## Do the fit to the exponential and optionally plot it.  Any
   ## correlation index of zero is removed, since we cannot take the
   ## log of zero.  Hopefully there won't be too many of these.
-  
+  ## If SHOW.CI is true, do the fit with 95% confidence intervals.
+
   y.zero <- which(id[,2]==0)
   if (length(y.zero)>0) {
     id <- id[-y.zero,]
@@ -1314,12 +1315,20 @@ corr.do.fit <- function(id, plot=T, ...) {
   x <- id[,1]
   y.log <- log(id[,2])
   fit <- lm(y.log ~ x)
-  if (plot)
-    curve(exp(fit$coeff[1])* exp(x*fit$coeff[2]), add=T, ...)
-
-  ## Mon 07 Jan 2002: must use curve() rather than abline() due to a
-  ## bug in abline in R 1.4
-  
+  if (show.ci) {
+    expt.new <- data.frame(x = seq(0, 850, 10))  #range of x for predictions.
+    expt.clim <- predict(fit, expt.new, interval="confidence")
+  }
+  if (plot)  {
+    if (show.ci) {
+      ## Confidence intervals will show mean, so don't need
+      ## to do both matlines and curve.
+      matlines(expt.new$x, exp(expt.clim), lty=c(1,2,2),col="red")
+    } else {
+      curve(exp(fit$coeff[1]) * exp(x * fit$coeff[2]), add = T,
+            from=0, ...)
+    }
+  }
   fit
 }
 
