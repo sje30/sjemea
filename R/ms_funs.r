@@ -1451,7 +1451,7 @@ count.nab <- function(ta, tb, tmax=0.05) {
           as.double(tb),
           as.integer(length(tb)),
           as.double(tmax),
-          res = integer(1))
+          res = integer(1), PACKAGE="sjemea")
   z$res
 }
 
@@ -1467,7 +1467,7 @@ hist.ab <- function(ta, tb, tmax, nbins) {
           as.integer(length(tb)),
           as.double(tmax),
           res = integer(nbins),
-          as.integer(nbins))
+          as.integer(nbins), PACKAGE="sjemea")
 
   counts <- z$res
   names(counts) <- hist.make.labels(0, tmax, nbins)
@@ -1488,7 +1488,7 @@ histbi.ab <- function(ta, tb, tmax, nbins) {
           as.integer(length(tb)),
           as.double(tmax),
           res = integer(nbins),
-          as.integer(nbins))
+          as.integer(nbins), PACKAGE="sjemea")
 
   counts <- z$res
   names(counts) <- hist.make.labels(-tmax, tmax, nbins)
