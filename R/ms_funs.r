@@ -1158,14 +1158,14 @@ my.upper <- function (x,diag=FALSE) {
 }
 
 
-make.mi <- function(s) {
+make.mi <- function(s, tmax=4) {
   ## Return the mutual information.
   ## this includes the bias term,
   ## For Dan's example:
   ## m <- 42000; n.t <-400; n.r <- 9
   ## mi.bias <- ( (n.t * n.r) - n.t - n.r + 1) / ( 2 * m * log(2))
   p.r <- prob.r(s)
-  l <- prob.t.cond.r(s, tmax=4, n.timebins=100)
+  l <- prob.t.cond.r(s, tmax, n.timebins=100)
   p.t.cond.r <- l$allhists
   p.t <- prob.t(p.t.cond.r, p.r)
 
