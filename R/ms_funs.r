@@ -987,13 +987,12 @@ jay.filter.for.max <- function(x, max) {
 
 jay.filter.for.min <- function(x, min) {
   ## Any times less than MIN are removed.
+  ## e.g. jay.filter.for.min(c(1,2,3,4), 6) should return "nothing?"
+  ## jay.filter.for.min(c(1,2,3,4), 3) returns 3 4
   x.low <- which(x<min)
-  if (any(x.low)) {
-    first.x <- x.low[length(x.low)]+1
-    last.x <- length(x)
-    x[first.x:last.x]
-  } else
-    x
+  if (any(x.low)) 
+    x <- x[-x.low]
+  x
 }
 
 
