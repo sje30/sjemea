@@ -906,7 +906,9 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
 
   dists.bins   <- bin.distances(dists, jay.distance.breaks)
 
+  ## Mon 25 Nov 2002: explore longer timescales?
   corr.indexes.dt <- 0.05               #time window for coincident spikes
+  ##corr.indexes.dt <- 1.00
   if (length(spikes) > 1) {
     corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
     corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
@@ -1544,12 +1546,24 @@ test.histograms.versus.r <- function() {
     t3 <- hist.ab(c(0), r,  tmax=max.t, nbins=nbins)
 
 
-    stopifnot(all.equal.numeric(t1,t2))
-    stopifnot(all.equal.numeric(sum(t1), count))
+    if(!all.equal.numeric(t1,t2)) {
+      print("first test")
+      print(t1); print(t2)
+      ##error("these are not equal")
+    }
+      
+    if(!all.equal.numeric(sum(t1), count)) {
+      print("2nd test")
+      print(sum(t1)); print(count)
+      ##error("sum and count are unequal")
+    }
     bi.cols <- cbind( nbins:1, (nbins+1):(2*nbins))
     bi.sums <- apply(matrix(t2[bi.cols], ncol=2), 1, sum)
-    stopifnot(all.equal.numeric(t3, bi.sums))
-
+    if(!all.equal.numeric(t3, bi.sums)) {
+      print("third test")
+      print(t3); print(bi.sums)
+      ##error("t3 and bi.sums are unequal")
+    }
     print(i)
   }
   print("all okay")
