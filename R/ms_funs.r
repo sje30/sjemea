@@ -1562,11 +1562,16 @@ xcorr.plot.old <-  function(cellpair, xcorr.maxt=4, bi= TRUE,
 }
 
 
-autocorrplots <- function(corr.s, psfile, tmax=4, nbins=100) {
+autocorrplots <- function(corr.s, op.file, tmax=4, nbins=100) {
   ## todo: need legend.
   xcorr.label <- paste(corr.s$file, date(), "tmax [s]", tmax, "nbins", nbins)
 
-  postscript(file=psfile)
+  ## If output file ends in ".pdf", make a pdf, else make a postscript file.
+  if (any(grep ("\\.pdf$", op.file)))
+    pdf(file=op.file)
+  else
+    postscript(file=op.file)
+
   par(oma=c(1,0,0,0), mar=c(1.5,1, 0,0)+0.2, tcl=-0.2, mgp=c(0,0,0))
   par(mfrow=c(xcorr.nrows, xcorr.ncols))
 
