@@ -770,6 +770,7 @@ summary.mm.s <- function(object, ...) {
 
 
 jay.read.spikes <- function(filename, scale=100, ids=NULL,
+                            time.interval=1,
                             min.time=NULL, max.time=NULL) {
   ## Read in Jay's data set.  Scale gives the distance in um between
   ## adjacent channels.  This is 100um by default.  This can be
@@ -876,7 +877,7 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
     corr.id.means <- NA
   }
 
-  rates <- make.spikes.to.frate(spikes)
+  rates <- make.spikes.to.frate(spikes, time.interval=time.interval)
 
   res <- list( channels=channels,
               spikes=spikes, nspikes=nspikes, NCells=length(spikes),
@@ -1007,11 +1008,10 @@ fourplot <- function(s) {
   plot(s)                                 #plot the spikes.
   if(!is.na(s$corr.indexes)) {
     ## Plot correlation indexes only if we have them.
-    plot.corr.index(s, identify=F,col="red")
+    plot.corr.index(s, identify=F,col="red", log="")
     plotCI(s$corr.id.means[,1], s$corr.id.means[,2], s$corr.id.means[,3],
-           xlab="distance", ylab="correlation index", log="",
-           main=paste(s$file, "mean and sd of each distance"),
-           pch=19,add=T)
+           xlab="distance", ylab="correlation index", 
+           pch=19, add=T)
     corr.do.fit(s$corr.id,plot=T)
   }
 }
@@ -1666,10 +1666,16 @@ xcorr.plot <-  function(spikes.a, spikes.b,
 }
 
 
-xcorr.restricted <- function(s, tmin, tmax, a, b) {
-  ## Compute the cross-correlation just between TMIN and TMAX for
-  ## two cells, A and B.
+xcorr.restricted <- function(s, a, b,
+                             tmin, tmax,
+                             xcorr.maxt=5) {
+  ## Compute the cross-correlation just between TMIN and TMAX for two
+  ## cells, A and B.  Times are given in seconds.  If TMIN, TMAX
+  ## omitted, they default to min,max time respectively.
 
+  if (missing(tmin)) tmin <- min(unlist(s$spikes))
+  if (missing(tmax)) tmax <- max(unlist(s$spikes))
+  
   ## Instead of plotting, we could just get the result returned to us.
   spikes.a <-s$spikes[[a]]
   spikes.b <-s$spikes[[b]]
@@ -1682,11 +1688,12 @@ xcorr.restricted <- function(s, tmin, tmax, a, b) {
   if (any(rej.b)) spikes.b <- spikes.b[-rej.b]
 
   ## for debugging, just check the range of spikes are as thought.
-  print(range(spikes.a))
-  print(range(spikes.b))
+  ##print(range(spikes.a))
+  ##print(range(spikes.b))
 
   xcorr.plot(spikes.a, spikes.b,
-             xcorr.maxt=4, bi=TRUE, plot.label=paste(a, b, sep=":"),
+             xcorr.maxt=xcorr.maxt,
+             bi=TRUE, plot.label=paste(a, b, sep=":"),
              nbins=100,
              autocorr=FALSE, pause=F,
              page.label="page label")
@@ -1786,6 +1793,43 @@ spikes.to.bursts <- function(spikes, burst.sep=2) {
   spikes[c(1,f)]
 }
 
+list.to.data.frame <- function(l) {
+  ## Convert a list of sublists to a data frame.  Each sublist is assumed
+  ## to have the same names; each name forms a column.
+  ## list.to.data.frame( list (list(a=3, name="cat", legs=4),
+  ##                           list(a=5, name="human", legs=2),
+  ##                           list(a=5, name="snake", legs=0)) )
+  ## Performs minimal sanity checking.
+  ## Master version is in ~/langs/R/list_to_dataframe.R -- edit that version
+  ## and then copy back here!!!
+  
+  if(length(unique(sapply(l, length))) > 1)
+    stop("not all list elements are of the same length")
+  
+  ## Check that the names of each sublist are identical.
+  num.sublists <- length(l)
+  if (num.sublists > 1) {
+    for(i in 2:num.sublists) {
+      ## check that sublist 2,3... has same names as sublist 1.
+      if (any(!(names(l[[i]]) == names(l[[1]])))) {
+        print(names(l[[1]]))
+        print(names(l[[i]]))
+        stop(paste("different names in sublists", 1,  i))
+      }
+    }
+  }
+  names <- names(l[[1]])
+  new.list <- list()
+  for (num in 1:length(l[[1]])) {
+    t <- sapply(l, function(x) {x[[num]]})
+    column <- list(t); names(column)[1] <- names[num]
+    new.list[[num]] <- column
+  }
+  d <- data.frame(new.list)
+  d
+}
+
+
 
 ######################################################################
 # movie-related functions.
@@ -1832,7 +1876,7 @@ make.movieframes <- function (x, beg=1,
                                end=dim(x$rates$rates)[1],
                               outputdir=dirname(tempfile()),
                               prefix="mea",
-                              seconds=F,
+                              seconds=T,
                               delete.first=FALSE,
                               delete.frames=TRUE) {
 
@@ -2035,7 +2079,7 @@ plot.mscom <- function(x, s, colour=T, ...) {
   
 
 show.movie <- function(x, beg=1, end,
-                       seconds=F,
+                       seconds=T,
                        delay=0.03, ...) {
   ## Show a movie within R.
   ## x is the spikes data structure.
@@ -2112,15 +2156,17 @@ make.spikes.to.frate <- function(spikes,
   res
 }
 
-plot.meanfiringrate <- function(s) {
-  ## At each timestep, plot the mean firing rate of all the cells.  This
-  ## is useful to see the overall activity throughout a recording.
+plot.meanfiringrate <- function (s, beg, end) {
+  ## Plot the mean firing rate over all the cells at each time step.
+  ## Can optionally specify the beginning (BEG) and end (END) time, in
+  ## seconds.
   
+  if (missing(beg)) beg <- s$rates$times[1]
+  if (missing(end)) end <- s$rates$times[length(s$rates$times)]
   av.rate <- apply(s$rates$rates, 1, mean)
-  ## No longer need to ingore first element of "times" since times
-  ## and av.rate should be the same length.
-  plot(s$rates$times, av.rate, type="h",
-       xlab="time (s)", ylab="mean firing rate",main=s$file)
+  plot(s$rates$times, av.rate, type = "h", xlab = "time (s)",
+       xlim=c(beg,end), bty="n",
+       ylab = "mean firing rate", main = s$file)
 }
 
 "setrates<-" <- function(s, value) {
