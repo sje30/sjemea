@@ -930,7 +930,7 @@ jay.filter.for.min <- function(x, min) {
 }
 
 plot.jay.pos <- function(x, use.rownames=F) {
-  ## Plot the layout of the multisite.  x here should be the pos field
+  ## Plot the layout of the multisite.  X here should be the pos field
   ## within the structure.
 
   range <- c(0, max(x))                 #should be a useful default range.
@@ -1671,8 +1671,8 @@ xcorr.restricted <- function(s, tmin, tmax, a, b) {
   ## two cells, A and B.
 
   ## Instead of plotting, we could just get the result returned to us.
-  spikes.a <-my.s$spikes[[a]]
-  spikes.b <-my.s$spikes[[b]]
+  spikes.a <-s$spikes[[a]]
+  spikes.b <-s$spikes[[b]]
 
   ## remove spikes outside the time range [tmin, tmax]
   rej.a <- which( (spikes.a < tmin) | (spikes.a > tmax))
@@ -1882,15 +1882,35 @@ time.to.frame <- function(times, time) {
   which.min(abs(times-time))
 }
 
-centre.of.mass <- function(s, beg, end, thresh.num=5, thresh.rate=2) {
+centre.of.mass <- function(s, beg, end, seconds=T,
+                           thresh.num=5, thresh.rate=2) {
   ## Find the centre of mass for a set of spikes.
-  ## BEG and END are given in seconds, and converted into frame numbers here.
+
+  ## BEG and END are given in seconds (by default), and converted
+  ## into frame numbers here. 
   ## A unit is active if its firing rate is above thresh.rate (Hz).
   ## THRESH.NUM is the minimum number of units that must be active to
   ## draw the Centre of mass.
+  ##
+  ## We return a list with two components: COM -- a 2-d array giving the centre
+  ## of mass at each timestep; ACTIVE -- list of units that are active.
 
-  first.frame <- time.to.frame(s$rates$times, beg)
-  last.frame <- time.to.frame(s$rates$times, end)
+  first.frame <- 
+    if (missing(beg)) 1
+    else
+      if (seconds)
+        time.to.frame(s$rates$times, beg)
+      else
+        beg
+  
+  last.frame <-
+    if (missing(end)) length(s$rates$times)
+    else
+      if (seconds)
+        time.to.frame(s$rates$times, end)
+      else
+        end
+
   n.frames <- (last.frame+1 - first.frame)
   com <- array(NA, dim=c(n.frames,2))   #(x,y) coords of COM for each frame.
 
@@ -1901,11 +1921,10 @@ centre.of.mass <- function(s, beg, end, thresh.num=5, thresh.rate=2) {
   com.thresh.rate <- 2
   com.thresh.num <- 5
   for (f in first.frame:last.frame) {
-    above <- which(my.s$rates$rates[f,]> com.thresh.rate)
+    above <- which(s$rates$rates[f,]> com.thresh.rate)
     if (length(above) >= com.thresh.num) {
       com[index,] <- c( mean(s$pos[above,1]), mean(s$pos[above,2]))
-      print(above)
-      active <- union(active, above)
+      active <- sort(union(active, above))
     }
     index <- index+1
   }
@@ -1953,7 +1972,11 @@ colour.com <- function(com) {
 
 plot.mscom <- function(x, s, colour=T, ...) {
   ## Plot the centre-of-mass using COLOUR if TRUE.
-
+  ## S is optional, but if given, we get to see electrode positions
+  ## and the name of the file.
+  par.pty <- par()$pty
+  par(pty="s")                          #use square plotting region.
+  
   if (colour) {
     colours <- colour.com(x$com)
     nwaves <- max(colours, na.rm=T)
@@ -1979,8 +2002,8 @@ plot.mscom <- function(x, s, colour=T, ...) {
         if (col.num == 8) col.num <- 1;
       }
       if (first.plot) {
-        times <- rownames(com$com)
-        title <- paste(basename(my.s$file),
+        times <- rownames(x$com)
+        title <- paste(ifelse(missing(s), "unknown file", basename(s$file)),
                        times[1], times[length(times)])
         first.plot <- FALSE
         plot(c, xlab="", ylab="",
@@ -2005,28 +2028,36 @@ plot.mscom <- function(x, s, colour=T, ...) {
     ## let's not bother with colours.
     plot.default(x$com, type="b",asp=1)
   }
+
+  ## restore "pty" parameter.
+  par(pty=par.pty)        
 }
   
 
-
-show.movie <- function(x, beg=1, end=dim(x$rates$rates)[1],
+show.movie <- function(x, beg=1, end,
                        seconds=F,
-                       delay=0.03) {
+                       delay=0.03, ...) {
   ## Show a movie within R.
   ## x is the spikes data structure.
-  ## first is the number of the first frame.
-  ## last is the number of the last frame (defaults to the number of
+  ## BEG is the number of the first frame.
+  ## END is the number of the last frame (defaults to the number of
   ## frames to show).
-  ## If seconds is true, beg and end are taken to be time in seconds, rather
-  ## than frame numbers.  
+  ## If seconds is true, BEG and END are taken to be time in seconds, rather
+  ## than frame numbers.  These are then converted into frame numbers.
   ## delay gives the delay in seconds between frames.
   if (seconds) {
     beg <- time.to.frame(x$rates$times, beg)
-    end <- time.to.frame(x$rates$times, end)
+    if (missing(end))
+      end <- dim(x$rates$rates)[1]
+    else
+      end <- time.to.frame(x$rates$times, end)
+  } else {
+    if (missing(end))
+      end <- dim(x$rates$rates)[1]
   }
-  
+       
   for (f in beg:end) {
-    plot.rate.mslayout(x, f)
+    plot.rate.mslayout(x, f, ...)
     Sys.sleep(delay)
   }
 }
@@ -2074,8 +2105,10 @@ make.spikes.to.frate <- function(spikes,
   if (clip)
     rates <- pmin(pmax(rates, frate.min), frate.max)
 
-
-  res <- list(rates=rates,times=time.breaks)
+  ## We can remove the last "time.break" since it does not correspond
+  ## to the start of a time frame.
+  res <- list(rates=rates,
+              times=time.breaks[-length(time.breaks)])
   res
 }
 
@@ -2084,9 +2117,9 @@ plot.meanfiringrate <- function(s) {
   ## is useful to see the overall activity throughout a recording.
   
   av.rate <- apply(s$rates$rates, 1, mean)
-  ## For the x axis, we ignore the first time bin to make the mean rates
-  ## and the times of the same length.
-  plot(s$rates$times[-1], av.rate, type="h",
+  ## No longer need to ingore first element of "times" since times
+  ## and av.rate should be the same length.
+  plot(s$rates$times, av.rate, type="h",
        xlab="time (s)", ylab="mean firing rate",main=s$file)
 }
 
@@ -2171,24 +2204,81 @@ isi <- function(train) {
 
 ## This is a simple linear scale.
 jay.ms.max.firingrate <- 10
+jay.ms.min.firingrate <- 0.0                  #min firing rate in Hz.
 
-plot.rate.mslayout <- function(s, frame.num) {
+## if electrodes are 100um, each circle can be no bigger than 50um radius,
+## else they will overlap.
+
+jay.ms.max.rad <- 50
+jay.ms.min.rad <- 2                     #size of smallest rate.
+
+
+rates.to.radii <- function(rates) {
+  rates.to.radii.prop.rad(rates)
+}
+
+rates.to.radii.prop.rad <- function(rates) {
+  ## Convert the firing rates RATES into radii, such that radius
+  ## is proportional to firing rate.
+
+  ## first ensure rates bounded in [min,max]
+  rates <- pmax(pmin(rates,jay.ms.max.firingrate),
+                jay.ms.min.firingrate)
+  
+  radii <- jay.ms.min.rad +
+    ((jay.ms.max.rad - jay.ms.min.rad)* ( rates - jay.ms.min.firingrate) /
+     (jay.ms.max.firingrate - jay.ms.min.firingrate))
+
+  radii
+}
+
+rates.to.radii.prop.area <- function(rates) {
+  ## Convert the firing rates RATES into radii, such that area of circle
+  ## is proportional to firing rate.
+  
+  ## first ensure rates bounded in [min,max]
+  rates <- pmax(pmin(rates,jay.ms.max.firingrate),
+                jay.ms.min.firingrate)
+
+
+
+
+
+
+
+
+
+
+  min.area <- pi * (jay.ms.min.rad^2)
+  max.area <- pi * (jay.ms.max.rad^2)
+  area <- min.area +
+    ((max.area - min.area)* ( rates - jay.ms.min.firingrate) /
+     (jay.ms.max.firingrate - jay.ms.min.firingrate))
+
+  radii <- sqrt(area/pi)
+
+  radii
+}
+
+## To compare the effect of the two different methods for converting
+## rate to radius:
+##
+##rates <- seq(from=jay.ms.min.firingrate, to=jay.ms.max.firingrate, length=100)
+##plot(rates, rates.to.radii.prop.area(rates), type="l",
+##     xlab="rate (Hz)", ylab="radius (um)")
+##points(rates, rates.to.radii.prop.rad(rates),pch=19)
+
+plot.rate.mslayout <- function(s, frame.num, show.com=F, skip.empty=F) {
   ## New version, fixed for Jay's dimensions.
   ## Plot the given frame number in the multisite layout.
   ## The biggest character size is set by jay.ms.max.firingrate.
+  ## If SHOW.COM is true, we show the centre of mass as a green dot.
+  ## If SKIP.EMPTY is true, any frames where all circles are at min radius
+  ## are not drawn.
 
   no.small.dots <- FALSE;               #set this to TRUE/FALSE
-  
-  max.rad <- 50                         #half electrode-spacing.
-  ## if electrodes are 100um, each circle can be no bigger than 50um radius,
-  ## else they will overlap.
-  
-  ## Get the firing rates, and set optional upper limit on firing rate.
-  rates <- pmin(s$rates$rates[frame.num,],jay.ms.max.firingrate)
-  
-  ## Convert the firing rate into a radius, using a linear scale.
-  radii <- rates * max.rad / jay.ms.max.firingrate
-  
+
+  radii <-  rates.to.radii(s$rates$rates[frame.num,])
   
   ## If the radius is zero, R (on unix) still draws a v. small circle
   ## -- is this a bug?  Anyway, replacing zeros (or small values)
@@ -2199,7 +2289,7 @@ plot.rate.mslayout <- function(s, frame.num) {
   draw.anything <- TRUE                 #flag - do not change.
   
   if (no.small.dots) {
-    min.radius <- 0.01                  #min firing rate in Hz.
+    min.radius <- jay.ms.min.firingrate *jay.ms.max.rad / jay.ms.max.firingrate
     small.cells <- which(radii < min.radius)
     if (any(small.cells))
       radii[small.cells] <- NA
@@ -2211,23 +2301,48 @@ plot.rate.mslayout <- function(s, frame.num) {
       
   }
 
-
-  if (draw.anything)
-    symbols( s$pos[,1], s$pos[,2],
-            fg="black", bg="black",
-            circles=radii,
-            xaxt="n", yaxt="n", xlab='', ylab='',
-            inches=FALSE,
-            xlim=c(0, 800), ylim=c(0,800),
-            main=formatC(s$rates$times[frame.num], digits=1, format="f"))
-  else
+  if (draw.anything) {
+    if (!skip.empty || (any(radii > jay.ms.min.rad))) {
+      symbols( s$pos[,1], s$pos[,2],
+              fg="black", bg="black",
+              circles=radii,
+              xaxt="n", yaxt="n", xlab='', ylab='',
+              inches=FALSE,
+              xlim=c(0, 800), ylim=c(0,800),
+              main=formatC(s$rates$times[frame.num], digits=1, format="f"))
+      if (show.com) {
+        com <- centre.of.mass(s, frame.num, frame.num, seconds=F)
+        if(any(com$active))
+          points(com$com, pch=19, col="green")
+      }
+    }
+  } else {
     ## nothing to draw, so just draw outline.
-    plot( NA, NA,
-         xaxt="n", yaxt="n", xlab='', ylab='',
-         xlim=c(0, 800), ylim=c(0,800),
-         main=formatC(s$rates$times[frame.num], digits=1, format="f"))
+    if (draw.empty) 
+      plot( NA, NA,
+           xaxt="n", yaxt="n", xlab='', ylab='',
+           xlim=c(0, 800), ylim=c(0,800),
+           main=formatC(s$rates$times[frame.num], digits=1, format="f"))
+  }
 }
 
+plot.rate.mslayout.scale <- function() {
+  ## Draw the scale bar for the plots.
+  x <- seq(from=100, to=700, by=100)
+  y <- rep(500, length(x))
+  rates <- seq(from=jay.ms.min.firingrate, to=jay.ms.max.firingrate,
+               length=length(x))
+  radii <-  rates.to.radii(rates)
+
+  symbols( x, y,
+          fg="black", bg="black",
+          circles=radii,
+          xaxt="n", yaxt="n", xlab='', ylab='',
+          inches=FALSE,
+          xlim=c(0, 800), ylim=c(0,800),
+          main="legend")
+  text(x, y-200, labels=signif(rates,digits=2))
+}
 
 plot.rate.mslayout.old <- function(s, frame.num) {
   ## Plot the given frame number in the multisite layout.
