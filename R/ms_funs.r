@@ -559,10 +559,16 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
 
 plot.corr.index <- function(x, identify=F, ...) {
   ## Plot the correlation indices as a function of distance.
-  ## If identify is T, we can locate cell pairs on the plot.
+  ## If identify is T, we can locate cell pairs on the plot using
+  ## left mouse button.
   dists <- x$dists[which(upper.tri(x$dists))]
   corrs <- x$corr.indexes[which(upper.tri(x$corr.indexes))]
-  plot.default(dists, corrs, xlab="uncorrected distance (um)",
+  if (is.null(x$scale)) 
+    xlabel <- "uncorrected distance (um)"
+  else
+    xlabel <- paste("distance (um) [scale=",x$scale,"]",sep='')
+
+  plot.default(dists, corrs, xlab=xlabel,
                ylab="correlation index", main=x$file, ...)
 
   if (identify) {
@@ -648,7 +654,9 @@ if (is.loaded(symbol.C("count_overlap")))
 dyn.load(ms.so.location);
 
 jay.read.spikes <- function(filename, scale=100) {
-  ## Read in Jay's data set.
+  ## Read in Jay's data set.  Scale gives the distance in um between
+  ## adjacent channels.  This is 100um by default.  This can be
+  ## changed to cope with the developmental changes in retina.
   fp <- file(filename, open="r")
   max.channels <- 64
   channels <- character(max.channels)
@@ -687,9 +695,15 @@ jay.read.spikes <- function(filename, scale=100) {
   names(nspikes) <- channels
 
   ## Parse the channel names to get the cell positions.
+  ## Note that we currently ignore any label that comes after the digits
+  ## for the channel.
+  ## e.g. when moer than one cell is assigned to the same channel, we
+  ## can have "ch_13a" and "ch_13b".  If there is only one cell on a channel
+  ## that channel is written "ch_13".
   cols <- as.integer(substring(channels, 4,4)) * scale
   rows <- as.integer(substring(channels, 5,5)) * scale
   pos <- cbind(cols, rows)
+  class(pos) <- "jay.pos"
 
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
@@ -704,12 +718,27 @@ jay.read.spikes <- function(filename, scale=100) {
               spikes=spikes, nspikes=nspikes, NCells=num.channels,
               file=filename,
               pos=pos,
+              scale=scale,
               dists=dists, dists.bins=dists.bins,
               corr.indexes=corr.indexes)
   class(res) <- "mm.s"
   res
 
 }
+
+
+plot.jay.pos <- function(x, use.rownames=F) {
+  ## Plot the layout of the multisite.  x here should be the pos field
+  ## within the structure.
+
+  range <- c(0, max(x))                 #should be a useful default range.
+  plot(x[,1], x[,2], xlim=range, ylim=range, xlab="", ylab="", type="n")
+  if (use.rownames)
+    text(x[,1], x[,2], rownames(x))
+  else
+    text(x[,1], x[,2])
+}
+
 
 filter.for.na <- function(x) {
   ## Truncate each row of X so that trailing NA entries are removed.
@@ -757,6 +786,37 @@ make.corr.indexes <- function(spikes)
   }
 
   corrs
+}
+
+
+
+corr.index.means <- function(x) {
+  ## Compute the mean,sd correlation index at each given distance.
+  dists <- x$dists[which(upper.tri(x$dists))]
+  corrs <- x$corr.indexes[which(upper.tri(x$corr.indexes))]
+
+  dists.uniq <- unique(dists)
+  num.dists <- length(dists.uniq)       #num of  different distances.
+
+  ##print(dists.uniq)
+  ## create 4-D array to store results.  Each row stores the
+  ## distance, mean corr, sd, and num of values at that distance.
+
+  res <- array(0,  dim=c(num.dists,4))
+  colnames(res) <- c("dist","mean corr", "sd", "n")
+  
+  i <- 1
+
+  for (d in dists.uniq) {
+    ## find all correlations for pairs within 0.01um of given distance.
+    cs <- corrs[ which(abs(dists-d)<0.01)]
+    corrs.mean <- mean(cs)
+    corrs.sd   <- sd(cs)
+    res[i,] <- c(d, corrs.mean, corrs.sd, length(cs))
+    i <- 1+i
+  }
+
+  res
 }
 
 
@@ -874,11 +934,114 @@ spikes.to.bursts <- function(spikes, burst.sep=2) {
 # movie-related functions.
 
 
+make.animated.gif <- function (x, beg, end, delay,
+                               output="anim.gif",
+                               delete.frames=TRUE) {
+
+  ## Loop over each frame, making a temporary .pbm (black/white) and
+  ## then convert it to a GIF.  Temporary gif file names are written
+  ## as /tmp/ms.movNNNNN.gif where NNNNN is the frame number.  The
+  ## frame number normally has leading zeros (e.g. 00050 rather than
+  ## 50) so that the frames are ordered correctly by the * wildcard
+  ## when creating the animated gif.
+
+  for (i in beg:end) {
+    plot.rate.mslayout(x, i)
+    file <- paste("/tmp/ms.mov", formatC(i,width=5,flag="0"), ".gif", sep='')
+    dev2bitmap(file="/tmp/ms.mov.pbm", type="pbmraw")
+    system(paste("ppmtogif /tmp/ms.mov.pbm >",file, sep=''))  
+  }
+
+  ## now make the animated gif.
+  system(paste("gifsicle --delay=",delay," --loop /tmp/ms.mov*.gif > ",
+               output, sep=''))
+
+  ## Have the option to keep or delete the individual frames after
+  ## making the movie.
+
+  if (delete.frames)
+    system("rm -f /tmp/ms.mov*.gif /tmp/ms.mov.pbm")
+
+}
 
 
-spikes.to.rates <- function(spikes) {
-  h <- hist(spikes, breaks=movie.breaks,plot=F)
-  h$counts
+show.movie <- function(x, first=1, last=dim(x$rates)[1],delay=0.03) {
+  ## Show a movie within R.
+  ## x is the spikes data structure.
+  ## first is the number of the first frame.
+  ## last is the number of the last frame (defaults to the number of
+  ## frames to show).
+  ## delay gives the delay in seconds between frames.
+  for (f in first:last) {
+    plot.rate.mslayout(x, f)
+    Sys.sleep(delay)
+  }
+}
+
+
+make.spikes.to.frate <- function(x,
+                                 time.interval=1, #time bin of 1sec.
+                                 frate.min=0,
+                                 frate.max=20,
+                                 time.low=0,
+                                 clip=FALSE,
+                                 time.high=ceiling(max(unlist(x$spikes)))
+                                 ) {
+  ## Convert the spikes for each cell into a firing rate (in Hz)
+
+  ## Currently cannot specify time.low or time.high as less than the
+  ## range of spike times else you get an error from hist().  The
+  ## default anyway is to do all the spikes within a data file.
+
+  ## if clips is set to TRUE, firing rate is clipped within the
+  ## values frate.min and frate.max.  This is problably not needed.
+  spikes.to.rates <- function(spikes, breaks, time.interval) {
+    h <- hist(spikes, breaks=breaks,plot=F)
+    h$counts/time.interval                #convert to firing rate (in Hz)
+  }
+
+  time.breaks <- seq(from=time.low, to=time.high, by=time.interval)
+  rates1 <- lapply(x$spikes, spikes.to.rates, breaks=time.breaks,
+                   time.interval=time.interval)
+
+  ## rates1 is a list; we want to convert it into an array.
+  rates <- array(unlist(rates1),
+                  dim=c(length(time.breaks)-1, length(rates1)))
+
+  ## Now optionally set the upper and lower frame rates if clip is TRUE.
+  if (clip)
+    rates <- pmin(pmax(rates, frate.min), frate.max)
+
+
+  res <- list(rates=rates,times=time.breaks)
+  res
+}
+
+"setrates<-" <- function(x, value) {
+  ## set the $rates and $times field of jay's structures.
+  ## typical usage:
+  ## rates <- make.spikes.to.frate(js, ...)
+  ## setrates(js) <- rates
+  
+  x$rates <- value$rates
+  x$times <- value$times
+  x
+}
+
+## This variable stores the maximum firing rate.  Any firing rate bigger
+## than this value is set to this value; this prevents the circles from
+## overlapping on the plots.
+jay.ms.max.firingrate <- 10
+
+
+
+plot.rate.mslayout <- function(x, frame.num) {
+  ## Plot the given frame number in the multisite layout.
+  ## If you want to plot circles rather than disks, change "pch=19"
+  ## to "pch=21".  Do `help("points")' for a summary of plot types.
+  plot(js$pos[,1], js$pos[,2], pch=19,
+       cex=pmin(x$rates[frame.num,],jay.ms.max.firingrate),
+       xlab='', ylab='', main=frame.num)
 }
 
 
