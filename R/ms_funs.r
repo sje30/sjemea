@@ -5,8 +5,11 @@
 ## data; those with "jay" in them are for Jay.  Some functions are suitable
 ## for both types.
 
-library(bbgraphics)                         #for plotCI() from Ben Bolker
+## TODO: worry about when more than one unit occupies same electrode
+## position -- how to show both in movie?
 
+
+library(bbgraphics)                         #for plotCI() from Ben Bolker
 
 ## todo -- are the cell positions inverted?
 
@@ -2246,18 +2249,17 @@ isi <- function(train) {
   isi
 }
 
-## This variable stores the maximum firing rate.  Any firing rate bigger
-## than this value is set to this value; this prevents the circles from
-## overlapping on the plots.
-
-## This is a simple linear scale.
+## store the maximum and minimum firing rate.  Any firing rate bigger
+## than this value is set to this value; this prevents the circles
+## from overlapping on the plots.  Likewise, anything smaller than the
+## minimum is set to the minimum value.
 jay.ms.max.firingrate <- 10
 jay.ms.min.firingrate <- 0.0                  #min firing rate in Hz.
 
 ## if electrodes are 100um, each circle can be no bigger than 50um radius,
 ## else they will overlap.
 
-jay.ms.max.rad <- 50
+jay.ms.max.rad <- 50                    #radius for highest firing rate.
 jay.ms.min.rad <- 2                     #size of smallest rate.
 
 
@@ -2302,12 +2304,13 @@ rates.to.radii.prop.area <- function(rates) {
 ## To compare the effect of the two different methods for converting
 ## rate to radius:
 ##
-##rates <- seq(from=jay.ms.min.firingrate, to=jay.ms.max.firingrate, length=100)
+##rates <- seq(from=jay.ms.min.firingrate,to=jay.ms.max.firingrate, length=100)
 ##plot(rates, rates.to.radii.prop.area(rates), type="l",
 ##     xlab="rate (Hz)", ylab="radius (um)")
 ##points(rates, rates.to.radii.prop.rad(rates),pch=19)
 
 ## set to TRUE for colour coding of firing rate; FALSE for radius-encoding.
+## Colour-coding seems to flicker a lot more than radius coding...
 plot.rate.colour <- FALSE
 
 
@@ -2476,6 +2479,20 @@ plot.rate.mslayout.scale <- function() {
   }
   text(x, y-200, labels=signif(rates,digits=2),cex=0.5)
 
+}
+
+movie.postage <- function(s, tmin, tmax, file="movies.ps") {
+  ## Create a postscript file of the firing rate from TMIN to TMAX (given in
+  ## seconds).
+  postscript(file=file)
+  par(mfrow=c(5, 7))
+  par(oma=c(0,0,3,0)); par(mar=c(0,1,3,0))
+  par(pty="s")                            #produce a square plotting region.
+  show.movie(s, seconds=T, delay=0,
+             beg=tmin, end=tmax,
+             show.com=T, skip.empty=T)
+  plot.rate.mslayout.scale()
+  dev.off()
 }
 
 plot.rate.mslayout.old <- function(s, frame.num) {
