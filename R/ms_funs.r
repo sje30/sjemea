@@ -2263,6 +2263,7 @@ colour.com <- function(com) {
 plot.mscom <- function(x, s, colour=TRUE, show.title=TRUE,
                        label.cells=NULL,
                        ##border=FALSE,
+                       max.cols=8,
                        rel.cex=1, ...) {
   ## Plot the centre-of-mass using COLOUR if TRUE.
   ## S is optional, but if given, we get to see electrode positions
@@ -2292,7 +2293,7 @@ plot.mscom <- function(x, s, colour=TRUE, show.title=TRUE,
         next
       else {
         col.num <- col.num +1;
-        if (col.num == 8) col.num <- 1;
+        if (col.num >= max.cols) col.num <- 1;
       }
       if (first.plot) {
         times <- rownames(x$com)
