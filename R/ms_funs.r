@@ -611,7 +611,9 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
 }
 
 
-plot.corr.index <- function(s, identify=F, ...) {
+plot.corr.index <- function(s, identify=F,
+                            main=paste(s$file, "dt:", s$corr.indexes.dt),
+                            ...) {
   ## Plot the correlation indices as a function of distance.
   ## If identify is T, we can locate cell pairs on the plot using
   ## left mouse button.  
@@ -624,7 +626,7 @@ plot.corr.index <- function(s, identify=F, ...) {
 
   plot.default(dists, corrs, xlab=xlabel,
                ylab="correlation index", bty="n",
-               main=paste(s$file, "dt:", s$corr.indexes.dt),
+               main=main,
                ...)
 
   if (identify) {
