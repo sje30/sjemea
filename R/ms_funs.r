@@ -817,11 +817,13 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
     x<-scan(fp, "", n=1, sep='\t', quiet=T)
     ## If first letter of item is not "c" then assume we have now
     ## reached the timestamps.
-    if (substr(x,1,1) != 'c') {
+    if (tolower(substr(x,1,2)) != "ch") {
       read.channel.names <- 0
       rest <- scan(fp, sep='\t', quiet=T); close(fp)
-      ## last element of `rest' is redundant, but we need to keep
+      ## last element of `rest' is redundant (there is one more TAB that
+      ## is not needed at the end of the file), but we need to keep 
       ## x - this is the first element.
+      ## File format documented in ~/ms/jay/JAYDATAFORMAT.txt
       times <- c(as.double(x), rest[1:length(rest)-1])
       ntimes <- length(times)
       dim(times) <- c(num.channels, ntimes/num.channels)
