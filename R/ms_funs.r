@@ -868,7 +868,7 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
   ## Parse the channel names to get the cell positions.
   ## Note that we currently ignore any label that comes after the digits
   ## for the channel.
-  ## e.g. when moer than one cell is assigned to the same channel, we
+  ## e.g. when more than one cell is assigned to the same channel, we
   ## can have "ch_13a" and "ch_13b".  If there is only one cell on a channel
   ## that channel is written "ch_13".
   ## In Jay's prog, rows are numbered from the top, downwards.  In R, we
