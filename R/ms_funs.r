@@ -2,6 +2,8 @@
 ## Mon 10 Sep 2001
 
 
+library(bbmisc)                         #for plotCI() from Ben Bolker
+
 ## todo -- are the cell positions inverted?
 
 ## * Markus's functions.
@@ -12,7 +14,7 @@ mm.burst.sep <- 10
 mm.num.electrodes <- 63                 #of these, 61 usuable...
 
 ## Size of the various data types.
-longsize <- 4; floatsize <- 4; intsize <- 2; unsize <- 2
+mm.longsize <- 4; mm.floatsize <- 4; mm.intsize <- 2; mm.unsize <- 2
 
 
 mm.readpos <- function(posfile) {
@@ -29,7 +31,7 @@ mm.readpos.compare <- function(NCells, boxes, posfile) {
   ## Read in the position file if it was given to compare with my
   ## assignment of channels to electrode positions.
   guess.pos <- array(0, dim=c(NCells,2))
-  ref.pos <- mm.readpos("ms_sje_pos.text")
+  ref.pos <- mm.readpos("~/ms/ms_sje_pos.text")
   for (i in 1:NCells) {
     matches <- which(boxes[,1] == i)
     ##cat(paste("matches for cell",i,":",matches, "\n"))
@@ -98,7 +100,7 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
   }
     
   fp <- file(cellname , 'rb')
-  Format <- readBin(fp, integer(), 1, longsize, endian="big")
+  Format <- readBin(fp, integer(), 1, mm.longsize, endian="big")
   close(fp)
 
   if (Format == 2) 
@@ -108,16 +110,24 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
 
   ## Do some things common to both formats.
   dists <- make.distances(res$pos)
-  ## Electrodes are spaced 70um apart.
+  ## Electrodes are spaced 70um apart.  dists.bins will show the
+  ## bin number of that distance.  Lower triangular elements are excluded.
   dists.bins <- apply(dists, 2, function(x) { ceiling((x-35)/70) + 1})
-  corr.indexes <- make.corr.indexes(res$spikes)
+  dists.bins[lower.tri(dists.bins,diag=T)] <- NA
 
+  corr.indexes <- make.corr.indexes(res$spikes)
 
   res$dists <- dists
   res$dists.bins <- dists.bins
   res$corr.indexes <- corr.indexes
-  res
+  
+  corr.id <- cbind(as.vector(dists),as.vector(corr.indexes))
+  corr.id <- corr.id[corr.id[,1]>0,]
+  corr.id.means <- corr.get.means(corr.id)
+  res$corr.id <- corr.id
+  res$corr.id.means <- corr.id.means
 
+  res
 }
 
 read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
@@ -130,20 +140,20 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   
   fp <- file(cellname , 'rb')
   seek(fp,0)
-  Format <- readBin(fp, integer(), 1, longsize, endian="big")
-  t <- readBin(fp, integer(), 4, longsize, endian="big")
+  Format <- readBin(fp, integer(), 1, mm.longsize, endian="big")
+  t <- readBin(fp, integer(), 4, mm.longsize, endian="big")
   FileIndex <- t[1]; BoxIndex <- t[2]; RecIndex <- t[3]; StatIndex <- t[4]
 
   ## Now read the NFiles...
   seek(fp, 64)
-  t <- readBin(fp, integer(), 4, intsize, endian="big")
+  t <- readBin(fp, integer(), 4, mm.intsize, endian="big")
   NFiles <- t[1]; NBoxes <- t[2]; NRecords <- t[3]; NCells <- t[4]
 
   if (NFiles>1)
     warning(paste("NFiles larger than 1 - check ok? - e.g. endTimes",
                   NFiles, "\n"))
   
-  t <- readBin(fp, integer(), 2, longsize, endian="big")
+  t <- readBin(fp, integer(), 2, mm.longsize, endian="big")
   NEvents <- t[1]; NSpikes <- t[2]
   cat(paste("NEvents", NEvents, "NSpikes", NSpikes, "\n"))
 
@@ -153,11 +163,11 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
 
   seek(fp, FileIndex)
   for (r in 1:NFiles) {
-    vrn <- readBin(fp, integer(), 1, intsize, endian="big")
+    vrn <- readBin(fp, integer(), 1, mm.intsize, endian="big")
     pfilename <- readChar(fp, 64)
     pdirname <- readChar(fp, 64)
-    flcrdat  <- readBin(fp, integer(), 1, longsize, endian="big")
-    t <- readBin(fp, integer(), 3, intsize, endian="big")
+    flcrdat  <- readBin(fp, integer(), 1, mm.longsize, endian="big")
+    t <- readBin(fp, integer(), 3, mm.intsize, endian="big")
     LowRecord <- t[1]; nrec <- t[2]; LastRecord <- t[3];
     cat(paste("File", r, "name", pfilename, "dir", pdirname,
               "nrec", nrec, "LastRecord", LastRecord, "\n"))
@@ -172,7 +182,7 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   ## todo -- determine how these boxes relate to position of neurons.
   seek(fp, BoxIndex)
   for (r in 1:NBoxes) {
-    t <- readBin(fp, integer(), 7, intsize, endian="big")
+    t <- readBin(fp, integer(), 7, mm.intsize, endian="big")
     group <- t[1]; channel <- t[2]; plott <- t[3]
     ##cat(paste("Box", r, "Group", group, "Chan", channel,
     ##"Plot", plott, "bounds", t[4], t[5], t[6], t[7], "\n"))
@@ -190,7 +200,7 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   ## to the start of the rth record.
 
   seek(fp,RecIndex)
-  RecordIndexes <- readBin(fp, integer(), NRecords, longsize, endian="big")
+  RecordIndexes <- readBin(fp, integer(), NRecords, mm.longsize, endian="big")
 
   ## Parse each record...
 
@@ -220,10 +230,10 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
     }
     
     seek(fp, RecordIndexes[r])
-    startclock[r] <- readBin(fp, integer(), 1, unsize, signed=F, endian="big")
-    endclock[r]   <- readBin(fp, integer(), 1, unsize, signed=F, endian="big")
-    nevents[r]    <- readBin(fp, integer(), 1, longsize, endian="big")
-    nspikes[r]    <- readBin(fp, integer(), 1, longsize, endian="big")
+    startclock[r] <- readBin(fp, integer(), 1, mm.unsize, signed=F, endian="big")
+    endclock[r]   <- readBin(fp, integer(), 1, mm.unsize, signed=F, endian="big")
+    nevents[r]    <- readBin(fp, integer(), 1, mm.longsize, endian="big")
+    nspikes[r]    <- readBin(fp, integer(), 1, mm.longsize, endian="big")
 
 
     ShiftTime <- (EndTime %/% mm.WrapTime) * mm.WrapTime
@@ -237,22 +247,22 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
     spikecount <- spikecount + nspikes[r]
     eventcount <- eventcount + nevents[r]
     ## Read in the number of spikes from each cell in record r.
-    spikespercell <- readBin(fp, integer(), NCells, longsize, endian="big")
+    spikespercell <- readBin(fp, integer(), NCells, mm.longsize, endian="big")
 
     ## Read in the time of event.
-    eventsinrecord <- readBin(fp, integer(), nevents[r],longsize, endian="big")
+    eventsinrecord <- readBin(fp, integer(), nevents[r],mm.longsize, endian="big")
 
     ## width of events
-    we <- readBin(fp, integer(), nevents[r], intsize, endian="big")
+    we <- readBin(fp, integer(), nevents[r], mm.intsize, endian="big")
 
     ## peak of events
-    pe <- readBin(fp, integer(), nevents[r], intsize, endian="big")
+    pe <- readBin(fp, integer(), nevents[r], mm.intsize, endian="big")
 
     ## time of each spike from each cell in record r
     TLast <- -1
     for (cell in 1:NCells) {
       nspikescell <- spikespercell[cell]
-      spiketimes <- readBin(fp, integer(), nspikescell, longsize, endian="big")
+      spiketimes <- readBin(fp, integer(), nspikescell, mm.longsize, endian="big")
 
 
       if (nspikescell >0 ) {
@@ -302,8 +312,8 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   if (seek(fp) != StatIndex)
     stop(paste ("StatIndex problem", stop, StatIndex))
 
-  C <- readBin(fp, integer(), NCells, intsize, endian="big")
-  SpikesInCell <- readBin(fp, integer(), NCells, longsize, endian="big")
+  C <- readBin(fp, integer(), NCells, mm.intsize, endian="big")
+  SpikesInCell <- readBin(fp, integer(), NCells, mm.longsize, endian="big")
 
   if (( sum(SpikesInCell) != NSpikes))
     stop("Error in the total number of spikes in cell")
@@ -313,13 +323,13 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   if (sum(abs(count.allspikes - SpikesInCell)) > 0)
     stop("Counts of spikes differs...")
 
-  Pe <- readBin(fp, numeric(), NCells, floatsize, endian="big")
-  Wi <- readBin(fp, numeric(), NCells, floatsize, endian="big")
-  PP <- readBin(fp, numeric(), NCells, floatsize, endian="big")
-  WP <- readBin(fp, numeric(), NCells, floatsize, endian="big")
-  WW <- readBin(fp, numeric(), NCells, floatsize, endian="big")
-  CrossF <- readBin(fp, numeric(), NCells*mm.num.electrodes, floatsize, endian="big")
-  CrossR <- readBin(fp, numeric(), NCells*mm.num.electrodes, floatsize, endian="big")
+  Pe <- readBin(fp, numeric(), NCells, mm.floatsize, endian="big")
+  Wi <- readBin(fp, numeric(), NCells, mm.floatsize, endian="big")
+  PP <- readBin(fp, numeric(), NCells, mm.floatsize, endian="big")
+  WP <- readBin(fp, numeric(), NCells, mm.floatsize, endian="big")
+  WW <- readBin(fp, numeric(), NCells, mm.floatsize, endian="big")
+  CrossF <- readBin(fp, numeric(), NCells*mm.num.electrodes, mm.floatsize, endian="big")
+  CrossR <- readBin(fp, numeric(), NCells*mm.num.electrodes, mm.floatsize, endian="big")
 
   dim(CrossF) <- c(NCells,mm.num.electrodes)
   dim(CrossR) <- c(NCells,mm.num.electrodes)
@@ -364,11 +374,11 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
 
   fp <- file(cellname , 'rb')
   seek(fp,0)
-  t <- readBin(fp, integer(), 4, intsize, endian="big")
+  t <- readBin(fp, integer(), 4, mm.intsize, endian="big")
   
   NFiles <- t[1]; NBoxes <- t[2]; NRecords <- t[3]; NCells <- t[4]
 
-  t <- readBin(fp, integer(), 2, longsize, endian="big")
+  t <- readBin(fp, integer(), 2, mm.longsize, endian="big")
   NSpikes <- t[1]; NEvents <- t[2];
   
   cat(paste("NFiles", NFiles, "NBoxes", NBoxes, "NRecords", NRecords,
@@ -378,11 +388,11 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
 
   ## Read in the file information
   for (r in 1:NFiles) {
-    vrn <- readBin(fp, integer(), 1, intsize, endian="big")
+    vrn <- readBin(fp, integer(), 1, mm.intsize, endian="big")
     pfilename <- readChar(fp, 64)
     pdirname <- readChar(fp, 64)
-    flcrdat  <- readBin(fp, integer(), 1, longsize, endian="big")
-    t <- readBin(fp, integer(), 3, intsize, endian="big")
+    flcrdat  <- readBin(fp, integer(), 1, mm.longsize, endian="big")
+    t <- readBin(fp, integer(), 3, mm.intsize, endian="big")
     LowRecord <- t[1]; nrec <- t[2]; LastRecord <- t[3];
     cat(paste("File", r, "name", pfilename, "dir", pdirname,
               "nrec", nrec, "LastRecord", LastRecord, "\n"))
@@ -391,24 +401,24 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   ## Read in the Box Info ####################
   boxes <- array(0, dim= c(NBoxes, 7))
   for (r in 1:NBoxes) {
-    t <- readBin(fp, integer(), 7, intsize, endian="big")
+    t <- readBin(fp, integer(), 7, mm.intsize, endian="big")
     group <- t[1]; channel <- t[2]; plott <- t[3]
     cat(paste("Box", r, "Group", group, "Chan", channel,
     "Plot", plott, "bounds", t[4], t[5], t[6], t[7], "\n"))
     boxes[r,] <- t
   }
 
-  startclock <- readBin(fp, integer(), NRecords, unsize,signed=F, endian="big")
-  endclock   <- readBin(fp, integer(), NRecords, unsize,signed=F, endian="big")
+  startclock <- readBin(fp, integer(), NRecords,mm.unsize,signed=F,endian="big")
+  endclock   <- readBin(fp, integer(), NRecords,mm.unsize,signed=F,endian="big")
 
   cat("start times\n")
   print(startclock); print(endclock)
-  SpikesInRecords <- readBin(fp, integer(), NRecords, longsize, endian="big")
-  SpikesInCell    <- readBin(fp, integer(),   NCells, longsize, endian="big")
+  SpikesInRecords <- readBin(fp, integer(), NRecords, mm.longsize, endian="big")
+  SpikesInCell    <- readBin(fp, integer(),   NCells, mm.longsize, endian="big")
 
 
   ## This seems to duplicate the information in the boxes.
-  C              <- readBin(fp, integer(),   NCells,  intsize, endian="big")
+  C              <- readBin(fp, integer(),   NCells,  mm.intsize, endian="big")
   print(C)
   ##cat(paste("after reading C, file pos is", seek(fp), "\n"))
 
@@ -432,7 +442,7 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   tempstuff <- readBin(fp, integer(), NCells*131*10/2, 2, endian="big")
   
   ## Number of spikes from each cell in each record
-  N <- readBin(fp, integer(), NCells*NRecords, longsize, endian="big")
+  N <- readBin(fp, integer(), NCells*NRecords, mm.longsize, endian="big")
   dim(N) <- c(NCells,NRecords)
   ##cat("N\n");print(N)
 
@@ -444,7 +454,7 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   ## Time of each spike from each cell in each record
   my.num.spikes <- sum(N)
   cat(paste("my.num.spikes", my.num.spikes, "\n"))
-  T <- readBin(fp, integer(), my.num.spikes, longsize, endian="big")
+  T <- readBin(fp, integer(), my.num.spikes, mm.longsize, endian="big")
 
   breaks <- as.vector(N)
   high <- cumsum(breaks)
@@ -510,7 +520,7 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   }                                   #next record.
   
   ## Number of events in each record
-  EventsInRecord <- readBin(fp, integer(), NRecords, longsize, endian="big")
+  EventsInRecord <- readBin(fp, integer(), NRecords, mm.longsize, endian="big")
 
 
   my.num.events <- sum(EventsInRecord)
@@ -518,9 +528,9 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
     warning(paste("we have some events... oh oh!", my.num.events, "\n"))
     ## todo: need to read in TE, WE, PE if we have any events.
   }
-  TE <- readBin(fp, integer(), my.num.events, longsize, endian="big")
-  WE <- readBin(fp, integer(), my.num.events, longsize, endian="big")
-  PE <- readBin(fp, integer(), my.num.events, longsize, endian="big")
+  TE <- readBin(fp, integer(), my.num.events, mm.longsize, endian="big")
+  WE <- readBin(fp, integer(), my.num.events, mm.longsize, endian="big")
+  PE <- readBin(fp, integer(), my.num.events, mm.longsize, endian="big")
 
   ## should now be at the end of the file, so can check file length.
 
@@ -711,16 +721,22 @@ jay.read.spikes <- function(filename, scale=100) {
   dists <- make.distances(pos)
   ## Electrodes are spaced 70um apart.
   dists.bins <- apply(dists, 2, function(x) { ceiling((x-50)/100) + 1})
+  dists.bins[lower.tri(dists.bins,diag=T)] <- NA
   corr.indexes <- make.corr.indexes(spikes)
 
-  
+  corr.id <- cbind(as.vector(dists),as.vector(corr.indexes))
+  corr.id <- corr.id[corr.id[,1]>0,]
+  corr.id.means <- corr.get.means(corr.id)
   res <- list( channels=channels,
               spikes=spikes, nspikes=nspikes, NCells=num.channels,
               file=filename,
               pos=pos,
               scale=scale,
               dists=dists, dists.bins=dists.bins,
-              corr.indexes=corr.indexes)
+              corr.indexes=corr.indexes,
+              corr.id=corr.id,
+              corr.id.means=corr.id.means
+              )
   class(res) <- "mm.s"
   res
 
@@ -755,13 +771,19 @@ make.distances <- function(posns)
 
   ## POSNS should be a (N,2) array.  Returns a NxN upper triangular
   ## array of the distances between all pairs of cells.
-  
+
+  ## Currently store distances to the nearest micron, so that it makes
+  ## the job of binning distances easier when computing the mean of
+  ## correlation index for each "distance".  In Figure 9 of the
+  ## Meister 1991 paper, distances are binned into 20um bins to get
+  ## round this problem.
+
   n <- dim(posns)[1]
   dists <- array(0, dim=c(n,n))
   for ( a in 1:n-1)
     for (b in (a+1):n) {
       delta <- posns[a,] - posns[b,]
-      dists[a,b] <- sqrt( sum(delta**2))
+      dists[a,b] <- round(sqrt( sum(delta**2)))
     }
 
   dists
@@ -827,7 +849,7 @@ prob.r <- function(s)  {
 
   counts <- table(s$dists.bins[which(upper.tri(s$dists.bins))])
   if (sum(counts) != num.distances)
-    error("sum of counts differs from num.distances",
+    stop("sum of counts differs from num.distances",
           sum(counts), num.distances)
 
   ## turn into probability.
@@ -895,7 +917,8 @@ count.nab <- function(ta, tb, tmax=0.05) {
 }
 
 hist.ab <- function(ta, tb, tmax, nbins) {
-  ## C routine to count the overlap N_ab
+  ## C routine to bin the overlap time between two spikes into a histogram
+  ## up to tmax.
   z <- .C("bin_overlap",
           as.double(ta),
           as.integer(length(ta)),
@@ -905,6 +928,107 @@ hist.ab <- function(ta, tb, tmax, nbins) {
           res = integer(nbins),
           as.integer(nbins))
   z$res
+}
+
+histbi.ab <- function(ta, tb, tmax, nbins) {
+  ## C routine to bin the overlap time between two spikes into a histogram
+  ## up to +/- tmax.  This is a bidirectional version of hist.ab
+  z <- .C("bin2_overlap",
+          as.double(ta),
+          as.integer(length(ta)),
+          as.double(tb),
+          as.integer(length(tb)),
+          as.double(tmax),
+          res = integer(nbins),
+          as.integer(nbins))
+  z$res
+}
+
+test.count.hist.nab <- function(s) {
+
+  ## For a set of spike trains, check that the C functions
+  ## count_overlap and hist_overlap calculate the same values: the
+  ## value returned by count_overlap should be the same as the sum of
+  ## the histogram returned by hist_overlap.
+  spikes <- s$spikes
+  
+  n <- length(spikes)
+  dt <- 0.05
+  Tmax <- max(unlist(spikes))           #time of last spike.
+  counts <- array(0, dim=c(n,n))
+  for ( a in 1:(n-1)) {
+    n1 <- length(spikes[[a]])
+    for (b in (a+1):n) {
+      n2 <- length(spikes[[b]])
+      count <-  count.nab(spikes[[a]], spikes[[b]],dt)
+      counts[a,b] <- count
+      this.hist <- hist.ab(spikes[[a]], spikes[[b]],dt,5)
+      if (sum(this.hist) != count) {
+        stop(paste("element", a,b, "count", count,
+                   "sum", sum(this.hist)))
+      }
+    }
+  }
+  ## return the upper triangular array of counts, just in case you want
+  ## to examine it.
+  counts
+}
+
+test.count.hist2.nab <- function(s) {
+
+  ## For a set of spike trains, check that the C functions
+  ## count_overlap and hist_overlap calculate the same values: the
+  ## value returned by count_overlap should be the same as the sum of
+  ## the histogram returned by hist_overlap.  Furthermore, the
+  ## bi_overlap function should be the same.
+
+  
+  spikes <- s$spikes
+  
+  n <- length(spikes)
+  dt <- 0.05
+  nbins <- 10
+  Tmax <- max(unlist(spikes))           #time of last spike.
+  counts <- array(0, dim=c(n,n))
+
+  ## which bins go together for the same absolute time delay.
+  ## Each column tells you which bins of the bi histogram should be
+  ## added to make the one-way histogram.
+  bi.cols <- cbind( nbins:1, (nbins+1):(2*nbins))
+
+  for ( a in 1:(n-1)) {
+    n1 <- length(spikes[[a]])
+    for (b in (a+1):n) {
+      n2 <- length(spikes[[b]])
+      count <-  count.nab(spikes[[a]], spikes[[b]],dt)
+      counts[a,b] <- count
+      this.hist <- hist.ab(spikes[[a]], spikes[[b]],dt,nbins)
+      ## when doing the bidirectional, must double the number of bins.
+      this.hist.bi <- histbi.ab(spikes[[a]], spikes[[b]],dt,nbins*2)
+
+      ## then work out the sums of the bins that correspond to the
+      ## same absolute time differences.  Works only for an even
+      ## number of bins.
+      bi.sums <- apply(matrix(this.hist.bi[bi.cols], ncol=2), 1, sum)
+
+      ##print(this.hist.bi); print(bi.sums); print(this.hist); stop("stop");
+
+      if (sum(this.hist) != count) {
+        stop(paste("element", a,b, "count", count,
+                   "sum", sum(this.hist)))
+      }
+      if (any (this.hist - bi.sums)) {
+        print(this.hist)
+        print(bi.sums)
+        stop(paste("histbi element", a,b, "count", count,
+                   "sum", sum(this.hist)))
+      }
+    }
+  }
+  ## return the upper triangular array of counts, just in case you want
+  ## to examine it.
+  ##counts
+  NULL
 }
 
 
@@ -925,6 +1049,8 @@ spikes.to.bursts <- function(spikes, burst.sep=2) {
   ## Convert spikes to bursts.
   ## burst.sep is the threshold time between spikes for finding bursts.
   ## spikes.to.bursts(c(1,2,3, 7,8, 11,12,13,14, 19,20, 23,24))
+  ## Note: this is too simplistic, and probably not applicable to animals
+  ## at older ages where the spike firing could be almost continuous.
   f <- which( diff(spikes) > burst.sep) +1
   spikes[c(1,f)]
 }
@@ -1094,3 +1220,41 @@ op.picture <- function(pos, rates, iteration) {
 }
 
   
+
+corr.get.means <- function(dvi) {
+  ## Compute the mean,sd of the correlation index at each distance.
+  ## dvi is the array of [n,2] values.
+  ## Returns a matrix.
+  
+  corr.get.means.helper <- function(x) {
+    ## Helper function to create  mean and sd of one set of distances.
+    indexes <- which(dvi[,1] == x)
+    c(x, mean(dvi[indexes,2]), sd(dvi[indexes,2]), length(indexes))
+  }
+  
+  d.uniq <- sort(unique(dvi[,1]))
+  means <- t(sapply(d.uniq, corr.get.means.helper))
+  colnames(means) <- c("dist", "mean", "sd", "n")
+  means
+}
+
+corr.do.fit <- function(dvi, plot=T) {
+  ## Do the fit to the exponential and optionally plot it.  Any
+  ## correlation index of zero is removed, since we cannot take the
+  ## log of zero.  Hopefully there won't be too many of these.
+  
+  y.zero <- which(dvi[,2]==0)
+  if (length(y.zero)>0) {
+    dvi <- dvi[-y.zero,]
+    warning(paste("removing", length(y.zero),"zero entries"))
+  }
+  x <- dvi[,1]
+  y.log <- log(dvi[,2])
+  fit <- lm(y.log ~ x)
+  if (plot)
+    curve(exp(fit$coeff[1])* exp(x*fit$coeff[2]), add=T)
+
+  ## Mon 07 Jan 2002: must use curve() rather than abline() due to a
+  ## bug in abline in R 1.4
+  
+  fit }
