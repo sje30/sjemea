@@ -1,7 +1,6 @@
 ## Functions for reading multisite data (both Markus/Rachel's and Jay's)
 ## Mon 10 Sep 2001
 
-
 library(bbmisc)                         #for plotCI() from Ben Bolker
 
 ## todo -- are the cell positions inverted?
@@ -101,10 +100,13 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
   Format <- readBin(fp, integer(), 1, mm.longsize, endian="big")
   close(fp)
 
-  if (Format == 2) 
+  if (Format == 2) {
+    cat(paste("Guessing",cellname, "is format 2\n"))
     res <- read.ms.mm.data.format2(cellname, posfile)
-  else 
+  } else {
+    cat(paste("Guessing",cellname, "is format 1\n"))
     res <- read.ms.mm.data.format1(cellname, posfile)
+  }
 
   max.time <- max(unlist(res$spikes), na.rm=T)
   res$meanfiringrate <- res$nspikes / max.time
@@ -126,8 +128,9 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
   corr.id.means <- corr.get.means(corr.id)
   res$corr.id <- corr.id
   res$corr.id.means <- corr.id.means
-  res$distance.breaks=mm.distance.breaks
-  res$distance.breaks.strings=mm.distance.breaks.strings
+  res$distance.breaks <- mm.distance.breaks
+  res$distance.breaks.strings <- mm.distance.breaks.strings
+  res$rates <- make.spikes.to.frate(res$spikes)
   class(res) <- "mm.s"
   res
 }
@@ -211,7 +214,7 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   starttimes <- integer(NRecords)       #to be calculated...
   endtimes   <- integer(NRecords)
   nevents    <- integer(NRecords)
-  nspikes    <- integer(NRecords)
+  nspikes.rec<- integer(NRecords)
 
   spikecount <- 0
   eventcount <- 0
@@ -235,7 +238,7 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
     startclock[r] <- readBin(fp, integer(), 1, mm.unsize, signed=F, endian="big")
     endclock[r]   <- readBin(fp, integer(), 1, mm.unsize, signed=F, endian="big")
     nevents[r]    <- readBin(fp, integer(), 1, mm.longsize, endian="big")
-    nspikes[r]    <- readBin(fp, integer(), 1, mm.longsize, endian="big")
+    nspikes.rec[r]<- readBin(fp, integer(), 1, mm.longsize, endian="big")
 
 
     ShiftTime <- (EndTime %/% mm.WrapTime) * mm.WrapTime
@@ -245,8 +248,8 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
     starttimes[r] <- (startclock[r] * 128) + ShiftTime
     
     cat(paste(r, "clock", startclock[r], endclock[r], "#events", nevents[r],
-              "#spikes", nspikes[r], "\n"))
-    spikecount <- spikecount + nspikes[r]
+              "#spikes", nspikes.rec[r], "\n"))
+    spikecount <- spikecount + nspikes.rec[r]
     eventcount <- eventcount + nevents[r]
     ## Read in the number of spikes from each cell in record r.
     spikespercell <- readBin(fp, integer(), NCells, mm.longsize, endian="big")
@@ -353,11 +356,12 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   res <- list (NFiles=NFiles, NBoxes=NBoxes, NRecords = NRecords,
                NSpikes=NSpikes, NEvents=NEvents,
                startclock=startclock, endclock=endclock,
-               nevents=nevents, nspikes=nspikes,
+               nevents=nevents, nspikes.rec=nspikes.rec,
                starttimes=starttimes,
                endtimes=endtimes,
                NCells=NCells, boxes=boxes, C=C,
                spikes=allspikes,
+               nspikes=sapply(allspikes, length),
                bursts=bursts,
                CrossF=CrossF, CrossR=CrossR, Pe=Pe,
                file=cellname,
@@ -405,15 +409,15 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   for (r in 1:NBoxes) {
     t <- readBin(fp, integer(), 7, mm.intsize, endian="big")
     group <- t[1]; channel <- t[2]; plott <- t[3]
-    cat(paste("Box", r, "Group", group, "Chan", channel,
-    "Plot", plott, "bounds", t[4], t[5], t[6], t[7], "\n"))
+    ##cat(paste("Box", r, "Group", group, "Chan", channel,
+    ##"Plot", plott, "bounds", t[4], t[5], t[6], t[7], "\n"))
     boxes[r,] <- t
   }
 
   startclock <- readBin(fp, integer(), NRecords,mm.unsize,signed=F,endian="big")
   endclock   <- readBin(fp, integer(), NRecords,mm.unsize,signed=F,endian="big")
 
-  cat("start times\n")
+  cat("start and end times\n")
   print(startclock); print(endclock)
   SpikesInRecords <- readBin(fp, integer(), NRecords, mm.longsize, endian="big")
   SpikesInCell    <- readBin(fp, integer(),   NCells, mm.longsize, endian="big")
@@ -421,7 +425,7 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
 
   ## This seems to duplicate the information in the boxes.
   C              <- readBin(fp, integer(),   NCells,  mm.intsize, endian="big")
-  print(C)
+  ## cat("about to print C\n");   print(C)
   ##cat(paste("after reading C, file pos is", seek(fp), "\n"))
 
 
@@ -452,7 +456,9 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   ## and which record.
   if (any(apply(N, 2, sum) != SpikesInRecords))
     stop("SpikesInRecords and Col sum of N differ")
-  
+
+  ## All spike times for each cell (and for each record) are read
+  ## in at once, and stored in a big T array.
   ## Time of each spike from each cell in each record
   my.num.spikes <- sum(N)
   cat(paste("my.num.spikes", my.num.spikes, "\n"))
@@ -462,13 +468,20 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   high <- cumsum(breaks)
   low <- c(1, high[1:(length(high)-1)]+1)
 
-  spikes <- apply(rbind(low,high), 2, function (i) {T[i[1]:i[2]]})
-
+  spikes <- apply(cbind(low, breaks), 1,
+                  function (i) {
+                    num <- i[2];
+                    if (num > 0)        #return spikes if there are some
+                      res <- T[i[1]:(i[1]+(num-1))]
+                    else                #return empty vector
+                      res <- numeric(0)
+                    res
+                  })
 
   starttimes <- integer(NRecords)       #to be calculated...
   endtimes   <- integer(NRecords)
   nevents    <- integer(NRecords)
-  nspikes    <- integer(NRecords)
+  nspikes.rec<- integer(NRecords)
 
   ## Make an empty list of size NCells.  Each element will be a list.
   allspikes <- list()
@@ -548,21 +561,30 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   
   ## check that the spikes are monotonic.
   check.spikes.monotonic(allspikes)
+
+  ## Check that the number of spikes matches the number we return in "spikes"
+  if (NSpikes != sum(sapply(spikes,length)))
+    warning("NSpikes and actual number of spikes differ")
+  
   bursts <- lapply(allspikes, function(x) spikes.to.bursts(x, mm.burst.sep))
   
   res <- list (NFiles=NFiles, NBoxes=NBoxes, NRecords = NRecords,
                NSpikes=NSpikes, NEvents=NEvents,
                startclock=startclock, endclock=endclock,
-               nevents=NEvents, nspikes=NSpikes,
+               nevents=NEvents,
+               nspikes.rec=nspikes.rec, # #of spikes per record.
                starttimes=starttimes,
                endtimes=endtimes,
                NCells=NCells, boxes=boxes, C=C,
                spikes=allspikes,
+               nspikes=sapply(allspikes, length), # #of spikes/cell.
                bursts=bursts,
                T=T,
                ##CrossF=CrossF, CrossR=CrossR, Pe=Pe,
                file=cellname,
                N=N,
+               SpikesInRecords=SpikesInRecords,
+               SpikesInCell=SpikesInCell,
                pos=pos)
   class(res) <- "mm.s"
   res
@@ -744,6 +766,9 @@ jay.read.spikes <- function(filename, scale=100) {
 
   corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
   corr.id.means <- corr.get.means(corr.id)
+
+  rates <- make.spikes.to.frate(spikes)
+
   res <- list( channels=channels,
               spikes=spikes, nspikes=nspikes, NCells=num.channels,
               meanfiringrate=meanfiringrate,
@@ -755,7 +780,8 @@ jay.read.spikes <- function(filename, scale=100) {
               corr.id=corr.id,
               corr.id.means=corr.id.means,
               distance.breaks=jay.distance.breaks,
-              distance.breaks.strings=jay.distance.breaks.strings
+              distance.breaks.strings=jay.distance.breaks.strings,
+              rates=rates
               )
   class(res) <- "mm.s"
   res
@@ -925,11 +951,29 @@ prob.r <- function(s)  {
   ## turn into probability.
   counts/num.distances
 }
-  
-prob.t.cond.r <- function(spikes, distance.bins, tmax,n.timebins)
+
+
+## Jay and I discussed what "M" should be.  If we have a pair of spike
+## trains with 5 spikes in A and 10 spikes in B, should M be 5*10 or
+## just the number of dt's which are less than 4 seconds?  (i.e. the
+## value of this.m below.)  It should be the latter we think, since
+## otherwise if the two spikes are perfectly correlated but very long,
+## there will be many dt's that will be greater than 4 seconds.  Dan's
+## figure 1b seems to show that each p(t|r) will sum to 1.0 (taking
+## into account the bin size; seems to be around 40 bins per 0.5
+## second in the plot).
+
+## So, for a pair of spike trains, we compute the cross-correlogram up
+## to 4 seconds, and then normalise the histogram so that it sums to
+## 1.  This histogram is then binned according to the distance between
+## the cell pair.  We then take the average of all histograms for that
+## distance bin to compute the overall p(t|r).
+
+prob.t.cond.r <- function(s, tmax,n.timebins)
 {
-  ## SPIKES should be a list of length N, N is the number of cells.
-  ## Return p(t|r) where r is the  bin number.
+  ## Return p(t|r) where r is the bin number.
+  spikes <- s$spikes
+  distance.bins <- s$dists.bins
   n <- s$NCells
   n.distancebins <- length(s$distance.breaks.strings)
   spikepairs <- integer(n.distancebins)
@@ -940,58 +984,178 @@ prob.t.cond.r <- function(spikes, distance.bins, tmax,n.timebins)
   allhists <- matrix(0, nrow=n.distancebins, ncol=n.timebins)
   ##dimnames=list("distance bin", "time"))
 
+  hists.rejected <- 0
   ## For each cell pair, compute the histogram of time differences between
   ## spikes, and bin it according to the distance between the cell pair.
   for (a in 1:(n-1)) {
-    ##print(a)
     n.a <- s$nspikes[a]
     for (b in (a+1):n) {
       n.b <- s$nspikes[b]
       bin <- distance.bins[a,b]
 
       hist <- hist.ab(spikes[[a]], spikes[[b]], tmax, n.timebins)
-      ##hist <- hist/ sum(hist)           #normalise
-      allhists[bin,] <- allhists[bin,] + hist
-      
-      if ( FALSE && (bin == 6)) {
-        cat(paste("bin", bin, "cells", a, b, "\n"))
-        plot(hist)
-        Sys.sleep(1)
-        print(hist)
-        print(allhists[[bin]])
-      }
+      this.m <- sum(hist)
 
-      nhists[bin] <- nhists[bin] + 1
-      spikepairs[bin] <- spikepairs[bin] + (n.a * n.b)
+      if (this.m > 0) {
+        ## include bin only if there were counts.
+        hist <- hist / (this.m)        #normalise by number of comparisons.
+        allhists[bin,] <- allhists[bin,] + hist
+        nhists[bin] <- nhists[bin] + 1
+        spikepairs[bin] <- spikepairs[bin] + this.m
+      } else {
+        hists.rejected <- 1 + hists.rejected
+      }
     }
   }
 
-  if (sum(nhists) != (n*(n-1)/2))
+  if(hists.rejected > 0)
+    cat(paste(hists.rejected, "histograms rejected from prob.t.cond.r\n"))
+  
+  if ((hists.rejected + sum(nhists)) != (n*(n-1)/2))
     stop(paste("did we compute enough histograms between cell pairs?",
                sum(nhists), (n*(n-1)/2)))
-            
-  ## Normalise each histogram for a given r to 1.0:
-  allhists <- t(apply(allhists, 1, function(x) {x/sum(x)}))
-  list (nhists = nhists,
-        allhists = allhists,
-        spikepairs = spikepairs)
-}
 
-fuzz.zero <- function(x) {
-  ## Test that x is very close to zero.
-  ## for numerical comparisons only.
-  abs(x) < 1e-12
+  ## Compute the average histogram for each distance.
+  ## Now take the average of each histogram.  This could be done by matrix
+  ## multiplication, but this is also simple.
+  ## for (i in 1:n.distancebins) {allhists[i,] <- allhists[i,] / nhists[i]}
+  allhists <- allhists / nhists
+
+  list(nhists = nhists,
+       allhists = allhists,
+       spikepairs = spikepairs,
+       m=sum(spikepairs),                             # number of counts.
+       tmax=tmax,
+       n.timebins=n.timebins
+       )
 }
 
 prob.t <- function(p.t.cond.r, p.r)  {
   ## Return p(t)
   p.t <- apply(p.t.cond.r, 2, function(x) { drop(x %*% p.r)}) #scalar product
-  if (!fuzz.zero(sum(p.t) - 1))
+  if (identical(all.equal(sum(p.t),1), FALSE))
     warning("p.t should sum to 1")
-
   p.t
 }
 
+corr.get.means <- function(id) {
+  ## Compute the mean,sd of the correlation index at each distance.
+  ## id is the array of [n,2] values.  Each row is [d,i].
+  ## Returns a matrix.
+  
+  corr.get.means.helper <- function(x) {
+    ## Helper function to create  mean and sd of one set of distances.
+    indexes <- which(id[,1] == x)
+    c(x, mean(id[indexes,2]), sd(id[indexes,2]), length(indexes))
+  }
+  
+  d.uniq <- sort(unique(id[,1]))
+  means <- t(sapply(d.uniq, corr.get.means.helper))
+  colnames(means) <- c("dist", "mean", "sd", "n")
+  means
+}
+
+corr.do.fit <- function(id, plot=T) {
+  ## Do the fit to the exponential and optionally plot it.  Any
+  ## correlation index of zero is removed, since we cannot take the
+  ## log of zero.  Hopefully there won't be too many of these.
+  
+  y.zero <- which(id[,2]==0)
+  if (length(y.zero)>0) {
+    id <- id[-y.zero,]
+    warning(paste("removing", length(y.zero),"zero entries"))
+  }
+  x <- id[,1]
+  y.log <- log(id[,2])
+  fit <- lm(y.log ~ x)
+  if (plot)
+    curve(exp(fit$coeff[1])* exp(x*fit$coeff[2]), add=T)
+
+  ## Mon 07 Jan 2002: must use curve() rather than abline() due to a
+  ## bug in abline in R 1.4
+  
+  fit }
+
+my.upper <- function (x,diag=FALSE) {
+  ## Return the upper triangular elements of a matrix on a row-by-row basis.
+  if (is.matrix(x)) {
+    x[ which(upper.tri(x,diag))]
+  } else {
+    stop(paste(deparse(substitute(x)),"is not a matrix"))
+  }
+}
+
+
+make.mi <- function(s) {
+  ## Return the mutual information.
+  ## this includes the bias term,
+  ## For Dan's example:
+  ## m <- 42000; n.t <-400; n.r <- 9
+  ## mi.bias <- ( (n.t * n.r) - n.t - n.r + 1) / ( 2 * m * log(2))
+  p.r <- prob.r(s)
+  l <- prob.t.cond.r(s, tmax=4, n.timebins=100)
+  p.t.cond.r <- l$allhists
+  p.t <- prob.t(p.t.cond.r, p.r)
+
+  if (identical(all.equal(sum(abs(apply(p.t.cond.r, 1, sum))),1),FALSE))
+    stop("at least one p(t|r) does not sum to 1")
+
+  (mi <- sum(p.r * apply(p.t.cond.r, 1,
+                         function(x) { sum(x * log2(x/p.t)) })) )
+
+  
+  m <- l$m;
+  n.t <- length(p.t)
+  n.r <- length(p.r)
+  mi.bias <- ( (n.t * n.r) - n.t - n.r + 1) / ( 2 * m * log(2))
+
+  mi <- mi - mi.bias                    # subtract bias.
+
+  res <- list(
+              mi=mi,
+              mi.bias=mi.bias,
+              p.r=p.r,
+              p.t.cond.r=p.t.cond.r,
+              l=l,
+              p.t=p.t)
+  res
+}
+
+show.prob.t.r <- function(s,comment="")  {
+  ## Show the p(t|r) distributions.
+  ## comment is an optional string to add to the plot.
+  ## make.mi() must have been done first...
+
+  op <- par(no.readonly = TRUE)
+  nbins <- length(s$distance.breaks) -1
+  if (nbins == 7)
+    par(mfrow=c(4,2))                   # jay
+  else 
+    par(mfrow=c(4,3))                   # MM
+  par(mar=c(4,4,2,2))                   #reduce each margin a bit.
+  par(oma=c(1,0,0,0))                   #outer margin, 1 line at bottom.
+
+  
+  timebin.tmax <- s$mi$l$tmax;
+  timebin.n    <- s$mi$l$n.timebins;
+  timebin.wid <- timebin.tmax/timebin.n; timebin.min <- 0
+  timebin.times <- seq(from=timebin.min+(timebin.wid/2),by=timebin.wid,
+                       length=timebin.n)
+  
+  for (i in 1:nbins) {
+    plot(timebin.times, s$mi$p.t.cond.r[i,],
+         ##main=paste(s$file,"r bin",i),
+         xlab="time (s)",
+         ylab=expression(paste("p(", Delta,"t|r)")),
+         main=paste(s$distance.breaks.strings[i], "um, n=",s$mi$l$nhists[i]),
+         )
+  }
+  plot(timebin.times, s$mi$p.t, main="p(t)",
+       xlab="time (s)", ylab="p(t)")
+  mtext(paste(s$file, date(), "MI",signif(s$mi$mi,4),comment),side=1, outer=T)
+
+  par(op)                               #restore old params.
+}
 
 count.nab <- function(ta, tb, tmax=0.05) {
   ## C routine to count the overlap N_ab (from Wong et al. 1993)
@@ -1180,7 +1344,9 @@ spikes.to.bursts <- function(spikes, burst.sep=2) {
 # movie-related functions.
 
 
-make.animated.gif <- function (x, beg, end, delay=0.02,
+make.animated.gif <- function (x, beg=1,
+                               end=dim(x$rates$rates)[1],
+                               delay=10,
                                output="anim.gif",
                                delete.frames=TRUE) {
 
@@ -1190,12 +1356,15 @@ make.animated.gif <- function (x, beg, end, delay=0.02,
   ## frame number normally has leading zeros (e.g. 00050 rather than
   ## 50) so that the frames are ordered correctly by the * wildcard
   ## when creating the animated gif.
+  ##
+  ## DELAY is the delay (an integer) in 100ths of a second.
 
   for (i in beg:end) {
     plot.rate.mslayout(x, i)
     file <- paste("/tmp/ms.mov", formatC(i,width=5,flag="0"), ".gif", sep='')
     dev2bitmap(file="/tmp/ms.mov.pbm", type="pbmraw")
-    system(paste("ppmtogif /tmp/ms.mov.pbm >",file, sep=''))  
+    system(paste("ppmtogif /tmp/ms.mov.pbm >",file, sep=''),
+           ignore.stderr=T)  
   }
 
   ## now make the animated gif.
@@ -1211,27 +1380,27 @@ make.animated.gif <- function (x, beg, end, delay=0.02,
 }
 
 
-show.movie <- function(x, first=1, last=dim(x$rates)[1],delay=0.03) {
+show.movie <- function(x, beg=1, end=dim(x$rates$rates)[1],delay=0.03) {
   ## Show a movie within R.
   ## x is the spikes data structure.
   ## first is the number of the first frame.
   ## last is the number of the last frame (defaults to the number of
   ## frames to show).
   ## delay gives the delay in seconds between frames.
-  for (f in first:last) {
+  for (f in beg:end) {
     plot.rate.mslayout(x, f)
     Sys.sleep(delay)
   }
 }
 
 
-make.spikes.to.frate <- function(x,
+make.spikes.to.frate <- function(spikes,
                                  time.interval=1, #time bin of 1sec.
                                  frate.min=0,
                                  frate.max=20,
                                  time.low=0,
                                  clip=FALSE,
-                                 time.high=ceiling(max(unlist(x$spikes)))
+                                 time.high=ceiling(max(unlist(spikes)))
                                  ) {
   ## Convert the spikes for each cell into a firing rate (in Hz)
 
@@ -1247,9 +1416,8 @@ make.spikes.to.frate <- function(x,
     h <- hist(spikes, breaks=breaks,plot=F)
     h$counts/time.interval                #convert to firing rate (in Hz)
   }
-
   time.breaks <- seq(from=time.low, to=time.high, by=time.interval)
-  rates1 <- lapply(x$spikes, spikes.to.rates, breaks=time.breaks,
+  rates1 <- lapply(spikes, spikes.to.rates, breaks=time.breaks,
                    time.interval=time.interval)
 
   ## rates1 is a list; we want to convert it into an array.
@@ -1263,6 +1431,17 @@ make.spikes.to.frate <- function(x,
 
   res <- list(rates=rates,times=time.breaks)
   res
+}
+
+plot.meanfiringrate <- function(x) {
+  ## At each timestep, plot the mean firing rate of all the cells.  This
+  ## is useful to see the overall activity throughout a recording.
+  
+  av.rate <- apply(x$rates$rates, 1, mean)
+  ## For the x axis, we ignore the first time bin to make the mean rates
+  ## and the times of the same length.
+  plot(x$rates$times[-1], av.rate, type="h",
+       xlab="time (s)", ylab="mean firing rate",main=s$file)
 }
 
 "setrates<-" <- function(x, value) {
@@ -1287,8 +1466,11 @@ plot.rate.mslayout <- function(x, frame.num) {
   ## Plot the given frame number in the multisite layout.
   ## If you want to plot circles rather than disks, change "pch=19"
   ## to "pch=21".  Do `help("points")' for a summary of plot types.
-  plot(js$pos[,1], js$pos[,2], pch=19,
-       cex=pmin(x$rates[frame.num,],jay.ms.max.firingrate),
+  ## The biggest character size is set by jay.ms.max.firingrate.
+  ## xaxt and yaxt control whether or not the axes are plotted.
+  
+  plot(x$pos[,1], x$pos[,2], pch=19, xaxt="n", yaxt="n",
+       cex=pmin(x$rates$rates[frame.num,],jay.ms.max.firingrate),
        xlab='', ylab='', main=frame.num)
 }
 
@@ -1343,100 +1525,3 @@ op.picture <- function(pos, rates, iteration) {
 
   
 
-corr.get.means <- function(id) {
-  ## Compute the mean,sd of the correlation index at each distance.
-  ## id is the array of [n,2] values.  Each row is [d,i].
-  ## Returns a matrix.
-  
-  corr.get.means.helper <- function(x) {
-    ## Helper function to create  mean and sd of one set of distances.
-    indexes <- which(id[,1] == x)
-    c(x, mean(id[indexes,2]), sd(id[indexes,2]), length(indexes))
-  }
-  
-  d.uniq <- sort(unique(id[,1]))
-  means <- t(sapply(d.uniq, corr.get.means.helper))
-  colnames(means) <- c("dist", "mean", "sd", "n")
-  means
-}
-
-corr.do.fit <- function(id, plot=T) {
-  ## Do the fit to the exponential and optionally plot it.  Any
-  ## correlation index of zero is removed, since we cannot take the
-  ## log of zero.  Hopefully there won't be too many of these.
-  
-  y.zero <- which(id[,2]==0)
-  if (length(y.zero)>0) {
-    id <- id[-y.zero,]
-    warning(paste("removing", length(y.zero),"zero entries"))
-  }
-  x <- id[,1]
-  y.log <- log(id[,2])
-  fit <- lm(y.log ~ x)
-  if (plot)
-    curve(exp(fit$coeff[1])* exp(x*fit$coeff[2]), add=T)
-
-  ## Mon 07 Jan 2002: must use curve() rather than abline() due to a
-  ## bug in abline in R 1.4
-  
-  fit }
-
-my.upper<-
-  function (x,diag=FALSE) {
-  ## Return the upper triangular elements of a matrix on a row-by-row basis.
-  if (is.matrix(x)) {
-    x[ which(upper.tri(x,diag))]
-  } else {
-    stop(paste(deparse(substitute(x)),"is not a matrix"))
-  }
-}
-
-
-make.mi <- function(s) {
-  ## make the mutual information.
-  p.r <- prob.r(s)
-  l <- prob.t.cond.r(s$spikes, s$dists.bins,tmax=4, n.timebins=100)
-  p.t.cond.r <- l$allhists
-  p.t <- prob.t(p.t.cond.r, p.r)
-
-  if (!fuzz.zero(sum(abs(apply(p.t.cond.r, 1, sum) -1))))
-    stop("at least one p(t|r) does not sum to 1")
-
-  (mi <- sum(p.r * apply(p.t.cond.r, 1,
-                         function(x) { sum(x * log2(x/p.t)) })) )
-  res <- list(
-              mi=mi,
-              p.r=p.r,
-              p.t.cond.r=p.t.cond.r,
-              l=l,
-              p.t=p.t)
-  res
-}
-
-
-show.distns <- function(s,comment="")  {
-  ## Show the distributions...
-  ## make.mi() must have been done first...
-
-  op <- par(no.readonly = TRUE)
-  nbins <- length(s$distance.breaks) -1
-  if (nbins == 7)
-    par(mfrow=c(4,2))                   # jay
-  else 
-    par(mfrow=c(4,3))                   # MM
-  par(mar=c(4,4,2,2))                   #reduce each margin a bit.
-  par(oma=c(1,0,0,0))                   #outer margin, 1 line at bottom.
-  for (i in 1:nbins) {
-    plot(timebin.times, s$mi$p.t.cond.r[i,],
-         ##main=paste(s$file,"r bin",i),
-         xlab="time (s)",
-         ylab=expression(paste("p(", Delta,"t|r)")),
-         main=paste(s$distance.breaks.strings[i], "um, n=",s$mi$l$nhists[i]),
-         )
-  }
-  plot(timebin.times, s$mi$p.t, main="p(t) [uncorrected]",
-       xlab="time (s)", ylab="p(t)")
-  mtext(paste(s$file, date(), "MI",signif(s$mi$mi,4),comment),side=1, outer=T)
-
-  par(op)                               #restore old params.
-}
