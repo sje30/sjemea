@@ -969,8 +969,8 @@ plot.jay.pos <- function(x, use.rownames=F, ...) {
   ## within the structure. ... allows us to specify other params such as
   ## "col" for colour of text -- see plot.shifted.jay.pos().
 
-  range <- c(0, max(x))                 #should be a useful default range.
-  plot(x[,1], x[,2], asp=1, xlim=range, ylim=range,
+  plot(x[,1], x[,2], asp=1,
+       xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
        bty="n",
        xlab="", ylab="", type="n")
   if (use.rownames)
@@ -1632,10 +1632,15 @@ check.similarity <- function(s, tmax=0.001) {
   results
 }
 
+## Global variable that controls whether the xaxis of the xcorr plot
+## is shown.
+xcorr.plot.xaxistimes <- FALSE
+
 xcorr.plot <-  function(spikes.a, spikes.b,
                         plot.label,
                         xcorr.maxt=4, bi= TRUE,
                         nbins=100,
+                        show.poisson=TRUE,
                         autocorr=FALSE, page.label= date(),
                         pause=TRUE) {
 
@@ -1686,17 +1691,36 @@ xcorr.plot <-  function(spikes.a, spikes.b,
   ## Plot the histogram.  type "l" is line, "h" for impulses.
   ## No axes are added here.
   plot(x, ylim=c(0,max.val), type="l",
+       bty="n",
        xlab="", ylab="", xaxt="n",yaxt="n")
 
-  lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="red")
-
+  ## if we want a y-axis, rather than "max" line...
+  want.yaxis <- TRUE
+  if (want.yaxis) 
+    axis(2, at = c(0, max.val), las=1)
+  
+  if (show.poisson) {
+    lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="blue")
+  }
   ## Now annotate the plot with some info.  Plot the info as a central
   ## "tic mark" along the x-axis (which goes from 1 to nbins)
-  axis(1, (nbins/2),
-       labels=c(paste(plot.label, " max", max.val,
-         ##"", signif(poisson.rate,2),
-         sep="")))
+#   axis(1, (nbins/2),
+#        labels=c(paste(plot.label,
+#          ifelse(want.yaxis, "", paste(" max", max.val)),
+#          ##"", signif(poisson.rate,2),
+#          sep="")))
 
+  ## put axis at bottom;
+  if (xcorr.plot.xaxistimes) {
+    axis(1, c(1, nbins/2, nbins), labels=c(-xcorr.maxt, 0, xcorr.maxt))
+  } else {
+    axis(1, c(1, nbins/2, nbins), labels=F)
+  }
+
+  ## put label at top:
+  mtext(plot.label, side=3, cex=par()$cex)
+
+ 
   screen.layout <- par()$mfg
   if ( identical(all.equal.numeric(screen.layout[1:2], c(1,1)), TRUE))
     ## Output the page label for only the first plot of the page.
@@ -1715,6 +1739,8 @@ xcorr.plot <-  function(spikes.a, spikes.b,
 
 xcorr.restricted <- function(s, a, b,
                              tmin, tmax,
+                             plot.label=paste(a,b,sep=":"),
+                             show.poisson=TRUE,
                              xcorr.maxt=5) {
   ## Compute the cross-correlation just between TMIN and TMAX for two
   ## cells, A and B.  Times are given in seconds.  If TMIN, TMAX
@@ -1740,9 +1766,10 @@ xcorr.restricted <- function(s, a, b,
 
   xcorr.plot(spikes.a, spikes.b,
              xcorr.maxt=xcorr.maxt,
-             bi=TRUE, plot.label=paste(a, b, sep=":"),
+             bi=TRUE, plot.label=plot.label,
              nbins=100,
              autocorr=FALSE, pause=F,
+             show.poisson=show.poisson,
              page.label="page label")
 
 }
@@ -2023,7 +2050,7 @@ centre.of.mass <- function(s, beg, end, seconds=T,
     index <- index+1
   }
 
-  res <- list(com=com, active=active, method="threshold")
+  res <- list(com=com, active=active, method="thresh")
   class(res) <- "mscom"
   res
 }
@@ -2172,7 +2199,8 @@ colour.com <- function(com) {
   colours
 }
 
-plot.mscom <- function(x, s, colour=T, ...) {
+plot.mscom <- function(x, s, colour=T, show.title=T,
+                       label.cells=NULL, ...) {
   ## Plot the centre-of-mass using COLOUR if TRUE.
   ## S is optional, but if given, we get to see electrode positions
   ## and the name of the file.
@@ -2212,7 +2240,9 @@ plot.mscom <- function(x, s, colour=T, ...) {
         plot(c, xlab="", ylab="",
              xlim = jay.ms.lim.x,
              ylim = jay.ms.lim.y,
-             col=col.num, asp=1, type="l", main=title)
+             xaxt="n", yaxt="n",
+             col=col.num, asp=1, type="l",
+             main=ifelse(show.title,title,""))
       } else {
         lines(c, col=col.num)
       }
@@ -2220,12 +2250,19 @@ plot.mscom <- function(x, s, colour=T, ...) {
       ## Draw the starting point and add a bit of jitter.
       text(c[1,1]+(20*runif(1)), c[1,2]+(20*runif(1)), "*", cex=3)
     }
-
     ## draw electrode positions if we have them.
     if(!missing(s)) {
-      points(s$pos)
-      if(!is.null(x$active))
-        points(s$pos[x$active,], pch=19)
+      ## if we don't have active list, just draw them all as empty.
+      electrode.cols <- rep(0, dim(s$pos)[1]) #default colour of white.
+      if (!is.null(x$active))
+        electrode.cols[x$active] <- 1   #black for the active ones.
+
+      points(s$pos, pch=21, bg=electrode.cols, cex=0.9, lwd=0.4)
+    }
+    if (!is.null(label.cells)) {
+      text(as.numeric(label.cells[,1]),
+           as.numeric(label.cells[,2]),
+           labels=label.cells[,3], cex=1)
     }
 
   } else {
@@ -2316,7 +2353,7 @@ make.spikes.to.frate <- function(spikes,
   res
 }
 
-plot.meanfiringrate <- function (s, beg, end) {
+plot.meanfiringrate <- function (s, beg, end, ...) {
   ## Plot the mean firing rate over all the cells at each time step.
   ## Can optionally specify the beginning (BEG) and end (END) time, in
   ## seconds.
@@ -2326,7 +2363,7 @@ plot.meanfiringrate <- function (s, beg, end) {
   av.rate <- apply(s$rates$rates, 1, mean)
   plot(s$rates$times, av.rate, type = "h", xlab = "time (s)",
        xlim=c(beg,end), bty="n",
-       ylab = "mean firing rate", main = s$file)
+       ylab = "mean firing rate", main = s$file, ...)
 }
 
 "setrates<-" <- function(s, value) {
@@ -2482,14 +2519,16 @@ plot.rate.mslayout <- function(...) {
     plot.rate.mslayout.rad(...)
 }
 
-plot.rate.mslayout.rad <- function(s, frame.num, show.com=F, skip.empty=F) {
+plot.rate.mslayout.rad <- function(s, frame.num, show.com=F,
+                                   show.time=TRUE,
+                                   skip.empty=F) {
   ## New version, fixed for Jay's dimensions.
   ## Plot the given frame number in the multisite layout.
   ## The biggest character size is set by jay.ms.max.firingrate.
   ## If SHOW.COM is true, we show the centre of mass as a green dot.
   ## If SKIP.EMPTY is true, any frames where all circles are at min radius
   ## are not drawn.
-
+  ## If SHOW.TIME is true, write the current time above the plot.
   no.small.dots <- FALSE;               #set this to TRUE/FALSE
 
   radii <-  rates.to.radii(s$rates$rates[frame.num,])
@@ -2530,7 +2569,10 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=F, skip.empty=F) {
               xaxt="n", yaxt="n", xlab='', ylab='',
               inches=FALSE,
               xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
-              main=formatC(s$rates$times[frame.num], digits=1, format="f"))
+              main=ifelse(show.time,
+                formatC(s$rates$times[frame.num], digits=1, format="f"),
+                "")
+              )
       if (show.com) {
         com <- centre.of.mass(s, frame.num, frame.num, seconds=F)
         if(any(com$active))
