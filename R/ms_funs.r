@@ -704,6 +704,9 @@ jay.read.spikes <- function(filename, scale=100) {
   nspikes <- sapply(spikes, length)
   names(nspikes) <- channels
 
+  max.time <- max(unlist(spikes), na.rm=T)
+  meanfiringrate <- nspikes/ max.time
+
   ## Parse the channel names to get the cell positions.
   ## Note that we currently ignore any label that comes after the digits
   ## for the channel.
@@ -729,6 +732,7 @@ jay.read.spikes <- function(filename, scale=100) {
   corr.id.means <- corr.get.means(corr.id)
   res <- list( channels=channels,
               spikes=spikes, nspikes=nspikes, NCells=num.channels,
+              meanfiringrate=meanfiringrate,
               file=filename,
               pos=pos,
               scale=scale,
@@ -856,26 +860,23 @@ prob.r <- function(s)  {
   counts/num.distances
 }
   
-prob.p.t.cond.r <- function(spikes, distance.bins)
+prob.p.t.cond.r <- function(spikes, distance.bins, tmax,n.timebins)
 {
   ## Return the correlation index values for each pair of spikes.
   ## The matrix returned is upper triangular.
   ## SPIKES should be a list of length N, N is the number of cells.
   n <- length(spikes)
-  n.distances <- max(distance.bins)
-
+  n.distances <- max(distance.bins, na.rm=T)
   spikepairs <- integer(n.distances)
   nhists <- integer(n.distances)
-  tmax <- 4.0;                          #2 second maximum
-  n.timebins <- tmax * 25;
 
-  ## Make a list to store the histograms for each distance bin.
-  ## Each histogram is initially emptry and built up.
-  allhists <- list();
-  for (i in 1:n.distances)
-    allhists[[i]] <- integer(n.timebins)
-                                    
+  ## Make a matrix to store the histogram for each bin.  Each row
+  ## is a histogram for that distance bin.
+  allhists <- matrix(0, nrow=n.distances, ncol=n.timebins)
+  ##dimnames=list("distance bin", "time"))
+  
   for (a in 1:(n-1)) {
+    print(a)
     n.a <- length(spikes[[a]])
     for (b in (a+1):n) {
       n.b <- length(spikes[[b]])
@@ -883,8 +884,8 @@ prob.p.t.cond.r <- function(spikes, distance.bins)
 
       hist <- hist.ab(spikes[[a]], spikes[[b]], tmax, n.timebins)
       ##hist <- hist/ sum(hist)           #normalise
-      allhists[[bin]] <- allhists[[bin]] + hist
-
+      allhists[bin,] <- allhists[bin,] + hist
+      
       if ( FALSE && (bin == 6)) {
         cat(paste("bin", bin, "cells", a, b, "\n"))
         plot(hist)
@@ -1258,3 +1259,4 @@ corr.do.fit <- function(dvi, plot=T) {
   ## bug in abline in R 1.4
   
   fit }
+
