@@ -840,6 +840,10 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
   ## e.g. when moer than one cell is assigned to the same channel, we
   ## can have "ch_13a" and "ch_13b".  If there is only one cell on a channel
   ## that channel is written "ch_13".
+  ## In Jay's prog, rows are numbered from the top, downwards.  In R, we
+  ## have the reverse.  To align them in R, we would need to subtract 9 from
+  ## rows.
+  
   cols <- as.integer(substring(channels, 4,4)) * scale
   rows <- as.integer(substring(channels, 5,5)) * scale
   pos <- cbind(cols, rows)
@@ -901,12 +905,8 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
       stop(paste("some units not in recording...",
                  paste(units[units>=length(spikes)],collapse=",")))
     }
-    unit.offsets <- pos*0               #set all elements to zero.
-
-    print(unit.offsets[units,])
-    print(updates[,2:3])
+    unit.offsets <- pos*0               #initialise all elements to zero.
     unit.offsets[units,] <- updates[,2:3]
-    print(unit.offsets)
   }
   
   
@@ -1976,7 +1976,7 @@ time.to.frame <- function(times, time) {
 }
 
 centre.of.mass <- function(s, beg, end, seconds=T,
-                           thresh.num=5, thresh.rate=2) {
+                           thresh.num=3, thresh.rate=2) {
   ## Find the centre of mass for a set of spikes.
 
   ## BEG and END are given in seconds (by default), and converted
@@ -1985,8 +1985,10 @@ centre.of.mass <- function(s, beg, end, seconds=T,
   ## THRESH.NUM is the minimum number of units that must be active to
   ## draw the Centre of mass.
   ##
-  ## We return a list with two components: COM -- a 2-d array giving the centre
-  ## of mass at each timestep; ACTIVE -- list of units that are active.
+  ## We return a list with components:
+  ## COM -- a 2-d array giving the centre of mass at each timestep
+  ## ACTIVE -- list of units that are active.
+  ## METHOD -- the method used to compute CoM.
 
   first.frame <- 
     if (missing(beg)) 1
@@ -2011,18 +2013,125 @@ centre.of.mass <- function(s, beg, end, seconds=T,
   colnames(com) <- c("com x", "com y")
   index <- 1
   active <- real(0)                     #vector of units that are active.
-  com.thresh.rate <- 2
-  com.thresh.num <- 5
+
   for (f in first.frame:last.frame) {
-    above <- which(s$rates$rates[f,]> com.thresh.rate)
-    if (length(above) >= com.thresh.num) {
+    above <- which(s$rates$rates[f,] > thresh.rate)
+    if (length(above) >= thresh.num) {
       com[index,] <- c( mean(s$pos[above,1]), mean(s$pos[above,2]))
       active <- sort(union(active, above))
     }
     index <- index+1
   }
 
-  res <- list(com=com, active=active)
+  res <- list(com=com, active=active, method="threshold")
+  class(res) <- "mscom"
+  res
+}
+
+centre.of.mass.wt <- function(s, beg, end, seconds=T) {
+
+  ## Find the centre of mass for a set of spikes.
+  ## Try a weighting factor version.  All cells included.
+
+  ## BEG and END are given in seconds (by default), and converted
+  ## into frame numbers here.
+  ## Each unit is weighted by dividing its current firing rate
+  ## by the overall firing rate.
+  ##
+  ## We return a list with two components:
+  ## COM -- a 2-d array giving the centre of mass at each timestep
+  ## ACTIVE -- list of units that are active.
+  ## METHOD -- the method used to compute CoM.
+  
+  first.frame <- 
+    if (missing(beg)) 1
+    else
+      if (seconds)
+        time.to.frame(s$rates$times, beg)
+      else
+        beg
+  
+  last.frame <-
+    if (missing(end)) length(s$rates$times)
+    else
+      if (seconds)
+        time.to.frame(s$rates$times, end)
+      else
+        end
+
+  n.frames <- (last.frame+1 - first.frame)
+  com <- array(NA, dim=c(n.frames,2))   #(x,y) coords of COM for each frame.
+
+  rownames(com) <- s$rates$times[first.frame:last.frame]
+  colnames(com) <- c("com x", "com y")
+  index <- 1
+
+  for (f in first.frame:last.frame) {
+    ## weighting factor of each unit i.
+    mass.i <- s$rates$rates[f,] / s$meanfiringrate
+    mass <- sum(mass.i)
+    com[index, 1] <- sum( mass.i * s$pos[,1]) / mass
+    com[index, 2] <- sum( mass.i * s$pos[,2]) / mass
+    index <- index+1
+  }
+
+  res <- list(com=com, active=NULL, method="wt by mean")
+  class(res) <- "mscom"
+  res
+}
+
+centre.of.mass.wt2 <- function(s, beg, end, seconds=T,
+                               thresh.num=3, thresh.rate=5) {
+
+  ## Find the centre of mass for a set of spikes.
+  ## Try a weighting factor version, after we first threshold the units
+  ## by the number of cells above a firing rate.
+  ## BEG and END are given in seconds (by default), and converted
+  ## into frame numbers here.
+  ## Each unit is weighted by dividing its current firing rate
+  ## by the overall firing rate.
+  ##
+  ## We return a list with two components:
+  ## COM -- a 2-d array giving the centre of mass at each timestep
+  ## ACTIVE -- list of units that are active.
+  ## METHOD -- the method used to compute CoM.
+  
+  first.frame <- 
+    if (missing(beg)) 1
+    else
+      if (seconds)
+        time.to.frame(s$rates$times, beg)
+      else
+        beg
+  
+  last.frame <-
+    if (missing(end)) length(s$rates$times)
+    else
+      if (seconds)
+        time.to.frame(s$rates$times, end)
+      else
+        end
+
+  n.frames <- (last.frame+1 - first.frame)
+  com <- array(NA, dim=c(n.frames,2))   #(x,y) coords of COM for each frame.
+
+  rownames(com) <- s$rates$times[first.frame:last.frame]
+  colnames(com) <- c("com x", "com y")
+  index <- 1
+
+  for (f in first.frame:last.frame) {
+    above <- which(s$rates$rates[f,] > thresh.rate)
+    if (length(above) >= thresh.num) {
+      ## weighting factor of each unit i.
+      mass.i <- s$rates$rates[f,] / s$meanfiringrate
+      mass <- sum(mass.i)
+      com[index, 1] <- sum( mass.i * s$pos[,1]) / mass
+      com[index, 2] <- sum( mass.i * s$pos[,2]) / mass
+    }
+    index <- index+1
+  }
+
+  res <- list(com=com, active=NULL, method="wt by mean")
   class(res) <- "mscom"
   res
 }
@@ -2097,10 +2206,12 @@ plot.mscom <- function(x, s, colour=T, ...) {
       if (first.plot) {
         times <- rownames(x$com)
         title <- paste(ifelse(missing(s), "unknown file", basename(s$file)),
+                       x$method,
                        times[1], times[length(times)])
         first.plot <- FALSE
         plot(c, xlab="", ylab="",
-             ylim=c(0,800), xlim=c(0,800), #oops, hard-code dimensions of array
+             xlim = jay.ms.lim.x,
+             ylim = jay.ms.lim.y,
              col=col.num, asp=1, type="l", main=title)
       } else {
         lines(c, col=col.num)
@@ -2293,6 +2404,10 @@ isi <- function(train) {
   isi
 }
 
+## These variables store the min and max size of the array in each dimension
+## (both x and y).  Units are stored in um.
+jay.ms.lim.x <- c(50, 850); jay.ms.lim.y <- c(50, 850)
+
 ## store the maximum and minimum firing rate.  Any firing rate bigger
 ## than this value is set to this value; this prevents the circles
 ## from overlapping on the plots.  Likewise, anything smaller than the
@@ -2414,7 +2529,7 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=F, skip.empty=F) {
               circles=radii,
               xaxt="n", yaxt="n", xlab='', ylab='',
               inches=FALSE,
-              xlim=c(0, 800), ylim=c(0,800),
+              xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
               main=formatC(s$rates$times[frame.num], digits=1, format="f"))
       if (show.com) {
         com <- centre.of.mass(s, frame.num, frame.num, seconds=F)
@@ -2427,7 +2542,7 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=F, skip.empty=F) {
     if (draw.empty) 
       plot( NA, NA,
            xaxt="n", yaxt="n", xlab='', ylab='',
-           xlim=c(0, 800), ylim=c(0,800),
+           xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
            main=formatC(s$rates$times[frame.num], digits=1, format="f"))
   }
 }
@@ -2445,7 +2560,7 @@ plot.rate.mslayout.scale <- function() {
           circles=radii,
           xaxt="n", yaxt="n", xlab='', ylab='',
           inches=FALSE,
-          xlim=c(0, 800), ylim=c(0,800),
+          xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
           main="legend")
   text(x, y-200, labels=signif(rates,digits=2))
 }
@@ -2480,10 +2595,11 @@ plot.rate.mslayout.col <- function(s, frame.num, show.com=F, skip.empty=F) {
   symbols(xs, ys,
           fg="black",
           bg=jay.ms.cmap[cols],
+          bty="n",
           circles=radii,
           xaxt="n", yaxt="n", xlab='', ylab='',
           inches=FALSE,
-          xlim=c(0, 800), ylim=c(0,800),
+          xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
           main=formatC(s$rates$times[frame.num], digits=1, format="f"))
   if (show.com) {
     com <- centre.of.mass(s, frame.num, frame.num, seconds=F)
@@ -2520,7 +2636,7 @@ plot.rate.mslayout.scale <- function() {
             circles=radii,
             xaxt="n", yaxt="n", xlab='', ylab='',
             inches=FALSE,
-            xlim=c(0, 800), ylim=c(0,800),
+            xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
             main="legend")
   } else {
     ## show the radius scale bar.
@@ -2535,7 +2651,7 @@ plot.rate.mslayout.scale <- function() {
             circles=radii,
             xaxt="n", yaxt="n", xlab='', ylab='',
             inches=FALSE,
-            xlim=c(0, 800), ylim=c(0,800),
+            xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
             main="legend")
   }
   text(x, y-200, labels=signif(rates,digits=2),cex=0.5)
