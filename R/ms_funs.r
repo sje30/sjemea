@@ -1592,7 +1592,8 @@ xcorr.plot <-  function(spikes.a, spikes.b,
                         plot.label,
                         xcorr.maxt=4, bi= TRUE,
                         nbins=100,
-                        autocorr=FALSE, page.label= date()) {
+                        autocorr=FALSE, page.label= date(),
+                        pause=TRUE) {
 
   ## Produce the cross-correlation of two spike trains, SPIKES.A and SPIKES.B.
   ## PLOT.LABEL is the text to be drawn under the plot.
@@ -1602,7 +1603,8 @@ xcorr.plot <-  function(spikes.a, spikes.b,
   ## To make an autocorrelation, SPIKES.A and SPIKES.B are the same train,
   ## and set AUTOCORR to true.  (For autocorrelation we exclude "self counts",
   ## when a spike is compare to itself.)
-  
+  ## If PAUSE is true, during interactive usage, we pause between screenfulls.
+  ## (X only, may not work on windows...)
   if (bi) {
     x <- histbi.ab(spikes.a, spikes.b, xcorr.maxt, nbins)
   } else {
@@ -1658,10 +1660,38 @@ xcorr.plot <-  function(spikes.a, spikes.b,
 
   if ( identical(all.equal.numeric(screen.layout[1:2],
                                    screen.layout[3:4]), TRUE)
-      && (names(dev.cur()) == "X11"))
+      && (names(dev.cur()) == "X11") && pause)
     ## If we are using a display and the last plot has just been shown,
     ## wait for the user to press RETURN before displaying next page.
     readline("Press return to see next page of plots.")
+
+}
+
+
+xcorr.restricted <- function(s, tmin, tmax, a, b) {
+  ## Compute the cross-correlation just between TMIN and TMAX for
+  ## two cells, A and B.
+
+  ## Instead of plotting, we could just get the result returned to us.
+  spikes.a <-my.s$spikes[[a]]
+  spikes.b <-my.s$spikes[[b]]
+
+  ## remove spikes outside the time range [tmin, tmax]
+  rej.a <- which( (spikes.a < tmin) | (spikes.a > tmax))
+  if (any(rej.a)) spikes.a <- spikes.a[-rej.a]
+
+  rej.b <- which( (spikes.b < tmin) | (spikes.b > tmax))
+  if (any(rej.b)) spikes.b <- spikes.b[-rej.b]
+
+  ## for debugging, just check the range of spikes are as thought.
+  print(range(spikes.a))
+  print(range(spikes.b))
+
+  xcorr.plot(spikes.a, spikes.b,
+             xcorr.maxt=4, bi=TRUE, plot.label=paste(a, b, sep=":"),
+             nbins=100,
+             autocorr=FALSE, pause=F,
+             page.label="page label")
 
 }
 
