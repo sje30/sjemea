@@ -619,11 +619,14 @@ plot.corr.index <- function(s, identify=F,
   ## left mouse button.  
   dists <- s$dists[which(upper.tri(s$dists))]
   corrs <- s$corr.indexes[which(upper.tri(s$corr.indexes))]
-  if (is.null(s$scale)) 
-    xlabel <- "uncorrected distance (um)"
-  else
-    xlabel <- paste("distance (um) [scale=",s$scale,"]",sep='')
 
+  xlabel <- expression(paste("distance (", mu, "m)"))
+
+#   if (is.null(s$scale)) 
+#     xlabel <- "uncorrected distance (um)"
+#   else
+#     xlabel <- paste("distance (um) [scale=",s$scale,"]",sep='')
+  
   plot.default(dists, corrs, xlab=xlabel,
                ylab="correlation index", bty="n",
                main=main,
