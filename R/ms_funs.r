@@ -709,10 +709,13 @@ summary.mm.s <- function(s) {
 ######################################################################
 
 
-jay.read.spikes <- function(filename, scale=100) {
+jay.read.spikes <- function(filename, scale=100, ids=NULL) {
   ## Read in Jay's data set.  Scale gives the distance in um between
   ## adjacent channels.  This is 100um by default.  This can be
-  ## changed to cope with the developmental changes in retina.
+  ## changed to cope with the developmental changes in retina.  IDS is
+  ## an optional vector of cell numbers that should be analysed -- the
+  ## other channels are read in but then ignored.
+
   fp <- file(filename, open="r")
   max.channels <- 64
   channels <- character(max.channels)
@@ -744,7 +747,12 @@ jay.read.spikes <- function(filename, scale=100) {
     }
   }
 
-  spikes <- apply(times, 1, jay.filter.for.na)  
+  spikes <- apply(times, 1, jay.filter.for.na)
+
+  if (!is.null(ids) ) {
+    spikes <- spikes[ids];
+    channels <- channels[ids];
+  }
 
   ## Count the number of spikes per channel, and label them.
   nspikes <- sapply(spikes, length)
@@ -793,7 +801,7 @@ jay.read.spikes <- function(filename, scale=100) {
   rates <- make.spikes.to.frate(spikes)
 
   res <- list( channels=channels,
-              spikes=spikes, nspikes=nspikes, NCells=num.channels,
+              spikes=spikes, nspikes=nspikes, NCells=length(spikes),
               meanfiringrate=meanfiringrate,
               file=filename,
               pos=pos,
@@ -811,6 +819,7 @@ jay.read.spikes <- function(filename, scale=100) {
   res
 
 }
+
 jay.filter.for.na <- function(x) {
   ## Truncate the vector X so that trailing NA entries are removed.
   ## This removes the 'empty' spikes at the bottom of each column when
@@ -1437,6 +1446,36 @@ test.count.hist2.nab <- function(s) {
   ##counts
   NULL
 }
+
+check.similarity <- function(s, tmax=0.001) {
+  ## Check to see if two cells have similar spike trains.
+  ## Check pair-wise to see the incidence of coincident spiking
+  ## (within TMAX seconds of each other).
+  ## Return an array,. showing for each cell pair:
+  ## i, j, count, n.i, n.j, frac
+
+  ## where i,j are the numbers of the cells; count is the raw count of
+  ## coincident spikes; n.i, n.j are the number of spikes in those
+  ## trains, and frac is the count/min(n.i, n.j)
+
+  n.cells <- s$NCells
+  n.comparisons <- (n.cells * (n.cells-1))/2
+  results <- matrix(0, nrow = n.comparisons, ncol = 6) #results array.
+  result.line <- 1
+  for (i in 1:(n.cells-1)) {
+    n.i <- s$nspikes[i]
+    for (j in (i+1):n.cells) {
+      count <- count.nab(s$spikes[[i]], s$spikes[[j]], tmax)
+      n.j <- s$nspikes[j]
+      frac <- count/ min(c(n.i, n.j))
+      results[result.line, ] <- c(i, j, count, n.i, n.j, frac)
+      result.line <- 1 + result.line
+    }
+  }
+  colnames(results) <- c("i", "j", "count", "n.i", "n.j", "frac")
+  results
+}
+
 
 
 
