@@ -635,6 +635,15 @@ plot.corr.index <- function(s, identify=F, ...) {
                   
 }
 
+plot.corr.index.fit <- function(s, ...) {
+  ### Show the correlation indexes and then the fit.
+  plot.corr.index(s, identify=F,col="red", log="")
+  plotCI(s$corr.id.means[,1], s$corr.id.means[,2], s$corr.id.means[,3],
+         xlab="distance", ylab="correlation index", 
+         pch=19, add=T)
+  corr.do.fit(s$corr.id,plot=T)
+}
+
 plot.mm.s <- function(s, whichcells=1:s$NCells,
                       mintime=min(unlist(s$spikes), na.rm=T),
                       maxtime=max(unlist(s$spikes), na.rm=T),
@@ -673,6 +682,7 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
          bty="n",
          main="",
          xaxt="n",
+         xaxs="i", yaxs="i",
          xlab="", ylab="", ...)
     mtext(main, side=3, adj=0, line=1)
     
@@ -1276,6 +1286,7 @@ corr.get.means <- function(id) {
     ## Helper function to create  mean and sd of one set of distances.
     indexes <- which(id[,1] == x)
     c(x, mean(id[indexes,2]), sd(id[indexes,2]), length(indexes))
+    ##c(x, median(id[indexes,2]), mad(id[indexes,2]), length(indexes))
   }
   
   d.uniq <- sort(unique(id[,1]))
@@ -1284,7 +1295,7 @@ corr.get.means <- function(id) {
   means
 }
 
-corr.do.fit <- function(id, plot=T) {
+corr.do.fit <- function(id, plot=T, ...) {
   ## Do the fit to the exponential and optionally plot it.  Any
   ## correlation index of zero is removed, since we cannot take the
   ## log of zero.  Hopefully there won't be too many of these.
@@ -1298,12 +1309,24 @@ corr.do.fit <- function(id, plot=T) {
   y.log <- log(id[,2])
   fit <- lm(y.log ~ x)
   if (plot)
-    curve(exp(fit$coeff[1])* exp(x*fit$coeff[2]), add=T)
+    curve(exp(fit$coeff[1])* exp(x*fit$coeff[2]), add=T, ...)
 
   ## Mon 07 Jan 2002: must use curve() rather than abline() due to a
   ## bug in abline in R 1.4
   
   fit
+}
+
+corr.check.fit <- function() {
+  ## Simple test routine to see that the exponential fits are okay.
+  a <- 40; b <- .01
+  x <- seq(from=1, to=500, by=20)
+  y <- a*exp(-b*x) + (2*rnorm(length(x)))
+  plot(x,y, log="y")
+  fit <- corr.do.fit( cbind(x,y), col=p9.col)
+  
+  ## should be similar to (a,b)
+  print(exp(fit$coefficients))
 }
 
 my.upper <- function (x,diag=FALSE) {
@@ -2379,7 +2402,7 @@ plot.meanfiringrate <- function (s, beg, end, ...) {
   if (missing(end)) end <- s$rates$times[length(s$rates$times)]
   av.rate <- apply(s$rates$rates, 1, mean)
   plot(s$rates$times, av.rate, type = "h", xlab = "time (s)",
-       xlim=c(beg,end), bty="n",
+       xlim=c(beg,end), bty="n", lwd=0.2,
        ylab = "mean firing rate", main = s$file, ...)
 }
 
