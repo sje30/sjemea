@@ -5,10 +5,6 @@
 ## data; those with "jay" in them are for Jay.  Some functions are suitable
 ## for both types.
 
-## TODO: worry about when more than one unit occupies same electrode
-## position -- how to show both in movie?
-
-
 library(bbgraphics)                         #for plotCI() from Ben Bolker
 
 ## todo -- are the cell positions inverted?
@@ -881,7 +877,40 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
   }
 
   rates <- make.spikes.to.frate(spikes, time.interval=time.interval)
+  
+  ## See if we need to shift any units.  this affects only the
+  ## visualisation of the units in the movies.  We assume that "shifted"
+  ## positions are stored in the file with same name as data file
+  ## except that the .txt is replaced with .sps.  Then each line of this
+  ## file contains three numbers:
+  ## c dx dy
+  ## where c is the cell number to move, and dx,dy is the amount (in um)
+  ## by which to move the cells.  If you edit the file, this function
+  ## must be called again for the new values to be read in.
+  ## The shifted positions are used only by the movie functions and
+  ## by the function plot.shifted.jay.pos(s) [this shows all units].
+  shift.filename <- sub("\\.txt$", ".sps", filename)
+  unit.offsets <- NULL                  #default value.
+  if (file.exists(shift.filename)) {
+    updates <- scan(shift.filename)
+    ## must be 3 data points per line
+    stopifnot(length(updates)%%3 == 0)
+    updates <- matrix(updates, ncol=3, byrow=T)
+    units <- updates[,1]
+    if (any(units> length(spikes))) {
+      stop(paste("some units not in recording...",
+                 paste(units[units>=length(spikes)],collapse=",")))
+    }
+    unit.offsets <- pos*0               #set all elements to zero.
 
+    print(unit.offsets[units,])
+    print(updates[,2:3])
+    unit.offsets[units,] <- updates[,2:3]
+    print(unit.offsets)
+  }
+  
+  
+  
   res <- list( channels=channels,
               spikes=spikes, nspikes=nspikes, NCells=length(spikes),
               meanfiringrate=meanfiringrate,
@@ -895,7 +924,8 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
               corr.id.means=corr.id.means,
               distance.breaks=jay.distance.breaks,
               distance.breaks.strings=jay.distance.breaks.strings,
-              rates=rates
+              rates=rates,
+              unit.offsets=unit.offsets
               )
   class(res) <- "mm.s"
   res
@@ -933,20 +963,34 @@ jay.filter.for.min <- function(x, min) {
     x
 }
 
-plot.jay.pos <- function(x, use.rownames=F) {
+
+plot.jay.pos <- function(x, use.rownames=F, ...) {
   ## Plot the layout of the multisite.  X here should be the pos field
-  ## within the structure.
+  ## within the structure. ... allows us to specify other params such as
+  ## "col" for colour of text -- see plot.shifted.jay.pos().
 
   range <- c(0, max(x))                 #should be a useful default range.
-  plot(x[,1], x[,2], asp=1, xlim=range, ylim=range, xlab="", ylab="", type="n")
+  plot(x[,1], x[,2], asp=1, xlim=range, ylim=range,
+       bty="n",
+       xlab="", ylab="", type="n")
   if (use.rownames)
-    text(x[,1], x[,2], rownames(x))
+    text(x[,1], x[,2], rownames(x), ...)
   else
-    text(x[,1], x[,2])
+    text(x[,1], x[,2], ...)
 }
 
 
-
+plot.shifted.jay.pos <- function(s) {
+  ## Add the shifted unit positions, if present, before plotting
+  ## the electrode layout.  Shifted units are coloured red.
+  pos <- s$pos
+  cols <- rep("blue", s$NCells)
+  if (!is.null(s$unit.offsets)) {
+    pos <- pos + s$unit.offsets
+    cols[which(apply(s$unit.offsets^2, 1, sum)>0)] <- "red"
+  }
+  plot.jay.pos(pos, col=cols)
+}
 
 shuffle.spike.times <- function (s, noise.sd) {
   ## Return new copy of s, with spike trains shuffled to add Gaussian noise
@@ -2340,6 +2384,13 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=F, skip.empty=F) {
   ## with NAs does the trick if you don't want small circles (but they
   ## act as electrode positions which is handy).
 
+  ## extract the unit positions and optionally update them to account
+  ## for offsets, so that cells do not overlap on screen.
+  xs <- s$pos[,1]; ys <- s$pos[,2]
+  if (!is.null(s$unit.offsets)) {
+    xs <- xs + s$unit.offsets[,1]
+    ys <- ys + s$unit.offsets[,2]
+  }
 
   draw.anything <- TRUE                 #flag - do not change.
   
@@ -2358,7 +2409,7 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=F, skip.empty=F) {
 
   if (draw.anything) {
     if (!skip.empty || (any(radii > jay.ms.min.rad))) {
-      symbols( s$pos[,1], s$pos[,2],
+      symbols(xs, ys,
               fg="black", bg="black",
               circles=radii,
               xaxt="n", yaxt="n", xlab='', ylab='',
@@ -2399,9 +2450,11 @@ plot.rate.mslayout.scale <- function() {
   text(x, y-200, labels=signif(rates,digits=2))
 }
 
-## Number of colours to have in the firing rate colourmap+the colourmap itself:
+## Number of colours to have in the firing rate colourmap
+## +the colourmap itself.  Reverse the list so that white is low
+## and black is high.
 jay.ms.ncols <- 16
-jay.ms.cmap <- gray(0:(jay.ms.ncols-1)/(jay.ms.ncols-1))
+jay.ms.cmap <- rev(gray(0:(jay.ms.ncols-1)/(jay.ms.ncols-1)))
 
 plot.rate.mslayout.col <- function(s, frame.num, show.com=F, skip.empty=F) {
   ## Colour indicates firing rate.
@@ -2415,8 +2468,16 @@ plot.rate.mslayout.col <- function(s, frame.num, show.com=F, skip.empty=F) {
   radii <- rep(45, dim(s$pos)[1])
 
   cols <- rates.to.cols(s$rates$rates[frame.num,])
-  
-  symbols( s$pos[,1], s$pos[,2],
+
+  ## extract the unit positions and optionally update them to account
+  ## for offsets, so that cells do not overlap on screen.
+  xs <- s$pos[,1]; ys <- s$pos[,2]
+  if (!is.null(s$unit.offsets)) {
+    xs <- xs + s$unit.offsets[,1]
+    ys <- ys + s$unit.offsets[,2]
+  }
+
+  symbols(xs, ys,
           fg="black",
           bg=jay.ms.cmap[cols],
           circles=radii,
@@ -2556,5 +2617,3 @@ op.picture <- function(pos, rates, iteration) {
   
   fname
 }
-
-
