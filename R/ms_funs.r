@@ -659,7 +659,7 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
   yminadd <- ticpercell
 
   if (show.bursts)
-    spikes <- s$bursts
+    spikes <- s$spikes
   else
     spikes <- s$spikes
 
@@ -668,17 +668,28 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
        main=s$file,xlab="time (s)", ylab="spikes of cell", ...)
 
   ymin <- 0
+
+  have.bursts <- ( (length(s$allb) > 0) && show.bursts)
   for (cell in whichcells) {
     ts <- spikes[[cell]]
     n <- length(ts)
     ys <- numeric(n) + ymin
     
     segments(ts, ys, ts, ys+deltay)
+
+    ## simple test to see if bursts have been defined.
+    if (have.bursts) {
+      b <- s$allb[[cell]]
+      burst.times <- sapply(b, function(x) x[1:2])
+      ys <- numeric(dim(burst.times)[2]) + ymin + (deltay/2)
+      segments(burst.times[1,], ys, burst.times[2,], ys, col=2)
+    }
     ymin <- ymin + yminadd
   }
 
   if (label.cells) {
-    mtext(whichcells, side=2, adj=allys)
+    allys <- seq(from=0, by=yminadd, length=N)
+    mtext(whichcells, side=2, at=allys, las=1)
   }
 
 }
@@ -744,6 +755,10 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
     spikes <- lapply(spikes, jay.filter.for.min, min=min.time)
 
   if (!is.null(ids) ) {
+    if (any(ids>length(spikes)))
+      stop(paste("some ids not in this data set:",
+                 paste(ids[ids>length(spikes)],collapse=" ")))
+    
     spikes <- spikes[ids];
     channels <- channels[ids];
   }
@@ -786,10 +801,17 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
     levels(cut(0, jay.distance.breaks, right=F, include.lowest=T))
 
   dists.bins   <- bin.distances(dists, jay.distance.breaks)
+
   corr.indexes.dt <- 0.05               #time window for coincident spikes
-  corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
-  corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
-  corr.id.means <- corr.get.means(corr.id)
+  if (length(spikes) > 1) {
+    corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
+    corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
+    corr.id.means <- corr.get.means(corr.id)
+  } else {
+    corr.indexes <- NA
+    corr.id <- NA
+    corr.id.means <- NA
+  }
 
   rates <- make.spikes.to.frate(spikes)
 
@@ -920,12 +942,15 @@ fourplot <- function(s) {
   plot(s$pos)                             #show layout of electrodes.
   plot.meanfiringrate(s)
   plot(s)                                 #plot the spikes.
-  plot.corr.index(s, identify=F,col="red")
-  plotCI(s$corr.id.means[,1], s$corr.id.means[,2], s$corr.id.means[,3],
-         xlab="distance", ylab="correlation index", log="",
-         main=paste(s$file, "mean and sd of each distance"),
-         pch=19,add=T)
-  corr.do.fit(s$corr.id,plot=T)
+  if(!is.na(s$corr.indexes)) {
+    ## Plot correlation indexes only if we have them.
+    plot.corr.index(s, identify=F,col="red")
+    plotCI(s$corr.id.means[,1], s$corr.id.means[,2], s$corr.id.means[,3],
+           xlab="distance", ylab="correlation index", log="",
+           main=paste(s$file, "mean and sd of each distance"),
+           pch=19,add=T)
+    corr.do.fit(s$corr.id,plot=T)
+  }
 }
 
 make.distances <- function(posns) {
@@ -956,23 +981,28 @@ make.corr.indexes <- function(spikes, dt) {
   ## "dt" is the maximum time for seeing whether two spikes are coincident.
   ## This is defined in the 1991 Meister paper.
   n <- length(spikes)
-  Tmax <- max(unlist(spikes))           #time of last spike.
-  Tmin <- min(unlist(spikes))           #time of first spike.
-  corrs <- array(0, dim=c(n,n))
-  for ( a in 1:(n-1)) {
-    n1 <- length(spikes[[a]])
-    for (b in (a+1):n) {
-      n2 <- length(spikes[[b]])
-      corrs[a,b] <-  as.double(count.nab(spikes[[a]], spikes[[b]],dt) *
-                               (Tmax-Tmin)) /
-                                 (as.double(n1) * n2 * (2*dt))
+  if (n == 1) {
+    ## If only one spike train, cannot compute the cross-corr indexes.
+    0;
+  } else {
+    Tmax <- max(unlist(spikes))           #time of last spike.
+    Tmin <- min(unlist(spikes))           #time of first spike.
+    corrs <- array(0, dim=c(n,n))
+    for ( a in 1:(n-1)) {
+      n1 <- length(spikes[[a]])
+      for (b in (a+1):n) {
+        n2 <- length(spikes[[b]])
+        corrs[a,b] <-  as.double(count.nab(spikes[[a]], spikes[[b]],dt) *
+                                 (Tmax-Tmin)) /
+                                   (as.double(n1) * n2 * (2*dt))
+      }
     }
+    
+    if (any(is.na(corrs))) {
+      stop("corrs has some NA values -- possible integer overflow in n1*n2?")
+    }
+    corrs
   }
-
-  if (any(is.na(corrs))) {
-    stop("corrs has some NA values -- possible integer overflow in n1*n2?")
-  }
-  corrs
 }
 
 
@@ -1686,6 +1716,7 @@ make.animated.gif <- function (x, beg=1,
   ## WARNING: this works only on Linux, as it requires a ocuple of
   ## external unix programs.!
 
+  stopifnot(machine()=="Unix")
   for (i in beg:end) {
     plot.rate.mslayout(x, i)
     file <- paste("/tmp/ms.mov", formatC(i,width=5,flag="0"), ".gif", sep='')
@@ -1710,6 +1741,7 @@ make.movieframes <- function (x, beg=1,
                                end=dim(x$rates$rates)[1],
                               outputdir=dirname(tempfile()),
                               prefix="mea",
+                              seconds=F,
                               delete.first=FALSE,
                               delete.frames=TRUE) {
 
@@ -1718,15 +1750,30 @@ make.movieframes <- function (x, beg=1,
   ## 50) so that the frames are ordered correctly by the * wildcard.
   ## OUTPUTDIR is the directory where the files are to be stored.  This
   ## should not end in a forward slash (/).
-  ## If delete.first is true, we delete all the png files in the output
+  ## If DELETE.FIRST is true, we delete all the png files in the output
   ## directory before making any new images.
-
+  ## If SECONDS is true, beg,end are interpreted as time in seconds,
+  ## not frames.  These times are then first converted into frame numbers.
+  ##
+  ## Once the frames are made, quicktime on PC can then make a movie of these
+  ## frames; or on unix, try: "animate -delay 5 mea*png"
+  
   if (substring(outputdir, first=nchar(outputdir))=="/")
     stop(paste("outputdir should not end in slash", outputdir))
+
+  if (seconds) {
+    ## convert beg, end into frames.
+    beg <- time.to.frame(x$rates$times, beg)
+    end <- time.to.frame(x$rates$times, end)
+  }
   
   if (delete.first) {
-    ## Delete all movie files before making new set.
-    unlink(paste(outputdir, "/", prefix, "*.png",sep=""))
+    ## Delete all movie files before making new set.  Best not to use
+    ## unlink as it doesn't accept wildcards on DOS.
+    files <- list.files(path=outputdir, full.names=T,
+                        pattern=paste(prefix,".*\\.png",sep=''))
+    if (length(files)>0)
+      file.remove(files)
   }
   
   for (i in beg:end) {
@@ -1737,6 +1784,138 @@ make.movieframes <- function (x, beg=1,
     dev2bitmap(file=file, type="pngmono")
   }
 }
+
+time.to.frame <- function(times, time) {
+  ## Given a vector of TIMES, return the index closest to TIME.
+  ## Normally, times will be the vector s$rates$times.
+  which.min(abs(times-time))
+}
+
+centre.of.mass <- function(s, beg, end, thresh.num=5, thresh.rate=2) {
+  ## Find the centre of mass for a set of spikes.
+  ## BEG and END are given in seconds, and converted into frame numbers here.
+  ## A unit is active if its firing rate is above thresh.rate (Hz).
+  ## THRESH.NUM is the minimum number of units that must be active to
+  ## draw the Centre of mass.
+
+  first.frame <- time.to.frame(s$rates$times, beg)
+  last.frame <- time.to.frame(s$rates$times, end)
+  n.frames <- (last.frame+1 - first.frame)
+  com <- array(NA, dim=c(n.frames,2))   #(x,y) coords of COM for each frame.
+
+  rownames(com) <- s$rates$times[first.frame:last.frame]
+  colnames(com) <- c("com x", "com y")
+  index <- 1
+  active <- real(0)                     #vector of units that are active.
+  com.thresh.rate <- 2
+  com.thresh.num <- 5
+  for (f in first.frame:last.frame) {
+    above <- which(my.s$rates$rates[f,]> com.thresh.rate)
+    if (length(above) >= com.thresh.num) {
+      com[index,] <- c( mean(s$pos[above,1]), mean(s$pos[above,2]))
+      print(above)
+      active <- union(active, above)
+    }
+    index <- index+1
+  }
+
+  res <- list(com=com, active=active)
+  class(res) <- "mscom"
+  res
+}
+
+colour.com <- function(com) {
+  ## Helper routine to parse the Centre of Mass into consecutive periods
+  ## of activity.  This function returns a vector labelling each time-step
+  ## of the centre of mass to a wave number.
+  nrows <- dim(com)[1]
+  colours <- integer(nrows)
+  wave <- 0
+  in.wave <- FALSE
+  for (i in 1:nrows) {
+    current <- com[i,1]
+    if (in.wave) {
+      if (is.na(current)) {
+        ## wave has ended
+        in.wave <- FALSE
+        colour <- NA
+      } else {
+        ## still within the wave
+        colour <- wave
+      }
+    } else {
+      ## see if we are now in a wave.
+      if (is.na(current)) {
+        colour <- NA
+      } else {
+        ## new wave has started.
+        wave <- wave + 1
+        colour <- wave
+        in.wave <- TRUE
+      }
+    }
+    colours[i] <- colour
+  }
+
+  colours
+}
+
+plot.mscom <- function(x, s, colour=T, ...) {
+  ## Plot the centre-of-mass using COLOUR if TRUE.
+
+  if (colour) {
+    colours <- colour.com(x$com)
+    nwaves <- max(colours, na.rm=T)
+    
+    ## Break up the COM into "waves", consecutive times when we have
+    ## the Centre of Mass. We then loop over these to plot with a
+    ## different colour for each wave.
+    ##com.lines <- sapply(1:nwaves, function(i) {x$com[which(colours==i),1:2]})
+    com.lines <- lapply(1:nwaves, function(i) {
+      valid <- which(colours==i)
+      v <- x$com[valid,1:2]
+      ##matrix(data=v, ncol=2)
+    })
+    col.num <- 0;
+    first.plot <- TRUE
+
+    for (i in 1:nwaves) {
+      c <- com.lines[[i]]
+      if (is.null((dim(c))))
+        next
+      else {
+        col.num <- col.num +1;
+        if (col.num == 8) col.num <- 1;
+      }
+      if (first.plot) {
+        times <- rownames(com$com)
+        title <- paste(basename(my.s$file),
+                       times[1], times[length(times)])
+        first.plot <- FALSE
+        plot(c, xlab="", ylab="",
+             ylim=c(0,800), xlim=c(0,800), #oops, hard-code dimensions of array
+             col=col.num, asp=1, type="l", main=title)
+      } else {
+        lines(c, col=col.num)
+      }
+      ##text(c[1,1], c[1,2], "*", cex=3)
+      ## Draw the starting point and add a bit of jitter.
+      text(c[1,1]+(20*runif(1)), c[1,2]+(20*runif(1)), "*", cex=3)
+    }
+
+    ## draw electrode positions if we have them.
+    if(!missing(s)) {
+      points(s$pos)
+      if(!is.null(x$active))
+        points(s$pos[x$active,], pch=19)
+    }
+
+  } else {
+    ## let's not bother with colours.
+    plot.default(x$com, type="b",asp=1)
+  }
+}
+  
 
 
 show.movie <- function(x, beg=1, end=dim(x$rates$rates)[1],
@@ -1751,19 +1930,10 @@ show.movie <- function(x, beg=1, end=dim(x$rates$rates)[1],
   ## than frame numbers.  
   ## delay gives the delay in seconds between frames.
   if (seconds) {
-    frames <- which(x$rates$times >= beg)
-    if (length(frames) >1)
-      beg <- frames[1]
-    else
-      ##stop(paste("beginning time (",beg,") is too late",sep=""))
-      beg <- 1
-    frames <- which(x$rates$times >= end)
-    if (length(frames) >1)
-      end <- frames[1]
-    else
-      ##stop(paste("end time (",beg,") is too late",sep=""))
-      end <- length(x$rates$rates)
+    beg <- time.to.frame(x$rates$times, beg)
+    end <- time.to.frame(x$rates$times, end)
   }
+  
   for (f in beg:end) {
     plot.rate.mslayout(x, f)
     Sys.sleep(delay)
@@ -1838,6 +2008,70 @@ plot.meanfiringrate <- function(s) {
   s$rates$rates <- value$rates
   s$rates$times <- value$times
   s
+}
+
+
+## Simple statistics of the spike trains.
+
+fano.array <- function(spikes, fano.timebins=c(0.1, 1.0)) {
+  ## Compute fano factor for set of spike trains over a range of
+  ## time bins.
+  stopifnot(is.list(spikes))
+  a <- sapply(fano.timebins, function(t) { fano.allspikes(spikes, t)})
+  rownames(a) <- 1:length(spikes)
+  colnames(a) <- fano.timebins
+  a
+}
+
+fano.allspikes <- function(spikes, timebin) {
+  ## helper function to compute fano factor of all spike trains
+  ## for one time bin.
+  sapply(spikes, function(x) {fano(x, timebin)[4]})
+}
+
+fano <- function(spikes, bin.wid=0.1) {
+  ## Compute the fano factor for one spike train, and for one bin width.
+
+  ## When computing breaks, sometimes the last break comes before the
+  ## last spike time, in which case we remove the spikes that come
+  ## after the last break.  This should remove only a very small
+  ## number of spikes.
+  breaks <- seq(from=0, to=ceiling(max(spikes)), by=bin.wid)
+  last.break <- breaks[length(breaks)]
+  spikes <- spikes[which( spikes <= last.break)]
+
+  h <-  hist(spikes,
+             breaks=breaks,
+             plot=F, include.lowest=T)
+
+  counts <- h$counts
+  counts.mean <- mean(counts); counts.var <- var(counts)
+  counts.fano <- counts.var / counts.mean
+  res <- c(bin.wid, counts.var, counts.mean, counts.fano)
+  names(res) <- c("bin wid", "var", "mean", "fano")
+  res
+}
+
+fano.plot <- function(s, fano.timebins=c(0.05, 0.1, 1.0, 2.0)) {
+  ## Box plot showing fano factor for the group of units
+  ## as a function of the time bin used for the Fano factor.
+  f <- fano.array(s$spikes, fano.timebins=fano.timebins)
+  boxplot(as.data.frame(f),
+          main=s$file,
+          xlab="time bin(s)", ylab="fano factor")
+  curve((x*0)+1,add=T)                        #Poisson line x=1
+
+  ## Return the fano array for subsequent processing.
+  f
+}
+
+
+isi <- function(train) {
+  ## Compute the ISI for one spike train.
+  n <- length(train)
+  isi <- train[2:n] - train[1:(n-1)]
+
+  isi
 }
 
 ## This variable stores the maximum firing rate.  Any firing rate bigger
