@@ -704,7 +704,8 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
   ## other channels are read in but then ignored.
 
   fp <- file(filename, open="r")
-  max.channels <- 64
+  ## todo: in an ideal world, this limit would not be required...
+  max.channels <- 200                   #should typically be 64 or less.
   channels <- character(max.channels)
   ## first read in the channel names
   num.channels <- 0
@@ -787,7 +788,6 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
   dists.bins   <- bin.distances(dists, jay.distance.breaks)
   corr.indexes.dt <- 0.05               #time window for coincident spikes
   corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
-
   corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
   corr.id.means <- corr.get.means(corr.id)
 
@@ -963,11 +963,15 @@ make.corr.indexes <- function(spikes, dt) {
     n1 <- length(spikes[[a]])
     for (b in (a+1):n) {
       n2 <- length(spikes[[b]])
-      corrs[a,b] <-  (count.nab(spikes[[a]], spikes[[b]],dt) * (Tmax-Tmin)) /
-        (n1 * n2 * (2*dt))
+      corrs[a,b] <-  as.double(count.nab(spikes[[a]], spikes[[b]],dt) *
+                               (Tmax-Tmin)) /
+                                 (as.double(n1) * n2 * (2*dt))
     }
   }
 
+  if (any(is.na(corrs))) {
+    stop("corrs has some NA values -- possible integer overflow in n1*n2?")
+  }
   corrs
 }
 
