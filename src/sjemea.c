@@ -163,11 +163,14 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 	   * trouble.
 	   */
 	  bin_numi = (int)((delta_t - min_val)/ bin_wid);
-	  bin_num = floor((delta_t - min_val)/ bin_wid);
+	  bin_num = (int)floor((delta_t - min_val)/ bin_wid);
+	  /*
 	  if (bin_num != bin_numi) {
-	    Rprintf("XXX difference in bin numbers: floor %d (int) %d %f\n",
+	    Rprintf("XXX different bin numbers: dt %f min %f wid %f floor %d (int) %d %f\n",
+		    delta_t, min_val, bin_wid,
 		    bin_num, bin_numi, delta_t);
 	  }
+	  */
 	  if ( (bin_num == nbins) &&(fabs(delta_t - max_val) < SMALLVAL))
 	    bin_num--;		/* fits into largest bin. */
 	  if ( (bin_num <0 ) || (bin_num >= nbins))
