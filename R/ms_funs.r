@@ -640,6 +640,8 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
                       maxtime=max(unlist(s$spikes), na.rm=T),
                       label.cells = FALSE,
                       show.bursts = FALSE,
+                      main=s$file,
+                      for.figure=FALSE,
                       ...) {
   ## Plot the spikes.
   ## WHICHCELLS is a list of cell numbers to plot; the default is to plot
@@ -652,7 +654,9 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
   ## If SHOW.BURSTS is true, we plots the bursts rather than the spikes.
   ## If LABELS.CELLS is true, we write the cell number of each spike train
   ## in the y-axis.
-
+  ## If FOR.FIGURE is true, we make a slightly different outline, which
+  ## is useful for making the figures.
+  
   N <- length(whichcells)
   ticpercell <- 1/N; deltay <- ticpercell * 0.8;
   yminadd <- ticpercell
@@ -662,10 +666,23 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
   else
     spikes <- s$spikes
 
-  plot( c(mintime, maxtime), c(0,1), type='n',
-       yaxt="n",
-       main=s$file,xlab="time (s)", ylab="spikes of cell", ...)
-
+  
+  if (for.figure) {
+    plot( c(mintime, maxtime), c(0,1), type='n',
+         yaxt="n",
+         bty="n",
+         main="",
+         xaxt="n",
+         xlab="", ylab="", ...)
+    mtext(main, side=3, adj=0, line=1)
+    
+  } else {
+    plot( c(mintime, maxtime), c(0,1), type='n',
+         yaxt="n",
+         main=main,
+         xlab="time (s)", ylab="spikes of cell", ...)
+  }
+  
   ymin <- 0
 
   have.bursts <- ( (length(s$allb) > 0) && show.bursts)
@@ -674,7 +691,7 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
     n <- length(ts)
     ys <- numeric(n) + ymin
     
-    segments(ts, ys, ts, ys+deltay)
+    segments(ts, ys, ts, ys+deltay, lwd=0.2)
 
     ## simple test to see if bursts have been defined.
     if (have.bursts) {
@@ -1700,7 +1717,7 @@ xcorr.plot <-  function(spikes.a, spikes.b,
     axis(2, at = c(0, max.val), las=1)
   
   if (show.poisson) {
-    lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="blue")
+    lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="cyan")
   }
   ## Now annotate the plot with some info.  Plot the info as a central
   ## "tic mark" along the x-axis (which goes from 1 to nbins)
@@ -2576,7 +2593,9 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=F,
       if (show.com) {
         com <- centre.of.mass(s, frame.num, frame.num, seconds=F)
         if(any(com$active))
-          points(com$com, pch=19, col="green")
+          ##points(com$com, pch=19, col="green")
+          ##points(com$com, pch=21, lwd=0.5, bg="grey")
+          points(com$com, pch=21, lwd=0.5, bg="white")
       }
     }
   } else {
