@@ -56,7 +56,7 @@ void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
       if (b[sb] > ahigh)
 	sb = nb;		/* stop checking this train */
       else			/* spike could be in [alow, ahigh] */
-	if (b[sb] > alow)
+	if (b[sb] >= alow)	/* equality holds when delta_t is -tmax */
 	  count++;
         else
 	  low = sb;		/* can ignore this spike in B from now on. */
@@ -100,7 +100,7 @@ void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
       if (b[sb] > ahigh)
 	sb = nb;		/* stop checking this train */
       else			/* spike could be in [alow, ahigh] */
-	if (b[sb] > alow) {
+	if (b[sb] >= alow) {	/* equality when (deltat == -tmax) */
 	  /* need to bin this value. */
 	  delta_t = fabs( b[sb] - a[sa]);
 	  bin_num = (int) (delta_t / bin_wid);
@@ -128,18 +128,18 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
    * histogram is [-T,T] where T=*PDT.
    */
 
-   */
   int count=0;
   int sa, sb, low;
   Sfloat alow, ahigh, dt, delta_t, bin_wid, min_val, max_val;
   int na, nb;
-  int bin_num, nbins;
+  int bin_num, nbins, bin_numi;
 
   na = *pna; nb = *pnb; dt=*pdt; nbins = *pnbins;
   min_val = 0.0-dt;		/* smallest value that we will bin. */
   max_val = dt;
   /* the range of times is now [-dt,dt], so we need to double dt. */
   bin_wid = (2.0 * dt)/nbins;
+  /*Rprintf("bin_wid %f\n", bin_wid);*/
   /* low is the index of first spike time in train b that could be
    * withing the range [a-dt, a+dt] of the spike in a.  We rely on the
    * spike times being ordered to use this trick.
@@ -152,15 +152,34 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
       if (b[sb] > ahigh)	/* >= for case when at max. */
 	sb = nb;		/* stop checking this train */
       else			/* spike could be in [alow, ahigh] */
-	if (b[sb] > alow) {
+	if (b[sb] >= alow) {	/* equality when (deltat == -tmax) */
 	  /* need to bin this value. */
 	  delta_t = ( b[sb] - a[sa]);
-	  bin_num = (int) ((delta_t - min_val)/ bin_wid);
+
+	  /* Compute bin number using both floor and casting to an
+	   * int.  This is temporary code as I think I found that
+	   * sometimes the "self spike" for auto-correlations was put
+	   * in the wrong bin.  If we get this error, we are in
+	   * trouble.
+	   */
+	  bin_numi = (int)((delta_t - min_val)/ bin_wid);
+	  bin_num = floor((delta_t - min_val)/ bin_wid);
+	  if (bin_num != bin_numi) {
+	    Rprintf("XXX difference in bin numbers: floor %d (int) %d %f\n",
+		    bin_num, bin_numi, delta_t);
+	  }
 	  if ( (bin_num == nbins) &&(fabs(delta_t - max_val) < SMALLVAL))
 	    bin_num--;		/* fits into largest bin. */
 	  if ( (bin_num <0 ) || (bin_num >= nbins))
 	    Rprintf("bin2: number wrong %f %d %f\n",delta_t, bin_num, bin_wid);
 	  else {
+	    /* When making auto-correlation, see which bin the
+	     * "self-comparison" is put into:
+	     */
+	    /* if (sa==sb) */
+	    /*Rprintf("%d: when binning own spike (time %f), dt %f bin %d\n",*/
+	    /*sa, a[sa], delta_t, bin_num);*/
+
 	    bins[bin_num]++;
 	  }
 	} else
@@ -170,7 +189,7 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 }
 
 /**********************************************************************/
-#ifdef donotwantthiscode.
+/*
 HELP ARRAY_HIST                             David Young, January 1994
 
 
@@ -357,7 +376,8 @@ elements from _startindex to _startindex + __nbins - 1.
 
 If a vector is to be re-used, it can be given as the third element of
 the list, in place of veclen.
-#endif
+*/
+
 
 
 
