@@ -1916,7 +1916,9 @@ make.movieframes <- function (x, beg=1,
     file <- paste(outputdir, "/", prefix,
                   formatC(i,width=5,flag="0"),
                   ".png", sep='')
-    dev2bitmap(file=file, type="pngmono")
+    ## Depending on whether we are colour coding or radius coding, change
+    ## the device -- this will keep the files small.
+    dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "pngmono"))
   }
 }
 
@@ -2286,15 +2288,6 @@ rates.to.radii.prop.area <- function(rates) {
   rates <- pmax(pmin(rates,jay.ms.max.firingrate),
                 jay.ms.min.firingrate)
 
-
-
-
-
-
-
-
-
-
   min.area <- pi * (jay.ms.min.rad^2)
   max.area <- pi * (jay.ms.max.rad^2)
   area <- min.area +
@@ -2314,7 +2307,20 @@ rates.to.radii.prop.area <- function(rates) {
 ##     xlab="rate (Hz)", ylab="radius (um)")
 ##points(rates, rates.to.radii.prop.rad(rates),pch=19)
 
-plot.rate.mslayout <- function(s, frame.num, show.com=F, skip.empty=F) {
+## set to TRUE for colour coding of firing rate; FALSE for radius-encoding.
+plot.rate.colour <- FALSE
+
+
+plot.rate.mslayout <- function(...) {
+  ## Simple wrapper to decide whether to encode firing rate as a radius or
+  ## colour of circle.
+  if (plot.rate.colour)
+    plot.rate.mslayout.col(...)
+  else
+    plot.rate.mslayout.rad(...)
+}
+
+plot.rate.mslayout.rad <- function(s, frame.num, show.com=F, skip.empty=F) {
   ## New version, fixed for Jay's dimensions.
   ## Plot the given frame number in the multisite layout.
   ## The biggest character size is set by jay.ms.max.firingrate.
@@ -2388,6 +2394,88 @@ plot.rate.mslayout.scale <- function() {
           xlim=c(0, 800), ylim=c(0,800),
           main="legend")
   text(x, y-200, labels=signif(rates,digits=2))
+}
+
+## Number of colours to have in the firing rate colourmap+the colourmap itself:
+jay.ms.ncols <- 16
+jay.ms.cmap <- gray(0:(jay.ms.ncols-1)/(jay.ms.ncols-1))
+
+plot.rate.mslayout.col <- function(s, frame.num, show.com=F, skip.empty=F) {
+  ## Colour indicates firing rate.
+  ## Plot the given frame number in the multisite layout.
+  ## If SHOW.COM is true, we show the centre of mass as a green dot.
+  ## If SKIP.EMPTY is true, any frames where all circles are at min radius
+  ## are not drawn.
+
+  ## This time, radii are fixed size (e.g. 45um), but colour varies.
+  ## radii <- rep(jay.ms.max.rad, dim(s$pos)[1])
+  radii <- rep(45, dim(s$pos)[1])
+
+  cols <- rates.to.cols(s$rates$rates[frame.num,])
+  
+  symbols( s$pos[,1], s$pos[,2],
+          fg="black",
+          bg=jay.ms.cmap[cols],
+          circles=radii,
+          xaxt="n", yaxt="n", xlab='', ylab='',
+          inches=FALSE,
+          xlim=c(0, 800), ylim=c(0,800),
+          main=formatC(s$rates$times[frame.num], digits=1, format="f"))
+  if (show.com) {
+    com <- centre.of.mass(s, frame.num, frame.num, seconds=F)
+    if(any(com$active))
+      points(com$com, pch=19, col="green")
+  }
+}
+
+rates.to.cols <- function(rates) {
+  bin.wid <- (jay.ms.max.firingrate - jay.ms.min.firingrate) /
+    jay.ms.ncols
+  
+  cols <- floor( (rates-jay.ms.min.firingrate)/ bin.wid)+1
+  ## in case firing rate is outside range of firingrates, limit values
+  ## of cols to within 1:jay.ms.ncols.
+  cols <- pmax(cols, 1)                 
+  cols <- pmin(cols, jay.ms.ncols)
+}
+
+plot.rate.mslayout.scale <- function() {
+  ## Draw the scale bar for the plots.
+
+  if (plot.rate.colour) {
+    x <- seq(from=100, to=700, by=100)
+    y <- rep(500, length(x))
+    rates <- seq(from=jay.ms.min.firingrate, to=jay.ms.max.firingrate,
+                 length=length(x))
+    radii <- rep(45, length(x))
+    cols <- rates.to.cols(rates)
+    
+    symbols(x, y,
+            fg="black",
+            bg=jay.ms.cmap[cols],
+            circles=radii,
+            xaxt="n", yaxt="n", xlab='', ylab='',
+            inches=FALSE,
+            xlim=c(0, 800), ylim=c(0,800),
+            main="legend")
+  } else {
+    ## show the radius scale bar.
+    x <- seq(from=100, to=700, by=100)
+    y <- rep(500, length(x))
+    rates <- seq(from=jay.ms.min.firingrate, to=jay.ms.max.firingrate,
+                 length=length(x))
+    radii <-  rates.to.radii(rates)
+    
+    symbols( x, y,
+            fg="black", bg="black",
+            circles=radii,
+            xaxt="n", yaxt="n", xlab='', ylab='',
+            inches=FALSE,
+            xlim=c(0, 800), ylim=c(0,800),
+            main="legend")
+  }
+  text(x, y-200, labels=signif(rates,digits=2),cex=0.5)
+
 }
 
 plot.rate.mslayout.old <- function(s, frame.num) {
