@@ -8,8 +8,8 @@
 
 mm.WrapTime <- 16** 4 * 128        #Clock wraparound in tics, ca 419s.
 mm.sample.rate <- 20000.0               #20KHz sample rate.
-mm.burst.sep <- 2
-
+mm.burst.sep <- 10
+mm.num.electrodes <- 63                 #of these, 61 usuable...
 
 ## Size of the various data types.
 longsize <- 4; floatsize <- 4; intsize <- 2; unsize <- 2
@@ -102,9 +102,21 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
   close(fp)
 
   if (Format == 2) 
-    read.ms.mm.data.format2(cellname, posfile)
+    res <- read.ms.mm.data.format2(cellname, posfile)
   else 
-    read.ms.mm.data.format1(cellname, posfile)
+    res <- read.ms.mm.data.format1(cellname, posfile)
+
+  ## Do some things common to both formats.
+  dists <- make.distances(res$pos)
+  ## Electrodes are spaced 70um apart.
+  dists.bins <- apply(dists, 2, function(x) { ceiling((x-35)/70) + 1})
+  corr.indexes <- make.corr.indexes(res$spikes)
+
+
+  res$dists <- dists
+  res$dists.bins <- dists.bins
+  res$corr.indexes <- corr.indexes
+  res
 
 }
 
@@ -306,11 +318,11 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   PP <- readBin(fp, numeric(), NCells, floatsize, endian="big")
   WP <- readBin(fp, numeric(), NCells, floatsize, endian="big")
   WW <- readBin(fp, numeric(), NCells, floatsize, endian="big")
-  CrossF <- readBin(fp, numeric(), NCells*63, floatsize, endian="big")
-  CrossR <- readBin(fp, numeric(), NCells*63, floatsize, endian="big")
+  CrossF <- readBin(fp, numeric(), NCells*mm.num.electrodes, floatsize, endian="big")
+  CrossR <- readBin(fp, numeric(), NCells*mm.num.electrodes, floatsize, endian="big")
 
-  dim(CrossF) <- c(NCells,63)
-  dim(CrossR) <- c(NCells,63)
+  dim(CrossF) <- c(NCells,mm.num.electrodes)
+  dim(CrossR) <- c(NCells,mm.num.electrodes)
   if ( seek(fp) != filesize)
     stop(paste("difference at end of file", seek(fp), filesize))
 
@@ -318,8 +330,6 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   close(fp)
 
   pos <- mm.readpos.compare(NCells, boxes, posfile)
-  dists <- make.distances(pos)
-  dists.bins <- apply(dists, 2, function(x) { ceiling((x-35)/70) + 1})
 
   ## Convert spike times into seconds.
   allspikes <- lapply(allspikes, function(x) { x / mm.sample.rate})
@@ -339,7 +349,7 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
                bursts=bursts,
                CrossF=CrossF, CrossR=CrossR, Pe=Pe,
                file=cellname,
-               pos=pos, dists=dists, dists.bins=dists.bins)
+               pos=pos)
   class(res) <- "mm.s"
   res
 }
@@ -410,15 +420,15 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   ##   WP <- readBin(fp, numeric(), NCells, doublesize, endian="big")
   ##   WW <- readBin(fp, numeric(), NCells, doublesize, endian="big")
 
-  ##   CrossF <- readBin(fp, numeric(), NCells*63, doublesize, endian="big")
-  ##   CrossR <- readBin(fp, numeric(), NCells*63, doublesize, endian="big")
-  ##   dim(CrossF) <- c(NCells,63)
-  ##   dim(CrossR) <- c(NCells,63)
+  ##   CrossF <- readBin(fp, numeric(), NCells*mm.num.electrodes, doublesize, endian="big")
+  ##   CrossR <- readBin(fp, numeric(), NCells*mm.num.electrodes, doublesize, endian="big")
+  ##   dim(CrossF) <- c(NCells,mm.num.electrodes)
+  ##   dim(CrossR) <- c(NCells,mm.num.electrodes)
 
   ## double is 10 bytes according to my calculations.
   ## Markus acknowledges that the double format in ThinkC (MAC) is curious
   ## so  for now, I'm just reading in blocks of 10 bytes.  131 is
-  ## derived from (63 + 63) + 5 
+  ## derived from (mm.num.electrodes + mm.num.electrodes) + 5 
   tempstuff <- readBin(fp, integer(), NCells*131*10/2, 2, endian="big")
   
   ## Number of spikes from each cell in each record
@@ -521,10 +531,6 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   close(fp)
 
   pos <- mm.readpos.compare(NCells, boxes, posfile)
-  dists <- make.distances(pos)
-  dists.bins <- apply(dists, 2, function(x) { ceiling((x-35)/70) + 1})
-  hist.r <- table(dists.bins)
-  prob.r <- hist.r / sum(hist.r)
   
   allspikes <- lapply(allspikes, function(x) { x / mm.sample.rate})
   
@@ -545,18 +551,34 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
                ##CrossF=CrossF, CrossR=CrossR, Pe=Pe,
                file=cellname,
                N=N,
-               pos=pos, dists=dists, dists.bins=dists.bins,
-               prob.r=prob.r
-               )
+               pos=pos)
   class(res) <- "mm.s"
   res
 }
 
 
+plot.corr.index <- function(x, identify=F, ...) {
+  ## Plot the correlation indices as a function of distance.
+  ## If identify is T, we can locate cell pairs on the plot.
+  dists <- x$dists[which(upper.tri(x$dists))]
+  corrs <- x$corr.indexes[which(upper.tri(x$corr.indexes))]
+  plot.default(dists, corrs, xlab="uncorrected distance (um)",
+               ylab="correlation index", main=x$file, ...)
+
+  if (identify) {
+    labels1 <- outer(seq(1, x$NCells), seq(1,x$NCells), FUN="paste")
+    labs <- labels1[which(upper.tri(labels1))]
+    identify(dists, corrs, labels=labs)
+  }
+                  
+}
+
+
+  
 plot.mm.s <- function(x, whichcells=1:x$NCells, mintime=0,
                      maxtime=max(unlist(x$spikes), na.rm=T),
-                      show.bursts=F) {
-
+                      show.bursts=F, ...) {
+  ## Plot the spikes.
   ## When evaluating maxtime, some cells may have no spikes; their
   ## lists get converted to NA in unlist() so those NA values need
   ## removing.
@@ -570,7 +592,8 @@ plot.mm.s <- function(x, whichcells=1:x$NCells, mintime=0,
   else
     spikes <- x$spikes
   
-  plot( c(mintime, maxtime), c(0,1), xlab='', type='n', main=x$file)
+  plot( c(mintime, maxtime), c(0,1), , type='n',
+       main=x$file,xlab="time (s)", ylab="spikes of cell", ...)
 
   ymin <- 0
   for (cell in whichcells) {
@@ -619,8 +642,10 @@ summary.mms <- function(x) {
 ######################################################################
 
 ## reload the overlap function if needed.
-if (is.loaded(symbol.C("count_overlap"))) dyn.unload("jay/count_overlap.so")
-dyn.load("jay/count_overlap.so");
+ms.so.location <- "/home/stephen/ms/jay/count_overlap.so"
+if (is.loaded(symbol.C("count_overlap")))
+  dyn.unload(ms.so.location)
+dyn.load(ms.so.location);
 
 jay.read.spikes <- function(filename, scale=100) {
   ## Read in Jay's data set.
@@ -668,12 +693,20 @@ jay.read.spikes <- function(filename, scale=100) {
 
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
+
+  dists <- make.distances(pos)
+  ## Electrodes are spaced 70um apart.
+  dists.bins <- apply(dists, 2, function(x) { ceiling((x-50)/100) + 1})
+  corr.indexes <- make.corr.indexes(spikes)
+
   
   res <- list( channels=channels,
               spikes=spikes, nspikes=nspikes, NCells=num.channels,
               file=filename,
-              pos=pos)
-
+              pos=pos,
+              dists=dists, dists.bins=dists.bins,
+              corr.indexes=corr.indexes)
+  class(res) <- "mm.s"
   res
 
 }
@@ -718,15 +751,30 @@ make.corr.indexes <- function(spikes)
     n1 <- length(spikes[[a]])
     for (b in (a+1):n) {
       n2 <- length(spikes[[b]])
-      corrs[a,b] <-  (count.nab(spikes[[a]], spikes[[b]]) * Tmax) /
-        (n1 * n2 * 0.1)
+      corrs[a,b] <-  (count.nab(spikes[[a]], spikes[[b]],dt) * Tmax) /
+        (n1 * n2 * (2*dt))
     }
   }
 
   corrs
 }
 
-make.p.t.cond.r <- function(spikes)
+
+prob.r <- function(s)  {
+  ## Given the distance bins, return the probability of finding
+  ## two neurons a distance r apart.
+  num.distances <- (s$NCells * (s$NCells - 1))/2
+
+  counts <- table(s$dists.bins[which(upper.tri(s$dists.bins))])
+  if (sum(counts) != num.distances)
+    error("sum of counts differs from num.distances",
+          sum(counts), num.distances)
+
+  ## turn into probability.
+  counts/num.distances
+}
+  
+prob.p.t.cond.r <- function(spikes, distance.bins)
 {
   ## Return the correlation index values for each pair of spikes.
   ## The matrix returned is upper triangular.
@@ -736,10 +784,11 @@ make.p.t.cond.r <- function(spikes)
 
   spikepairs <- integer(n.distances)
   nhists <- integer(n.distances)
-  tmax <- 2.0;                          #2 second maximum
-  n.timebins <- 200
+  tmax <- 4.0;                          #2 second maximum
+  n.timebins <- tmax * 25;
 
   ## Make a list to store the histograms for each distance bin.
+  ## Each histogram is initially emptry and built up.
   allhists <- list();
   for (i in 1:n.distances)
     allhists[[i]] <- integer(n.timebins)
@@ -749,8 +798,19 @@ make.p.t.cond.r <- function(spikes)
     for (b in (a+1):n) {
       n.b <- length(spikes[[b]])
       bin <- distance.bins[a,b]
+
       hist <- hist.ab(spikes[[a]], spikes[[b]], tmax, n.timebins)
+      ##hist <- hist/ sum(hist)           #normalise
       allhists[[bin]] <- allhists[[bin]] + hist
+
+      if ( FALSE && (bin == 6)) {
+        cat(paste("bin", bin, "cells", a, b, "\n"))
+        plot(hist)
+        Sys.sleep(1)
+        print(hist)
+        print(allhists[[bin]])
+      }
+
       nhists[bin] <- nhists[bin] + 1
       spikepairs[bin] <- spikepairs[bin] + (n.a * n.b)
     }
@@ -763,7 +823,7 @@ make.p.t.cond.r <- function(spikes)
 
 
 count.nab <- function(ta, tb, tmax=0.05) {
-  ## C routine to count the overlap N_ab
+  ## C routine to count the overlap N_ab (from Wong et al. 1993)
   z <- .C("count_overlap",
           as.double(ta),
           as.integer(length(ta)),
@@ -790,10 +850,13 @@ hist.ab <- function(ta, tb, tmax, nbins) {
 
 check.spikes.monotonic <- function(spikes) {
   ## Check to see that all spike times are monotonically increasing.
+  ## The counting and histogram routines assumes that spike times
+  ## are sorted, earliest spikes first.
   ## check.spikes.monotonic( list(c(1,3,5), c(1,5,4)))
   results <- sapply( spikes, function(x) { any(diff(x) <0)})
   if (any(results)) {
-    stop(paste("some spike trains are non-monotonic:", which(results),"\n"))
+    stop(paste("Spikes are not ordered in increasing time",
+               which(results),"\n"))
   }
 }
   
@@ -821,7 +884,7 @@ spikes.to.rates <- function(spikes) {
 
 
 op.picture <- function(pos, rates, iteration) {
-
+  ## output a plot of the multisite array activity as a postscript file.
   ps.scale <- 0.5 ### 1.0                      #overall scale factor for plot.
   
   ps.min.x <- 40; ps.min.y <- 40
