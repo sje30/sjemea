@@ -710,10 +710,9 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
 
     ## simple test to see if bursts have been defined.
     if (have.bursts) {
-      b <- s$allb[[cell]]
-      burst.times <- sapply(b, function(x) x[1:2])
+      burst.times <- s$allb[[cell]]
       ys <- numeric(dim(burst.times)[2]) + ymin + (deltay/2)
-      segments(burst.times[1,], ys, burst.times[2,], ys, col=2)
+      segments(burst.times[,1], ys, burst.times[,2], ys, col="red")
     }
     ymin <- ymin + yminadd
   }
