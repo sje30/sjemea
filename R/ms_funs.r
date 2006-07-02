@@ -1999,7 +1999,7 @@ make.animated.gif <- function (x, beg=1,
   ## WARNING: this works only on Linux, as it requires a ocuple of
   ## external unix programs.!
 
-  stopifnot(machine()=="Unix")
+  stopifnot(.Platform$OS.type=="unix")
   for (i in beg:end) {
     plot.rate.mslayout(x, i)
     file <- paste("/tmp/ms.mov", formatC(i,width=5,flag="0"), ".gif", sep='')
