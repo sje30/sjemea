@@ -5,7 +5,7 @@
 ## data; those with "jay" in them are for Jay.  Some functions are suitable
 ## for both types.
 
-library(bbgraphics)                         #for plotCI() from Ben Bolker
+library(bbmisc)                         #for plotCI() from Ben Bolker
 
 ## todo -- are the cell positions inverted?
 
