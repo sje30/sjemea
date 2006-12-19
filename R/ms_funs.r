@@ -5,7 +5,120 @@
 ## data; those with "jay" in them are for Jay.  Some functions are suitable
 ## for both types.
 
-library(bbmisc)                         #for plotCI() from Ben Bolker
+
+## plotCI() is taken from Ben Bolker's bbmisc package.
+## http://www.zoo.ufl.edu/bolker/R/src/
+## Update Tue 28 Nov 2006, now need clean.args also.
+
+## remove arguments not intended for a particular function from a string
+
+
+## repeated from bbfuns/misc.R
+clean.args <- function(argstr,fn,exclude.repeats=FALSE,
+                       exclude.other=NULL,dots.ok=TRUE) {
+  fnargs <- names(formals(fn))
+  if (length(argstr)>0 && !("..." %in% fnargs && dots.ok))  {
+    badargs <- names(argstr)[!sapply(names(argstr),"%in%",c(fnargs,""))]
+    for (i in badargs)
+      argstr[[i]] <- NULL
+  }
+  if (exclude.repeats) {
+    ntab <- table(names(argstr))
+    badargs <- names(ntab)[ntab>1 & names(ntab)!=""]
+    for (i in badargs)
+      argstr[[i]] <- NULL
+  }
+  for (i in exclude.other)  ## additional arguments to exclude.other
+    argstr[[i]] <- NULL
+  argstr
+}
+
+
+plotCI <- function (x, y = NULL, uiw, liw = uiw,
+                    ui=NULL, li=NULL,
+                    err="y",
+                    sfrac = 0.01, gap=0, slty=par("lty"),
+                    add=FALSE,
+                    scol=NULL,
+                    pt.bg=par("bg"),
+                    ...)  {
+  ## from Bill Venables, R-list, modified with contributions and ideas
+  ## from Gregory Warnes and the list
+  ## requires clean.args()
+  ## process arguments:
+  arglist <- list(...)
+  if (is.list(x)) {
+    y <- x$y
+    x <- x$x
+  }
+  if (is.null(y)) {
+    if (is.null(x)) 
+      stop("both x and y NULL")
+    y <- as.numeric(x)
+    x <- seq(along = x)
+  }
+  if (missing(uiw) && (is.null(ui) || is.null(li)))
+    stop("must specify either relative limits or both lower and upper limits")
+  if (!missing(uiw)) {  ## 
+    if (err=="y") z <- y else z <- x
+    ui <- z + uiw
+    li <- z - liw
+  }
+  ## fill in default arguments
+  if (is.null(arglist$"xlab"))
+    arglist$"xlab" <- deparse(substitute(x))
+  if (is.null(arglist$"ylab"))
+    arglist$"ylab" <- deparse(substitute(y))
+  if (err=="y" && is.null(arglist$"ylim"))
+    arglist$"ylim" <- range(c(y, ui, li), na.rm=TRUE)
+  if (err=="x" && is.null(arglist$"xlim"))
+    arglist$"xlim" <- range(c(x, ui, li), na.rm=TRUE)
+  if (missing(scol)) {
+    if (!is.null(arglist$"col")) scol <- arglist$"col"
+    else scol <- par("col")
+  }
+  plotpoints <- TRUE
+  if (!is.null(arglist$"pch") && is.na(arglist$"pch")) {
+    arglist$"pch" <- 1
+    plotpoints <- FALSE
+  }
+  ## 
+  if (!add)
+    do.call("plot",c(list(x,y,type="n"),
+                          clean.args(arglist,plot)))
+  if (gap==TRUE) gap <- 0.01  ## default gap size: maybe too complicated?
+  ul <- c(li, ui)
+  if (err=="y") {
+    gap <- rep(gap,length(x))*diff(par("usr")[3:4])
+    smidge <- par("fin")[1] * sfrac
+    arrow.args <- c(list(lty=slty,angle=90,length=smidge,code=1,
+                         col=scol),
+                    clean.args(arglist,arrows,exclude.other=c("col","lty")))
+    do.call("arrows",c(list(x , li, x, pmax(y-gap,li)),
+                       arrow.args))
+    do.call("arrows",c(list(x , ui, x, pmin(y+gap,ui)),
+                       arrow.args))
+  }
+  else if (err=="x") {
+    gap <- rep(gap,length(x))*diff(par("usr")[1:2])
+    smidge <- par("fin")[2] * sfrac
+    arrow.args <- c(list(lty=slty,angle=90,length=smidge,code=1),
+                    clean.args(arglist,arrows,exclude.other=c("col","lty")))
+    do.call("arrows",c(list(li, y, pmax(x-gap,li), y),
+                       arrow.args))
+    do.call("arrows",c(list(ui, y, pmin(x+gap,ui), y),
+                       arrow.args))
+  }
+  ## now draw the points (in case we want to have "bg" set for points)
+  if (plotpoints)
+    do.call("points",c(list(x, y, bg=pt.bg),
+                       clean.args(arglist,points,
+                                  exclude.other=c("xlab","ylab","xlim","ylim",
+                                    "axes"))))
+  invisible(list(x = x, y = y))
+}
+
+
 
 ## todo -- are the cell positions inverted?
 
@@ -2004,8 +2117,9 @@ make.animated.gif <- function (x, beg=1,
     plot.rate.mslayout(x, i)
     file <- paste("/tmp/ms.mov", formatC(i,width=5,flag="0"), ".gif", sep='')
     dev2bitmap(file="/tmp/ms.mov.pbm", type="pbmraw")
-    system(paste("ppmtogif /tmp/ms.mov.pbm >",file, sep=''),
-           ignore.stderr=TRUE)  
+    system(paste("ppmtogif /tmp/ms.mov.pbm >",file, sep=''), ignore.stderr=TRUE)
+    ##file <- paste("/tmp/ms.mov", formatC(i,width=5,flag="0"), ".pbm", sep='')
+    ##dev2bitmap(file=file, type="pbmraw")
   }
 
   ## now make the animated gif.
@@ -2860,4 +2974,193 @@ op.picture <- function(pos, rates, iteration) {
          
   
   fname
+}
+
+
+######################################################################
+## Code for Sanger MEA analysis,
+######################################################################
+
+sanger.read.spikes <- function(filename, scale=200, ids=NULL,
+                            time.interval=1,
+                            min.time=NULL, max.time=NULL) {
+
+  ## Read in Sanger data set.  Scale gives the distance in um between
+  ## adjacent channels.  This is 200um by default.  This can be
+  ## changed to cope with the developmental changes in retina.  IDS is
+  ## an optional vector of cell numbers that should be analysed -- the
+  ## other channels are read in but then ignored.
+
+
+  ## Tue 25 Jul 2006 -- I'm not sure if this is the cleanest way to read in the
+  ## data files, as it probably can be read in using just
+  ## read.csv(filename, sep='\t')
+  ## but since this works, fine.
+  
+  fp <- file(filename, open="r")
+
+  header <- readLines(fp, n=1)
+  header.split <- strsplit(header, '\t')[[1]]
+  n.cols <- length(header.split)
+  stopifnot( header.split[n.cols] == 'Sweep_Stop')
+  ## We have two extra args to worry about at the end.
+  channels <- header.split[1:(n.cols-2)]
+  num.channels <- length(channels)
+
+  
+  ## The first line of data is special in that it has the Sweep_Start
+  ## and Sweep_stop times.
+  line1 <- scan(fp, "", n=n.cols, sep='\t', quiet=TRUE)
+  ## Throw away last two numbers on line 1, as they are the
+  ## sweep_start and sweep_stop times.
+  sweep.start <- line1[n.cols-1]
+  sweep.stop  <- line1[n.cols]
+  ##line1 <- line1[1:num.channels]
+  
+
+  ## Now read in remaining times.
+  rest <- scan(fp, sep='\t', quiet=TRUE)
+  close(fp)
+  ## NA in the files indicates no more spikes for that channel.
+  times <- c(as.double(line1), rest)
+  stopifnot( (length(times) %% (num.channels+2)) == 0)
+
+  ## Reformat to a matrix.
+  ntimes <- length(times)
+  dim(times) <- c(n.cols, ntimes/n.cols)
+
+  ## Remove the last two rows, as they just the sweep_start and
+  ## sweep_stop times.
+  
+  spikes <- apply(times[1:num.channels,], 1, jay.filter.for.na)
+
+
+  if (!is.null(max.time))
+    spikes <- lapply(spikes, jay.filter.for.max, max=max.time)
+
+  if (!is.null(min.time))
+    spikes <- lapply(spikes, jay.filter.for.min, min=min.time)
+
+  if (!is.null(ids) ) {
+    if (any(ids>length(spikes)))
+      stop(paste("some ids not in this data set:",
+                 paste(ids[ids>length(spikes)],collapse=" ")))
+    
+    spikes <- spikes[ids];
+    channels <- channels[ids];
+  }
+
+  ## Count the number of spikes per channel, and label them.
+  nspikes <- sapply(spikes, length)
+  names(nspikes) <- channels
+
+  ## meanfiring rate is the number of spikes divided by the (time of
+  ## last spike - time of first spike).  
+  meanfiringrate <- nspikes/ ( sapply(spikes, max) - sapply(spikes, min))
+
+  ## Parse the channel names to get the cell positions.
+  ## Note that we currently ignore any label that comes after the digits
+  ## for the channel.
+  ## e.g. when more than one cell is assigned to the same channel, we
+  ## can have "ch_13a" and "ch_13b".  If there is only one cell on a channel
+  ## that channel is written "ch_13".
+  ## In Jay's prog, rows are numbered from the top, downwards.  In R, we
+  ## have the reverse.  To align them in R, we would need to subtract 9 from
+  ## rows.
+  
+  cols <- as.integer(substring(channels, 4,4)) * scale
+  rows <- as.integer(substring(channels, 5,5)) * scale
+  pos <- cbind(cols, rows)
+  class(pos) <- "jay.pos"
+
+  ## temporary test: shuffle electrode positions.
+  ## pos <- pos[sample(1:num.channels),]
+  
+  ## check that the spikes are monotonic.
+  check.spikes.monotonic(spikes)
+
+  dists <- make.distances(pos)
+
+  ## Test code:
+  ## corr <- matrix(data=c(0, 0, 0, 4, 0, 0, 5, 7, 0),nrow=3)
+  ## dists <- matrix(data=c(0,0,0, 1, 0,0, 9,8,0),nrow=3)
+  ## cbind( my.upper(dists), my.upper(corr))
+
+  ## Electrodes are spaced 100um apart in Jay's rectangular array.
+  ## Sanger- add 2000 bin!
+  jay.distance.breaks <- c(0, 150, 250, 350, 450, 550, 650, 1000, 2000)
+  jay.distance.breaks.strings <-
+    levels(cut(0, jay.distance.breaks, right=FALSE, include.lowest=TRUE))
+
+  dists.bins   <- bin.distances(dists, jay.distance.breaks)
+
+  ## Mon 25 Nov 2002: explore longer timescales?
+  corr.indexes.dt <- 0.05               #time window for coincident spikes
+  ##corr.indexes.dt <- 10.00 # try longer, such as 1s, 5s or 10s.
+  if (length(spikes) > 1) {
+    corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
+    corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
+    corr.id.means <- corr.get.means(corr.id)
+  } else {
+    corr.indexes <- NA
+    corr.id <- NA
+    corr.id.means <- NA
+  }
+
+  rates <- make.spikes.to.frate(spikes, time.interval=time.interval)
+  
+  ## See if we need to shift any units.  this affects only the
+  ## visualisation of the units in the movies.  We assume that "shifted"
+  ## positions are stored in the file with same name as data file
+  ## except that the .txt is replaced with .sps.  Then each line of this
+  ## file contains three numbers:
+  ## c dx dy
+  ## where c is the cell number to move, and dx,dy is the amount (in um)
+  ## by which to move the cells.  If you edit the file, this function
+  ## must be called again for the new values to be read in.
+  ## The shifted positions are used only by the movie functions and
+  ## by the function plot.shifted.jay.pos(s) [this shows all units].
+
+
+  ## Tue 19 Dec 2006: this assumes filename ends in .txt; do not worry
+  ## about this for now.
+  
+  shift.filename <- sub("\\.txt$", ".sps", filename)
+  unit.offsets <- NULL                  #default value.
+  if (FALSE && file.exists(shift.filename)) { #TODO -- why running?
+    updates <- scan(shift.filename)
+    ## must be 3 data points per line
+    stopifnot(length(updates)%%3 == 0)
+    updates <- matrix(updates, ncol=3, byrow=TRUE)
+    units <- updates[,1]
+    if (any(units> length(spikes))) {
+      stop(paste("some units not in recording...",
+                 paste(units[units>=length(spikes)],collapse=",")))
+    }
+    unit.offsets <- pos*0               #initialise all elements to zero.
+    unit.offsets[units,] <- updates[,2:3]
+  }
+  
+  
+  
+  res <- list( channels=channels,
+              spikes=spikes, nspikes=nspikes, NCells=length(spikes),
+              meanfiringrate=meanfiringrate,
+              file=filename,
+              pos=pos,
+              scale=scale,
+              dists=dists, dists.bins=dists.bins,
+              corr.indexes=corr.indexes,
+              corr.indexes.dt=corr.indexes.dt,
+              corr.id=corr.id,
+              corr.id.means=corr.id.means,
+              distance.breaks=jay.distance.breaks,
+              distance.breaks.strings=jay.distance.breaks.strings,
+              rates=rates,
+              unit.offsets=unit.offsets,
+              rec.time=as.numeric(c(sweep.start, sweep.stop))
+              )
+  class(res) <- "mm.s"
+  res
+
 }
