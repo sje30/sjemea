@@ -3,7 +3,7 @@ s.min = 5
 
 plot.par <- function(allb, ylab, index, max=-1,title='') {
   ## plot result over channels, e.g. burst duration, or si.
-  plot.channels <- min(length(allb), 20)
+  plot.channels <- min(length(allb), 70)
   durns <- list()
   for (i in 1:plot.channels) {
     ##print(i)
@@ -49,7 +49,7 @@ spikes.to.bursts.surprise <- function(s) {
 
   ncells <- s$NCells
 
-  ncells <- 20                           #temp
+  ##ncells <- 10                           #temp
   allb <- list()
   for (train in 1:ncells) {
     cat(sprintf("** analyse train %d\n", train))
@@ -65,6 +65,13 @@ spikes.to.bursts.surprise <- function(s) {
       ##browser()
       if (length(bad.rows)>0)
         bursts <- bursts[-bad.rows,]
+
+      if (length(bursts)==4) {
+        ## only one burst... silly HACK.
+        names <- names(bursts)
+        dim(bursts) <- c(1,4)
+        colnames(bursts) <- names
+      }
     }
     allb[[train]] <- bursts
   }
@@ -243,3 +250,83 @@ bursts.to.active <- function(bursts, tmin, tmax, dt) {
   names(active) <- seq(from=tmin, by=dt, length=nbins)
   active
 }
+
+
+write.burst.summary <- function(s, allb, outfile) {
+
+  ## Create a table of output results.
+
+  channels <- s$channels
+  spikes <- as.vector(s$nspikes)
+
+  duration <- s$rec.time[2]  - s$rec.time[1]
+
+  mean.freq <- round(spikes/duration, 3)
+
+  num.bursts <- sapply(allb, length)
+  if (any(num.bursts==1))
+    num.bursts[which(num.bursts==1)] <- 0
+  num.bursts <- num.bursts / 4          #hack
+
+  bursts.per.sec <- round(num.bursts/duration,3)
+  bursts.per.min <- bursts.per.sec * 60
+
+
+  durations <- sapply(allb, get.durations)
+  mean.dur <- round(sapply(durations, mean), 3)
+  sd.dur <- round(sapply(durations, sd), 3)
+
+  ns <- sapply(allb, get.n)
+  mean.spikes <- round(sapply(ns, mean), 3)
+  sd.spikes   <- round(sapply(ns, sd), 3)
+  total.spikes.in.burst <- sapply(ns, sum)
+  per.spikes.in.burst <- round(100 *(total.spikes.in.burst / spikes), 3)
+
+  si <- sapply(allb, get.si)
+  mean.si <- round(sapply(si, mean), 3)
+  
+  df <- data.frame(channels=channels, spikes=spikes, mean.freq=mean.freq,
+                   num.bursts=num.bursts,
+                   bursts.per.sec=bursts.per.sec,
+                   bursts.per.min=bursts.per.min,
+                   mean.dur=mean.dur,
+                   sd.dur=sd.dur,
+                   mean.spikes=mean.spikes,
+                   sd.spikes=sd.spikes,
+                   per.spikes.in.burst=per.spikes.in.burst,
+                   per.spikes.out.burst=round(100.0-per.spikes.in.burst,3),
+                   mean.si=mean.si
+                   )
+  write.csv(df, file=outfile)
+
+}
+
+
+get.durations <- function(b) {
+  if( (length(b) > 1) ) {
+    ## some bursts.
+    b[,4]
+  } else {
+    0                                   #return no durations.
+  }
+}
+  
+
+get.n <- function(b) {
+  if( (length(b) > 1) ) {
+    ## some bursts.
+    b[,2]
+  } else {
+    0                                   #return no durations.
+  }
+}
+  
+get.si <- function(b) {
+  if( (length(b) > 1) ) {
+    ## some bursts.
+    b[,3]
+  } else {
+    0                                   #return no SI
+  }
+}
+  
