@@ -1,22 +1,26 @@
-s.min = 5
+## Burst analysis, surprise method.
+
+s.min = 5                               #threshold on suprise index.
+
+burst.isi.threshold = FALSE             #do we want to use threshold on ISI?
+burst.isi.max = 0.1 #ISI within burst must be smaller than this.
 
 
-plot.par <- function(allb, ylab, index, max=-1,title='') {
+######################################################################
+
+burst.info <- c("first", "len", "SI", "durn", "mean.isis")
+burst.info.len = length(burst.info)
+
+plot.burst.info <- function(allb, index, ylab=NULL, max=-1,title='') {
   ## plot result over channels, e.g. burst duration, or si.
   plot.channels <- min(length(allb), 70)
-  durns <- list()
+  values <- list()
   for (i in 1:plot.channels) {
-    ##print(i)
     b <- allb[[i]]
-    if (length(b)==1) {
-      res <- NA
+    if (num.bursts(b)==0) {
+      res <- NULL
     } else {
-      if (length(b) ==4) {
-        ## have only one burst!  TO CHECK...! (e.g. spike train 18)
-        res <- b[index]
-      } else {
         res <- b[,index]
-      }
     }
 
     ## TODO -- strip out any INF values that creep into SI.
@@ -26,22 +30,25 @@ plot.par <- function(allb, ylab, index, max=-1,title='') {
     if (length(infs)>0)
       res <- res[-infs]
     
-    durns[[i]] <- res
+    values[[i]] <- res
   }
 
   if (max>0) {
-    durns <- sapply(durns, pmin, max)
+    values <- sapply(values, pmin, max)
     ##browser()
   }
+  mins <- min(sapply(values, min), na.rm=TRUE)
+  maxs <- max(sapply(values, max), na.rm=TRUE)
 
-  mins <- min(sapply(durns, min), na.rm=TRUE)
-  maxs <- max(sapply(durns, max), na.rm=TRUE)
-  stripchart(durns, method="jitter", pch=20, vert=T,main=title,
+  if(is.null(ylab))
+    ylab=index
+
+  stripchart(values, method="jitter", pch=20, vert=T,main=title,
              ylim=c(mins,maxs),
              xlab='channel', ylab=ylab)
 
   ## return value.
-  ##durns
+  ##values
 
 }
 
@@ -56,23 +63,6 @@ spikes.to.bursts.surprise <- function(s) {
     spikes <- s$spikes[[train]]
 
     bursts <- find.bursts(spikes)
-
-    ## SJE: remove any NAs from bursts that occur -- check later why
-    ## they occur.
-    if (length(bursts)>1) {             #i.e. not NA returned.
-      ## we found some bursts.
-      bad.rows <- which (is.na(bursts[,1]))
-      ##browser()
-      if (length(bad.rows)>0)
-        bursts <- bursts[-bad.rows,]
-
-      if (length(bursts)==4) {
-        ## only one burst... silly HACK.
-        names <- names(bursts)
-        dim(bursts) <- c(1,4)
-        colnames(bursts) <- names
-      }
-    }
     allb[[train]] <- bursts
   }
 
@@ -93,8 +83,8 @@ find.bursts <- function(spikes,debug=FALSE) {
   ## Create a temp array for the storage of the bursts.  Assume that it
   ## will not be longer than Nspikes/3.
   max.bursts <- floor(nspikes/3)
-  bursts <- matrix(NA, nrow=max.bursts, ncol=4)
-  burst <- 1
+  bursts <- matrix(NA, nrow=max.bursts, ncol=burst.info.len)
+  burst <- 0
 
   ## note, no need to check to end of spike train!
   while ( n < nspikes-2) {              #end condition to check!!!
@@ -108,12 +98,13 @@ find.bursts <- function(spikes,debug=FALSE) {
         ## no burst found, just move on one spike.
         n <- n + 1
       } else {
-        bursts[burst,] <- res
+        ## found a burst.
         burst <- burst + 1
         if (burst > max.bursts) {
           print("too many bursts")
           browser()
         }
+        bursts[burst,] <- res
         n <- n + res[2]                 #move to end of burst.
       }
     } else {
@@ -123,11 +114,16 @@ find.bursts <- function(spikes,debug=FALSE) {
   }
 
   ## At end of spike train, now truncate bursts to right length.
-  if (burst > 1) {
-    res <- bursts[1:burst,]
+  if (burst > 0) {
+    ## need to handle one burst as special case?
+    if (burst==1) {
+      res <- matrix(bursts[1,], nrow=1, ncol=burst.info.len)
+    } else {
+      res <- bursts[1:burst,]
+    }
     if(debug)
       print(dim(res))
-    colnames(res) <- c("first", "len", "SI", "durn")
+    colnames(res) <- burst.info
   } else {
     res <- NA
   }
@@ -150,13 +146,21 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
       cat(sprintf("starting phase 1 n %d s %.4f\n", n, s))
     ## Phase 1 - add spikes to the train.
     phase1 = TRUE
-    while( phase1) {
-      s.new = surprise(n, i+1, spikes, nspikes, mean.isi)
+    i.asn = n+i                         #current end index of spike train.
+
+    ## in Phase1, check that we still have spikes to add to the train.
+    while( phase1 && (i.asn < nspikes) ) {
+
+      if (!burst.isi.threshold ||
+          (( spikes[i.asn+1] - spikes[i.asn]) < burst.isi.max))
+        s.new = surprise(n, i+1, spikes, nspikes, mean.isi)
+      else
+        s.new = 0                       #handles case when ISI > threshold.
       ## TODO -- useful debug info.
       ## cat(sprintf("phase 1: n %d i %d s.new %.4f\n", n, i, s.new))
       if (s.new > s) {
         s = s.new
-        i = i+1
+        i = i+1; i.asn = i.asn+1;
       } else {
         phase1 = FALSE
       }
@@ -164,25 +168,37 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
     ## start deleting spikes from the start of the burst.
     phase2 = TRUE
     while(phase2) {
-      s.new = surprise(n, i, spikes, nspikes, mean.isi)
+      s.new = surprise(n+1, i-1, spikes, nspikes, mean.isi)
+      if(is.na(s.new))
+        browser()
       if (debug)
         cat(sprintf("phase 2: n %d i %d s.new %.4f\n", n, i, s.new))        
       if (s.new > s) {
+        print("in phase 2 acceptance\n")
         n = n+1; i = i-1
         s = s.new
         if (i==2) {
           ## perhaps set end of phase2 here in this case?
+          ## this will happen!!!! TODO
           print("i ==2 in phase 2")
-          browser()
+          phase2=FALSE
+          ##browser()
         }
       } else {
         phase2 = FALSE
       }
     }
+
+    ## End of burst detection; accumulate result.
+
+    ## compute the ISIs, and then the mean ISI.
+    isis = diff(spikes[n+(0:(i-1))])
+    mean.isis = mean(isis)
+    
     durn = spikes[n+i] - spikes[n]
-    res <- c(n=n, i=i, s=s, durn=durn)
+    res <- c(n=n, i=i, s=s, durn=durn, mean.isis=mean.isis)
   } else {
-    res <- rep(NA, 4)
+    res <- rep(NA, burst.info.len)
   }
   ##browser()
   res
@@ -192,17 +208,11 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
 surprise <- function(n, i, spikes, nspikes, mean.isi) {
   ## Calculate surprise.
 
-  if (n+i> nspikes) {
-    ## Handle case when we are at the end of a spike train...
-    ## Needs to be done in several situations. e.g. find.bursts
-    s = 0
-  }
-  else {
-    dur <- spikes[n+i] - spikes[n]
-    lambda <- dur / mean.isi
-    p <- ppois(i-2, lambda, lower.tail=FALSE)
-    s = -log(p)
-  }
+  ##stopifnot(n+i <= nspikes)
+  dur <- spikes[n+i-1] - spikes[n]
+  lambda <- dur / mean.isi
+  p <- ppois(i-2, lambda, lower.tail=FALSE)
+  s = -log(p)
 
   s
 }
@@ -228,7 +238,7 @@ plot.spikes <- function(xlim=NULL, show.bursts=TRUE) {
 }
        
 bursts.to.active <- function(bursts, tmin, tmax, dt) {
-
+  ## ???
   nbins = floor((tmax-tmin)/dt)+1
 
   active = vector(length=nbins)         #default all FALSE.
@@ -252,8 +262,12 @@ bursts.to.active <- function(bursts, tmin, tmax, dt) {
 }
 
 
-write.burst.summary <- function(s, allb, outfile) {
-
+write.burst.summary <- function(s, outfile) {
+  ## Write out a summary text file (some information is computed here,
+  ## rather than just collation of info).
+  
+  allb <- s$allb
+  
   ## Create a table of output results.
 
   channels <- s$channels
@@ -263,30 +277,40 @@ write.burst.summary <- function(s, allb, outfile) {
 
   mean.freq <- round(spikes/duration, 3)
 
-  num.bursts <- sapply(allb, length)
-  if (any(num.bursts==1))
-    num.bursts[which(num.bursts==1)] <- 0
-  num.bursts <- num.bursts / 4          #hack
+  nbursts <- sapply(allb, num.bursts)
 
-  bursts.per.sec <- round(num.bursts/duration,3)
+  bursts.per.sec <- round(nbursts/duration,3)
   bursts.per.min <- bursts.per.sec * 60
 
 
-  durations <- sapply(allb, get.durations)
+  durations <- burstinfo(allb, "durn")
   mean.dur <- round(sapply(durations, mean), 3)
   sd.dur <- round(sapply(durations, sd), 3)
 
-  ns <- sapply(allb, get.n)
+  mean.isis <- burstinfo(allb, "mean.isis")
+  mean.mean.isis <- round(sapply(mean.isis, mean), 3)
+  sd.mean.isis <- round(sapply(mean.isis, sd), 3)
+
+  
+  ns <- burstinfo(allb, "len")
   mean.spikes <- round(sapply(ns, mean), 3)
   sd.spikes   <- round(sapply(ns, sd), 3)
   total.spikes.in.burst <- sapply(ns, sum)
   per.spikes.in.burst <- round(100 *(total.spikes.in.burst / spikes), 3)
 
-  si <- sapply(allb, get.si)
+  si <- burstinfo(allb, "SI")
   mean.si <- round(sapply(si, mean), 3)
+
+
+  IBIs <- calc.all.ibi(s, allb)
+  mean.IBIs <- sapply(IBIs, mean)
+  sd.IBIs <- sapply(IBIs, sd, na.rm=TRUE)
+  cv.IBIs <- round(sd.IBIs/ mean.IBIs, 3)
+  ## round afterwards...
+  mean.IBIs <- round(mean.IBIs, 3); sd.IBIs <- round(sd.IBIs, 3)
   
   df <- data.frame(channels=channels, spikes=spikes, mean.freq=mean.freq,
-                   num.bursts=num.bursts,
+                   nbursts=nbursts,
                    bursts.per.sec=bursts.per.sec,
                    bursts.per.min=bursts.per.min,
                    mean.dur=mean.dur,
@@ -295,38 +319,71 @@ write.burst.summary <- function(s, allb, outfile) {
                    sd.spikes=sd.spikes,
                    per.spikes.in.burst=per.spikes.in.burst,
                    per.spikes.out.burst=round(100.0-per.spikes.in.burst,3),
-                   mean.si=mean.si
+                   mean.si=mean.si,
+                   mean2.isis=mean.mean.isis,
+                   sd.mean.isis=sd.mean.isis,
+                   mean.IBIs=mean.IBIs,
+                   sd.IBIs=sd.IBIs,
+                   cv.IBIs=cv.IBIs
                    )
   write.csv(df, file=outfile)
 
 }
 
-
-get.durations <- function(b) {
-  if( (length(b) > 1) ) {
-    ## some bursts.
-    b[,4]
-  } else {
-    0                                   #return no durations.
-  }
+burstinfo <- function(allb, index) {
+  ## Extra some part of the Burst information, for each channel.
+  ## index will be the name of one of the columns of burst info.
+  sapply(allb, function(b) {
+    if (length(b)>1) {
+      b[,index]
+    } else {
+      0
+    }
+  })
 }
   
 
-get.n <- function(b) {
-  if( (length(b) > 1) ) {
-    ## some bursts.
-    b[,2]
+
+
+calc.ibi <- function(spikes, b) {
+  ## Compute the interburst intervals (IBI) for one spike train.
+  ## Only valid if more than one burst.
+
+  nburst = num.bursts(b)
+  if ( nburst == 0) {
+    res = NA                            #no bursts
   } else {
-    0                                   #return no durations.
+    if (nburst == 1) {
+      res = NA                          #cannot compute  IBI w/only 1 burst.
+    } else {
+      ## find end spike in each burst.
+      end = b[,"first"] + b[,"len"] - 1
+
+      ## for NBURST bursts, there will be NBURST-1 IBIs.
+      start.spikes = b[2:nburst,"first"]
+      end.spikes   = end[1:(nburst-1)]
+      res = spikes[start.spikes] - spikes[end.spikes]
+    }
   }
+  res
 }
-  
-get.si <- function(b) {
-  if( (length(b) > 1) ) {
-    ## some bursts.
-    b[,3]
-  } else {
-    0                                   #return no SI
+
+calc.all.ibi <- function (s, allb) {
+  ## Compute IBI for all spike trains.
+  nchannels <- s$NCells
+  IBIs = list()
+  for (i in 1:nchannels) {
+    IBIs[[i]]  = calc.ibi(s$spikes[[i]], allb[[i]])
   }
+
+  IBIs
 }
-  
+
+
+num.bursts <- function(b) {
+  ## Return the number of bursts found for a spike train.
+  if(is.na(b[1]))
+    0
+  else
+    nrow(b)
+}
