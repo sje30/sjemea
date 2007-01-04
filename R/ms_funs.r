@@ -6,12 +6,15 @@
 ## for both types.
 
 
+
 ## plotCI() is taken from Ben Bolker's bbmisc package.
 ## http://www.zoo.ufl.edu/bolker/R/src/
 ## Update Tue 28 Nov 2006, now need clean.args also.
 
 ## remove arguments not intended for a particular function from a string
 
+## Some of this code requires code from the tcltk package; this is loaded
+## by using the DEPENDS: field in the package description.
 
 ## repeated from bbfuns/misc.R
 clean.args <- function(argstr,fn,exclude.repeats=FALSE,
@@ -766,12 +769,12 @@ plot.corr.index.fit <- function(s, ...) {
   corr.do.fit(s$corr.id,plot=TRUE)
 }
 
-plot.mm.s <- function(s, whichcells=1:s$NCells,
+plot.mm.s <- function(s, whichcells=NULL,
                       mintime=min(unlist(s$spikes), na.rm=TRUE),
                       maxtime=max(unlist(s$spikes), na.rm=TRUE),
                       label.cells = FALSE,
                       show.bursts = FALSE,
-                      main=s$file,
+                      main=NULL,
                       for.figure=FALSE,
                       ...) {
   ## Plot the spikes.
@@ -787,7 +790,15 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
   ## in the y-axis.
   ## If FOR.FIGURE is true, we make a slightly different outline, which
   ## is useful for making the figures.
-  
+
+  if (is.null(whichcells)) {
+    whichcells <- 1:s$NCells
+  }
+
+  if (is.null(main)) {
+    main <- basename(s1$file)
+  }
+     
   N <- length(whichcells)
   ticpercell <- 1/N; deltay <- ticpercell * 0.8;
   yminadd <- ticpercell
@@ -809,9 +820,8 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
     mtext(main, side=3, adj=0, line=0.5)
     
   } else {
-    plot( c(mintime, maxtime), c(0,1), type='n',
-         yaxt="n",
-         main=main,
+    plot( c(mintime, maxtime), c(0,1), type='n', bty='n',
+         yaxt="n", main=main,
          xlab="time (s)", ylab="spikes of cell", ...)
   }
   
@@ -819,23 +829,42 @@ plot.mm.s <- function(s, whichcells=1:s$NCells,
 
   have.bursts <- ( (length(s$allb) > 0) && show.bursts)
   for (cell in whichcells) {
-    ts <- spikes[[cell]]
-    n <- length(ts)
+    ts <- spikes[[cell]]                #get spike times.
+    n <- length(ts)                     #number of spikes.
     ys <- numeric(n) + ymin
     
-    segments(ts, ys, ts, ys+deltay, lwd=0.2)
+    segments(ts, ys, ts, ys+deltay, lwd=0.2) #draw spikes.
 
     ## simple test to see if bursts have been defined.
     if (have.bursts) {
       burst.times <- s$allb[[cell]]
-      ys <- numeric(dim(burst.times)[2]) + ymin + (deltay/2)
-      segments(burst.times[,1], ys, burst.times[,2], ys, col="red")
+      if (!is.na(burst.times[1])) {
+        ## we have some vald burst info.
+        nbursts <- nrow(burst.times)
+        ##ys <- rep(ymin+deltay/2, nbursts)
+
+        ## alternate height of bursts so that we can sep adjacent bursts.
+        ys <- rep(ymin+deltay/2, nbursts)
+        shimmy <- deltay*0.25
+        odd <- (1:nbursts) %% 2 == 1
+        ys[odd] <- ys[odd] + shimmy
+
+        start.burst <- ts[burst.times[,"first"]]
+        ## for the end of the burst, -1 is needed since if start spike
+        ## is 20, and i=3, last spike in burst is 22 (spikes 20, 21, 22)
+        end.burst <- ts[ burst.times[,"first"] + burst.times[,"len"] -1]
+        segments(start.burst, ys,
+                 end.burst, ys,
+                 col="red", lwd=2)
+        text(start.burst, rep(ymin+deltay*1.1, nbursts),
+             labels=burst.times[,"len"], col="blue")
+      }
     }
     ymin <- ymin + yminadd
   }
 
   if (label.cells) {
-    allys <- seq(from=0, by=yminadd, length=N)
+    allys <- seq(from=yminadd/2, by=yminadd, length=N)
     mtext(whichcells, side=2, at=allys, las=1)
   }
 
@@ -2540,10 +2569,15 @@ make.spikes.to.frate <- function(spikes,
   if (clip)
     rates <- pmin(pmax(rates, frate.min), frate.max)
 
+
+  ## Do the average computation here.
+  ## av.rate == average rate across the array.
+  av.rate <- apply(rates, 1, mean)
   ## We can remove the last "time.break" since it does not correspond
   ## to the start of a time frame.
   res <- list(rates=rates,
-              times=time.breaks[-length(time.breaks)])
+              times=time.breaks[-length(time.breaks)],
+              av.rate=av.rate)
   res
 }
 
@@ -2554,8 +2588,7 @@ plot.meanfiringrate <- function (s, beg, end, ...) {
   
   if (missing(beg)) beg <- s$rates$times[1]
   if (missing(end)) end <- s$rates$times[length(s$rates$times)]
-  av.rate <- apply(s$rates$rates, 1, mean)
-  plot(s$rates$times, av.rate, type = "h", xlab = "time (s)",
+  plot(s$rates$times, s$rates$av.rate, type = "h", xlab = "time (s)",
        xlim=c(beg,end), bty="n", lwd=0.2,
        ylab = "mean firing rate", main = s$file, ...)
 }
@@ -3164,3 +3197,126 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
   res
 
 }
+
+######################################################################
+## Visualisation efforts.
+
+
+beg.time.t <- tclVar(1)                   #set initial value as 1.
+durn.t <- tclVar(100)
+cells.t <- tclVar("")
+burst.t <- tclVar(1)
+label.t <- tclVar(1)
+
+spikeview <- function(s, duration=100) {
+  ## Create a Spikeview window and show it.
+
+  ## Init the vars?
+  tclvalue(durn.t) <- as.character(duration)
+  
+  show.plot <- function(...) {
+    ## Update the plot window.
+    ## TODO: check that beg/end times are suitable.
+    beg.time <- as.numeric(tclvalue(beg.time.t))
+    durn <- as.numeric(tclvalue(durn.t))
+
+    ## If "cells.t" is currently empty, the string will empty and thus
+    ## the cells.t will be set to NULL; otherwise, the expression will
+    ## be the sequence of numbers.
+    which.cells <- eval(parse(text= tclvalue(cells.t)))
+    
+    ##x <- floor(beg.time) + (1:durn)
+    ##plot(x, data[x], main=beg.time, type='l', yaxt='n')
+    plot.mm.s(s, whichcells=which.cells,
+              label.cells=(tclvalue(label.t)=="1"),
+              show.bursts=(tclvalue(burst.t)=="1"),
+              mintime=beg.time, maxtime=beg.time+durn)
+  }
+
+
+
+  update.time <- function(panel) {
+    ## Convert duration to a number -- all text items are strings.
+    durn <- as.numeric(panel$duration)
+    x <- floor(panel$beg.time) + (1:durn)
+    plot(x, data[x], main=panel$beg.time, type='l', ylab='n')
+    
+    ## must return the panel object.
+    panel
+  }
+  
+  next.callback <- function() {
+    ## Callback for the next button.
+    ## TODO: check that it can be updated.
+    tclvalue(beg.time.t) <-
+      as.character( as.numeric(tclvalue(beg.time.t)) +
+                   as.numeric(tclvalue(durn.t)))
+    show.plot()
+  }
+
+  prev.callback <- function() {
+    ## Callback for the prev button.
+    tclvalue(beg.time.t) <-
+      as.character(as.numeric(tclvalue(beg.time.t)) -
+                   as.numeric(tclvalue(durn.t)))
+    show.plot()
+  }
+
+  returnkey.callback <- function(...) {
+    ##  Callback when RETURN is pressed within entry boxes.
+    ## Taken from rpanel method.
+    show.plot()
+  }
+
+
+  ## Create base frame.
+  base <- tktoplevel()
+  spec.frame <- tkframe(base, borderwidth=2)
+  tkwm.title(base, "Spike viewer")
+  
+  s.beg.time <- s$rec.time[1]
+  s.end.time <- s$rec.time[2]
+  scale <- tkscale(spec.frame, command=show.plot,
+                   from = s.beg.time,
+                   to =   s.end.time, 
+                   showvalue=TRUE,
+                   variable=beg.time.t,
+                   resolution=3,
+                   orient="horiz")
+  ## The callback for the slider will send, as first argument,
+  ## the current value of the slider.
+
+  
+  next.but <- tkbutton(spec.frame, text="Next", command=next.callback)
+  prev.but <- tkbutton(spec.frame, text="Prev", command=prev.callback)
+  
+
+  durn.lab <- tklabel(spec.frame, text="Durn (s)")
+  durn.but <- tkentry(spec.frame, textvariable=durn.t,width=5)
+  tkbind(durn.but, "<Key-Return>", returnkey.callback)
+
+  cells.lab <- tklabel(spec.frame, text="Cells")
+  cells.but <- tkentry(spec.frame, textvariable=cells.t,width=5)
+  tkbind(cells.but, "<Key-Return>", returnkey.callback)
+
+
+  burst.rad <- tkcheckbutton(spec.frame,
+                             command=show.plot,
+                             text="Burst", indicatoron=1, variable=burst.t)
+
+  labels.rad <- tkcheckbutton(spec.frame,
+                             command=show.plot,
+                             text="Cell id", indicatoron=1, variable=label.t)
+  
+  ## Add buttons, one row at a time, using the grid manager.
+  tkgrid(scale, columnspan=2)
+  tkgrid(prev.but, next.but)
+  tkgrid(durn.lab, durn.but)
+  tkgrid(cells.lab, cells.but)
+  tkgrid(burst.rad, labels.rad)
+  
+  tkpack(spec.frame)
+
+}
+
+
