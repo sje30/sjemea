@@ -3320,3 +3320,97 @@ spikeview <- function(s, duration=100) {
 }
 
 
+
+
+######################################################################
+## * Movie functions.
+
+
+pause.time <- 100                       #delay in msec
+
+movie.time <- tclVar(1)                 # current start time of frame.
+movie.show <- tclVar(1)                 # "1" for on, "0" for off.
+
+movie.window <- function(s, beg=NULL, end=NULL) {
+
+
+  if (is.null(beg))
+    beg <- 1
+      
+  if (is.null(end))
+    end <- dim(s$rates$rates)[1]
+  
+  ##cat(sprintf("beg %d end %d\n", beg, end))
+
+  tclvalue(movie.time) <- as.character(beg)
+  
+  show.movie.frame <- function(..., update.win=TRUE) {
+    start.time <- as.numeric(tclvalue(movie.time))
+    ##print(paste("show movie", start.time))
+    
+    plot.rate.mslayout(s, start.time, ...)
+    if ( update.win && (tclvalue(movie.show)=="1")) {
+      next.time <- start.time + 1
+      if (next.time < end ) {
+        ## Still have more to show...
+        tclvalue(movie.time) <- as.character(next.time)
+        tcl("after", pause.time, show.movie.frame)
+      } else {
+        tclvalue(movie.show) == "0"     #for consistency.
+      }
+    }
+  }
+
+    
+    
+  stop.callback <- function() {
+    ## Callback for the stop button.
+    tclvalue(movie.show) <- "0"
+  }
+
+  go.callback <- function() {
+    ## Callback for the go button.
+    tclvalue(movie.show) <- "1"
+    show.movie.frame()
+  }
+
+
+  show.plot.scale <- function(...) {
+    ## Callback for the scale widget.
+    show.movie.frame(update.win=FALSE)
+  }
+
+
+  ## Create a control window and show it.
+  
+  ## Create base frame.
+  base <- tktoplevel()
+  spec.frame <- tkframe(base, borderwidth=2)
+  tkwm.title(base, "Movie player")
+  
+  scale <- tkscale(spec.frame,
+                   command=show.plot.scale,
+                   from = beg, to = end, 
+                   showvalue=TRUE, 
+                   variable=movie.time,
+                   resolution=1,
+                   orient="horiz")
+  
+  go.but   <- tkbutton(spec.frame, text="Go",   command=go.callback)
+  prev.but <- tkbutton(spec.frame, text="Stop", command=stop.callback)
+  
+
+  ## Add buttons, one row at a time, using the grid manager.
+  tkgrid(scale, columnspan=2)
+  tkgrid(go.but, prev.but)
+  
+  tkpack(spec.frame)
+
+}
+
+
+
+
+
+
+## TODO: quit action should close the movie down!!!
