@@ -796,7 +796,7 @@ plot.mm.s <- function(s, whichcells=NULL,
   }
 
   if (is.null(main)) {
-    main <- basename(s1$file)
+    main <- basename(s$file)
   }
      
   N <- length(whichcells)
