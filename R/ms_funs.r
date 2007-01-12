@@ -3380,11 +3380,21 @@ movie.window <- function(s, beg=NULL, end=NULL) {
     show.movie.frame(update.win=FALSE)
   }
 
+  close.window <- function() {
+    ## Callback for when the WM tries to delete the window.
+    ## This is needed to stop the movie before destroying the window.
+    tclvalue(movie.show) <- "0"
+    tkdestroy(base)
+  }
 
   ## Create a control window and show it.
   
   ## Create base frame.
   base <- tktoplevel()
+  tcl("wm", "protocol", base, "WM_DELETE_WINDOW", close.window)
+
+
+  
   spec.frame <- tkframe(base, borderwidth=2)
   tkwm.title(base, "Movie player")
   
@@ -3413,4 +3423,4 @@ movie.window <- function(s, beg=NULL, end=NULL) {
 
 
 
-## TODO: quit action should close the movie down!!!
+
