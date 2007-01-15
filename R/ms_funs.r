@@ -363,14 +363,12 @@ make.jay.layout <- function(positions) {
 
 }
 
-jay.read.spikes <- function(filename, scale=100, ids=NULL,
+jay.read.spikes <- function(filename, ids=NULL,
                             time.interval=1,
                             beg=NULL, end=NULL) {
-  ## Read in Jay's data set.  Scale gives the distance in um between
-  ## adjacent channels.  This is 100um by default.  This can be
-  ## changed to cope with the developmental changes in retina.  IDS is
-  ## an optional vector of cell numbers that should be analysed -- the
-  ## other channels are read in but then ignored.
+  ## Read in Jay's data set.
+  ## IDS is an optional vector of cell numbers that should be analysed
+  ## -- the other channels are read in but then ignored.
 
   fp <- file(filename, open="r")
   ## todo: in an ideal world, this limit would not be required...
@@ -510,7 +508,6 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
               meanfiringrate=meanfiringrate,
               file=filename,
               layout=layout,
-              scale=scale,
               dists=dists, dists.bins=dists.bins,
               corr.indexes=corr.indexes,
               corr.indexes.dt=corr.indexes.dt,
@@ -2419,13 +2416,12 @@ make.sanger1.layout <- function(positions) {
 
 }
 
-sanger.read.spikes <- function(filename, scale=200, ids=NULL,
+sanger.read.spikes <- function(filename, ids=NULL,
                                time.interval=1,
                                beg=NULL, end=NULL) {
 
-  ## Read in Sanger data set.  Scale gives the distance in um between
-  ## adjacent channels.  This is 200um by default.  This can be
-  ## changed to cope with the developmental changes in retina.  IDS is
+  ## Read in Sanger data set.  
+  ## IDS is
   ## an optional vector of cell numbers that should be analysed -- the
   ## other channels are read in but then ignored.
 
@@ -2503,27 +2499,8 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
   meanfiringrate <- nspikes/ ( end - beg)
 
   ## Parse the channel names to get the cell positions.
-  ## Note that we currently ignore any label that comes after the digits
-  ## for the channel.
-  ## e.g. when more than one cell is assigned to the same channel, we
-  ## can have "ch_13a" and "ch_13b".  If there is only one cell on a channel
-  ## that channel is written "ch_13".
-  ## In Jay's prog, rows are numbered from the top, downwards.  In R, we
-  ## have the reverse.  To align them in R, we would need to subtract 9 from
-  ## rows.
-
   layout <- make.sanger1.layout(substring(channels, 4, 5))
 
-  ## TODO: DELETE
-  ##cols <- as.integer(substring(channels, 4,4)) * scale
-  ##rows <- as.integer(substring(channels, 5,5)) * scale
-  ##pos <- cbind(cols, rows)
-  ##class(pos) <- "jay.pos"
-
-
-  ## temporary test: shuffle electrode positions.
-  ## pos <- pos[sample(1:num.channels),]
-  
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
 
@@ -2598,7 +2575,6 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
               file=filename,
               ##pos=pos,
               layout=layout,
-              scale=scale,
               dists=dists, dists.bins=dists.bins,
               corr.indexes=corr.indexes,
               corr.indexes.dt=corr.indexes.dt,
