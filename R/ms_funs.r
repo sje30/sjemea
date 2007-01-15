@@ -165,8 +165,8 @@ plot.corr.index.fit <- function(s, ...) {
 }
 
 plot.mm.s <- function(s, whichcells=NULL,
-                      mintime=min(unlist(s$spikes), na.rm=TRUE),
-                      maxtime=max(unlist(s$spikes), na.rm=TRUE),
+                      beg=min(unlist(s$spikes), na.rm=TRUE),
+                      end=max(unlist(s$spikes), na.rm=TRUE),
                       label.cells = FALSE,
                       show.bursts = FALSE,
                       main=NULL,
@@ -175,11 +175,11 @@ plot.mm.s <- function(s, whichcells=NULL,
   ## Plot the spikes.
   ## WHICHCELLS is a list of cell numbers to plot; the default is to plot
   ## all of the cells.
-  ## The MINTIME and MAXTIME is the time range for which we want to
+  ## BEG and END are the time range for which we want to
   ## plot spikes.  When evaluating maxtime, some cells may have no
   ## spikes; their lists get converted to NA in unlist() so those NA
-  ## values need removing.  By default, MINTIME will be the time of the
-  ## first spike, and MAXTIME will be the time of the last spike.
+  ## values need removing.  By default, BEG will be the time of the
+  ## first spike, and END will be the time of the last spike.
   ## If SHOW.BURSTS is true, we plots the bursts rather than the spikes.
   ## If LABELS.CELLS is true, we write the cell number of each spike train
   ## in the y-axis.
@@ -205,7 +205,7 @@ plot.mm.s <- function(s, whichcells=NULL,
 
   
   if (for.figure) {
-    plot( c(mintime, maxtime), c(0,1), type='n',
+    plot( c(beg, end), c(0,1), type='n',
          yaxt="n",
          bty="n",
          main="",
@@ -215,7 +215,7 @@ plot.mm.s <- function(s, whichcells=NULL,
     mtext(main, side=3, adj=0, line=0.5)
     
   } else {
-    plot( c(mintime, maxtime), c(0,1), type='n', bty='n',
+    plot( c(beg, end), c(0,1), type='n', bty='n',
          yaxt="n", main=main,
          xlab="time (s)", ylab="spikes of cell", ...)
   }
@@ -342,7 +342,7 @@ summary.mm.s <- function(object, ...) {
 
 jay.read.spikes <- function(filename, scale=100, ids=NULL,
                             time.interval=1,
-                            min.time=NULL, max.time=NULL) {
+                            beg=NULL, end=NULL) {
   ## Read in Jay's data set.  Scale gives the distance in um between
   ## adjacent channels.  This is 100um by default.  This can be
   ## changed to cope with the developmental changes in retina.  IDS is
@@ -385,11 +385,11 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
 
   spikes <- apply(times, 1, jay.filter.for.na)
 
-  if (!is.null(max.time))
-    spikes <- lapply(spikes, jay.filter.for.max, max=max.time)
+  if (!is.null(end))
+    spikes <- lapply(spikes, jay.filter.for.max, max=end)
 
-  if (!is.null(min.time))
-    spikes <- lapply(spikes, jay.filter.for.min, min=min.time)
+  if (!is.null(beg))
+    spikes <- lapply(spikes, jay.filter.for.min, min=beg)
 
   if (!is.null(ids) ) {
     if (any(ids>length(spikes)))
@@ -399,6 +399,11 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
     spikes <- spikes[ids];
     channels <- channels[ids];
   }
+
+  spikes.range <- range(unlist(spikes))
+  if (is.null(beg))  beg <-  spikes.range[1]
+  if (is.null(end))  end <-  spikes.range[2]
+  rec.time <- c(beg, end)
 
   ## Count the number of spikes per channel, and label them.
   nspikes <- sapply(spikes, length)
@@ -501,6 +506,7 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
               distance.breaks=jay.distance.breaks,
               distance.breaks.strings=jay.distance.breaks.strings,
               rates=rates,
+              rec.time=rec.time,
               unit.offsets=unit.offsets
               )
   class(res) <- "mm.s"
@@ -1972,7 +1978,8 @@ make.spikes.to.frate <- function(spikes,
   ## to the start of a time frame.
   res <- list(rates=rates,
               times=time.breaks[-length(time.breaks)],
-              av.rate=av.rate)
+              av.rate=av.rate,
+              time.interval=time.interval)
   res
 }
 
@@ -2410,8 +2417,8 @@ op.picture <- function(pos, rates, iteration) {
 ######################################################################
 
 sanger.read.spikes <- function(filename, scale=200, ids=NULL,
-                            time.interval=1,
-                            min.time=NULL, max.time=NULL) {
+                               time.interval=1,
+                               beg=NULL, end=NULL) {
 
   ## Read in Sanger data set.  Scale gives the distance in um between
   ## adjacent channels.  This is 200um by default.  This can be
@@ -2441,8 +2448,8 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
   line1 <- scan(fp, "", n=n.cols, sep='\t', quiet=TRUE)
   ## Throw away last two numbers on line 1, as they are the
   ## sweep_start and sweep_stop times.
-  sweep.start <- line1[n.cols-1]
-  sweep.stop  <- line1[n.cols]
+  sweep.start <- as.numeric(line1[n.cols-1])
+  sweep.stop  <- as.numeric(line1[n.cols])
   ##line1 <- line1[1:num.channels]
   
 
@@ -2463,11 +2470,15 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
   spikes <- apply(times[1:num.channels,], 1, jay.filter.for.na)
 
 
-  if (!is.null(max.time))
-    spikes <- lapply(spikes, jay.filter.for.max, max=max.time)
+  if (!is.null(end)) {
+    spikes <- lapply(spikes, jay.filter.for.max, max=end)
+    sweep.stop <- end
+  }
 
-  if (!is.null(min.time))
-    spikes <- lapply(spikes, jay.filter.for.min, min=min.time)
+  if (!is.null(beg)) {
+    spikes <- lapply(spikes, jay.filter.for.min, min=beg)
+    sweep.start <- beg
+  }
 
   if (!is.null(ids) ) {
     if (any(ids>length(spikes)))
@@ -2484,7 +2495,7 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
 
   ## meanfiring rate is the number of spikes divided by the (time of
   ## last spike - time of first spike).  
-  meanfiringrate <- nspikes/ ( sapply(spikes, max) - sapply(spikes, min))
+  meanfiringrate <- nspikes/ ( sweep.stop - sweep.start)
 
   ## Parse the channel names to get the cell positions.
   ## Note that we currently ignore any label that comes after the digits
@@ -2586,7 +2597,7 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
               distance.breaks.strings=jay.distance.breaks.strings,
               rates=rates,
               unit.offsets=unit.offsets,
-              rec.time=as.numeric(c(sweep.start, sweep.stop))
+              rec.time=c(sweep.start, sweep.stop)
               )
   class(res) <- "mm.s"
   res
@@ -2628,7 +2639,7 @@ spikeview <- function(s, duration=100) {
     plot.mm.s(s, whichcells=which.cells,
               label.cells=(tclvalue(label.t)=="1"),
               show.bursts=(tclvalue(burst.t)=="1"),
-              mintime=beg.time, maxtime=beg.time+durn)
+              beg=beg.time, end=beg.time+durn)
   }
 
 
@@ -2730,25 +2741,24 @@ movie.time <- tclVar(1)                 # current start time of frame.
 movie.show <- tclVar(1)                 # "1" for on, "0" for off.
 
 movie.window <- function(s, beg=NULL, end=NULL) {
-
+  ## Play the movie of the spike trains on the MEA.
+  ## BEG and END (if given) are the time in seconds on the array.
 
   if (is.null(beg))
-    beg <- 1
+    beg <- s$rec.time[1]
       
   if (is.null(end))
-    end <- dim(s$rates$rates)[1]
-  
-  ##cat(sprintf("beg %d end %d\n", beg, end))
+    end <- s$rec.time[2]
 
   tclvalue(movie.time) <- as.character(beg)
   
   show.movie.frame <- function(..., update.win=TRUE) {
     start.time <- as.numeric(tclvalue(movie.time))
     ##print(paste("show movie", start.time))
-    
-    plot.rate.mslayout(s, start.time, ...)
+    frame.num <- time.to.frame(s$rates$times, start.time)
+    plot.rate.mslayout(s, frame.num, ...)
     if ( update.win && (tclvalue(movie.show)=="1")) {
-      next.time <- start.time + 1
+      next.time <- start.time + s$rates$time.interval
       if (next.time < end ) {
         ## Still have more to show...
         tclvalue(movie.time) <- as.character(next.time)
@@ -2801,7 +2811,7 @@ movie.window <- function(s, beg=NULL, end=NULL) {
                    from = beg, to = end, 
                    showvalue=TRUE, 
                    variable=movie.time,
-                   resolution=1,
+                   resolution=s$rates$time.interval,
                    orient="horiz")
   
   go.but   <- tkbutton(spec.frame, text="Go",   command=go.callback)
@@ -2815,6 +2825,7 @@ movie.window <- function(s, beg=NULL, end=NULL) {
   tkpack(spec.frame)
 
 }
+
 
 
 
