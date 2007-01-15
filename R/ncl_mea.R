@@ -62,7 +62,7 @@ mcd.data.to.array <- function(file, beg=NULL, end=NULL) {
 
 
 
-ncl.read.spikes <- function(filename, scale=200, ids=NULL,
+ncl.read.spikes <- function(filename, ids=NULL,
                             time.interval=1, beg=NULL, end=NULL) {
 
   ## Read in Ncl data set.  Scale gives the distance in um between
@@ -107,29 +107,13 @@ ncl.read.spikes <- function(filename, scale=200, ids=NULL,
   ## todo: spike names need to be found.
   
   ## Parse the channel names to get the cell positions.
-  ## Note that we currently ignore any label that comes after the digits
-  ## for the channel.
-  ## e.g. when more than one cell is assigned to the same channel, we
-  ## can have "ch_13a" and "ch_13b".  If there is only one cell on a channel
-  ## that channel is written "ch_13".
-  ## In Jay's prog, rows are numbered from the top, downwards.  In R, we
-  ## have the reverse.  To align them in R, we would need to subtract 9 from
-  ## rows.
-  
-  ##cols <- as.integer(substring(channels, 4,4)) * scale
-  ##rows <- as.integer(substring(channels, 5,5)) * scale
-  cols <- as.integer(substring(channels, 1,1)) * scale
-  rows <- as.integer(substring(channels, 2,2)) * scale
-  pos <- cbind(cols, rows)
-  class(pos) <- "jay.pos"
 
-  ## temporary test: shuffle electrode positions.
-  ## pos <- pos[sample(1:num.channels),]
+  layout <- make.sanger1.layout(substring(channels, 1,2))
   
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
 
-  dists <- make.distances(pos)
+  dists <- make.distances(layout$pos)
 
   ## Test code:
   ## corr <- matrix(data=c(0, 0, 0, 4, 0, 0, 5, 7, 0),nrow=3)
@@ -157,7 +141,8 @@ ncl.read.spikes <- function(filename, scale=200, ids=NULL,
     corr.id.means <- NA
   }
 
-  rates <- make.spikes.to.frate(spikes, time.interval=time.interval)
+  rates <- make.spikes.to.frate(spikes, time.interval=time.interval,
+                                beg=beg, end=end)
   
   ## See if we need to shift any units.  this affects only the
   ## visualisation of the units in the movies.  We assume that "shifted"
@@ -175,21 +160,21 @@ ncl.read.spikes <- function(filename, scale=200, ids=NULL,
   ## Tue 19 Dec 2006: this assumes filename ends in .txt; do not worry
   ## about this for now.
   
-  shift.filename <- sub("\\.txt$", ".sps", filename)
-  unit.offsets <- NULL                  #default value.
-  if (FALSE && file.exists(shift.filename)) { #TODO -- why running?
-    updates <- scan(shift.filename)
-    ## must be 3 data points per line
-    stopifnot(length(updates)%%3 == 0)
-    updates <- matrix(updates, ncol=3, byrow=TRUE)
-    units <- updates[,1]
-    if (any(units> length(spikes))) {
-      stop(paste("some units not in recording...",
-                 paste(units[units>=length(spikes)],collapse=",")))
-    }
-    unit.offsets <- pos*0               #initialise all elements to zero.
-    unit.offsets[units,] <- updates[,2:3]
-  }
+##   shift.filename <- sub("\\.txt$", ".sps", filename)
+   unit.offsets <- NULL                  #default value.
+##   if (FALSE && file.exists(shift.filename)) { #TODO -- why running?
+##     updates <- scan(shift.filename)
+##     ## must be 3 data points per line
+##     stopifnot(length(updates)%%3 == 0)
+##     updates <- matrix(updates, ncol=3, byrow=TRUE)
+##     units <- updates[,1]
+##     if (any(units> length(spikes))) {
+##       stop(paste("some units not in recording...",
+##                  paste(units[units>=length(spikes)],collapse=",")))
+##     }
+##     unit.offsets <- layout$pos*0               #initialise all elements to zero.
+##     unit.offsets[units,] <- updates[,2:3]
+##   }
   
   
   
@@ -197,8 +182,7 @@ ncl.read.spikes <- function(filename, scale=200, ids=NULL,
               spikes=spikes, nspikes=nspikes, NCells=length(spikes),
               meanfiringrate=meanfiringrate,
               file=filename,
-              pos=pos,
-              scale=scale,
+              layout=layout,
               dists=dists, dists.bins=dists.bins,
               corr.indexes=corr.indexes,
               corr.indexes.dt=corr.indexes.dt,
