@@ -340,6 +340,29 @@ summary.mm.s <- function(object, ...) {
 ######################################################################
 
 
+
+make.jay.layout <- function(positions) {
+  ## make the layout for Jay's MEA
+
+
+  xlim <- ylim <- c(50, 850)
+  spacing <- 100
+
+  cols <- as.integer(substring(positions, 1,1)) * spacing
+  rows <- as.integer(substring(positions, 2,2)) * spacing
+  pos <- cbind(cols, rows)
+  
+  rownames(pos) <- positions
+  
+  layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
+                 pos=pos)
+
+  class(layout) <- "mealayout"
+
+  layout
+
+}
+
 jay.read.spikes <- function(filename, scale=100, ids=NULL,
                             time.interval=1,
                             beg=NULL, end=NULL) {
@@ -414,27 +437,16 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
   meanfiringrate <- nspikes/ ( sapply(spikes, max) - sapply(spikes, min))
 
   ## Parse the channel names to get the cell positions.
-  ## Note that we currently ignore any label that comes after the digits
-  ## for the channel.
-  ## e.g. when more than one cell is assigned to the same channel, we
-  ## can have "ch_13a" and "ch_13b".  If there is only one cell on a channel
-  ## that channel is written "ch_13".
-  ## In Jay's prog, rows are numbered from the top, downwards.  In R, we
-  ## have the reverse.  To align them in R, we would need to subtract 9 from
-  ## rows.
-  
-  cols <- as.integer(substring(channels, 4,4)) * scale
-  rows <- as.integer(substring(channels, 5,5)) * scale
-  pos <- cbind(cols, rows)
-  class(pos) <- "jay.pos"
 
+  layout <- make.jay.layout( substring(channels, 4, 5))
+  
   ## temporary test: shuffle electrode positions.
   ## pos <- pos[sample(1:num.channels),]
   
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
 
-  dists <- make.distances(pos)
+  dists <- make.distances(layout$pos)
 
   ## Test code:
   ## corr <- matrix(data=c(0, 0, 0, 4, 0, 0, 5, 7, 0),nrow=3)
@@ -461,7 +473,8 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
     corr.id.means <- NA
   }
 
-  rates <- make.spikes.to.frate(spikes, time.interval=time.interval)
+  rates <- make.spikes.to.frate(spikes, time.interval=time.interval,
+                                beg=beg, end=end)
   
   ## See if we need to shift any units.  this affects only the
   ## visualisation of the units in the movies.  We assume that "shifted"
@@ -486,7 +499,7 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
       stop(paste("some units not in recording...",
                  paste(units[units>=length(spikes)],collapse=",")))
     }
-    unit.offsets <- pos*0               #initialise all elements to zero.
+    unit.offsets <- layout$pos*0               #initialise all elements to zero.
     unit.offsets[units,] <- updates[,2:3]
   }
   
@@ -496,7 +509,7 @@ jay.read.spikes <- function(filename, scale=100, ids=NULL,
               spikes=spikes, nspikes=nspikes, NCells=length(spikes),
               meanfiringrate=meanfiringrate,
               file=filename,
-              pos=pos,
+              layout=layout,
               scale=scale,
               dists=dists, dists.bins=dists.bins,
               corr.indexes=corr.indexes,
@@ -542,35 +555,6 @@ jay.filter.for.min <- function(x, min) {
   if (any(x.low)) 
     x <- x[-x.low]
   x
-}
-
-
-plot.jay.pos <- function(x, use.rownames=FALSE, ...) {
-  ## Plot the layout of the multisite.  X here should be the pos field
-  ## within the structure. ... allows us to specify other params such as
-  ## "col" for colour of text -- see plot.shifted.jay.pos().
-
-  plot(x[,1], x[,2], asp=1,
-       xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
-       bty="n",
-       xlab="", ylab="", type="n")
-  if (use.rownames)
-    text(x[,1], x[,2], rownames(x), ...)
-  else
-    text(x[,1], x[,2], ...)
-}
-
-
-plot.shifted.jay.pos <- function(s) {
-  ## Add the shifted unit positions, if present, before plotting
-  ## the electrode layout.  Shifted units are coloured red.
-  pos <- s$pos
-  cols <- rep("blue", s$NCells)
-  if (!is.null(s$unit.offsets)) {
-    pos <- pos + s$unit.offsets
-    cols[which(apply(s$unit.offsets^2, 1, sum)>0)] <- "red"
-  }
-  plot.jay.pos(pos, col=cols)
 }
 
 shuffle.spike.times <- function (s, noise.sd) {
@@ -631,7 +615,7 @@ fourplot <- function(s) {
   on.exit(par(old.par))
   
   par(mfrow=c(2,2))
-  plot(s$pos)                             #show layout of electrodes.
+  plot(s$layout)                             #show layout of electrodes.
   plot.meanfiringrate(s)
   plot(s)                                 #plot the spikes.
   if(!is.na(s$corr.indexes)) {
@@ -1663,7 +1647,7 @@ centre.of.mass <- function(s, beg, end, seconds=TRUE,
   for (f in first.frame:last.frame) {
     above <- which(s$rates$rates[f,] > thresh.rate)
     if (length(above) >= thresh.num) {
-      com[index,] <- c( mean(s$pos[above,1]), mean(s$pos[above,2]))
+      com[index,] <- c( mean(s$layout$pos[above,1]), mean(s$layout$pos[above,2]))
       active <- sort(union(active, above))
     }
     index <- index+1
@@ -1716,8 +1700,8 @@ centre.of.mass.wt <- function(s, beg, end, seconds=TRUE) {
     ## weighting factor of each unit i.
     mass.i <- s$rates$rates[f,] / s$meanfiringrate
     mass <- sum(mass.i)
-    com[index, 1] <- sum( mass.i * s$pos[,1]) / mass
-    com[index, 2] <- sum( mass.i * s$pos[,2]) / mass
+    com[index, 1] <- sum( mass.i * s$layout$pos[,1]) / mass
+    com[index, 2] <- sum( mass.i * s$layout$pos[,2]) / mass
     index <- index+1
   }
 
@@ -1771,8 +1755,8 @@ centre.of.mass.wt2 <- function(s, beg, end, seconds=TRUE,
       ## weighting factor of each unit i.
       mass.i <- s$rates$rates[f,] / s$meanfiringrate
       mass <- sum(mass.i)
-      com[index, 1] <- sum( mass.i * s$pos[,1]) / mass
-      com[index, 2] <- sum( mass.i * s$pos[,2]) / mass
+      com[index, 1] <- sum( mass.i * s$layout$pos[,1]) / mass
+      com[index, 2] <- sum( mass.i * s$layout$pos[,2]) / mass
     }
     index <- index+1
   }
@@ -1860,8 +1844,8 @@ plot.mscom <- function(x, s, colour=TRUE, show.title=TRUE,
                        times[1], times[length(times)])
         first.plot <- FALSE
         plot(c, xlab="", ylab="",
-             xlim = jay.ms.lim.x,
-             ylim = jay.ms.lim.y,
+             xlim = s$layout$xlim,
+             ylim = s$layout$ylim,
              xaxt="n", yaxt="n",
              col=col.num, asp=1, type="l",
              main=ifelse(show.title,title,""))
@@ -1876,11 +1860,11 @@ plot.mscom <- function(x, s, colour=TRUE, show.title=TRUE,
     ## draw electrode positions if we have them.
     if(!missing(s)) {
       ## if we don't have active list, just draw them all as empty.
-      electrode.cols <- rep(0, dim(s$pos)[1]) #default colour of white.
+      electrode.cols <- rep(0, dim(s$layout$pos)[1]) #default colour of white.
       if (!is.null(x$active))
         electrode.cols[x$active] <- 1   #black for the active ones.
 
-      points(s$pos, pch=21, bg=electrode.cols, cex=rel.cex*0.9,
+      points(s$layout$pos, pch=21, bg=electrode.cols, cex=rel.cex*0.9,
              lwd=0.4)
     }
     if (!is.null(label.cells)) {
@@ -1932,15 +1916,15 @@ make.spikes.to.frate <- function(spikes,
                                  time.interval=1, #time bin of 1sec.
                                  frate.min=0,
                                  frate.max=20,
-                                 time.low=floor(min(unlist(spikes))),
                                  clip=FALSE,
-                                 time.high=ceiling(max(unlist(spikes)))
+                                 beg=floor(min(unlist(spikes))),
+                                 end=ceiling(max(unlist(spikes)))
                                  ) {
   ## Convert the spikes for each cell into a firing rate (in Hz)
   ## We count the number of spikes within time bins of duration
   ## time.interval (measured in seconds).
   ##
-  ## Currently cannot specify time.low or time.high as less than the
+  ## Currently cannot specify BEG or END as less than the
   ## range of spike times else you get an error from hist().  The
   ## default anyway is to do all the spikes within a data file.
 
@@ -1952,8 +1936,8 @@ make.spikes.to.frate <- function(spikes,
     h <- hist(spikes, breaks=breaks,plot=FALSE)
     h$counts/time.interval                #convert to firing rate (in Hz)
   }
-  time.breaks <- seq(from=time.low, to=time.high, by=time.interval)
-  if (time.breaks[length(time.breaks)] < time.high) {
+  time.breaks <- seq(from=beg, to=end, by=time.interval)
+  if (time.breaks[length(time.breaks)] < end) {
     ## extra time bin needs adding.
     ## e.g seq(1,6, by = 3) == 1 4, so we need to add 7 ourselves.
     time.breaks <- c(time.breaks,
@@ -2070,9 +2054,6 @@ isi <- function(train) {
   isi
 }
 
-## These variables store the min and max size of the array in each dimension
-## (both x and y).  Units are stored in um.
-jay.ms.lim.x <- c(50, 850); jay.ms.lim.y <- c(50, 850)
 
 ## store the maximum and minimum firing rate.  Any firing rate bigger
 ## than this value is set to this value; this prevents the circles
@@ -2169,7 +2150,7 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=FALSE,
 
   ## extract the unit positions and optionally update them to account
   ## for offsets, so that cells do not overlap on screen.
-  xs <- s$pos[,1]; ys <- s$pos[,2]
+  xs <- s$layout$pos[,1]; ys <- s$layout$pos[,2]
   if (!is.null(s$unit.offsets)) {
     xs <- xs + s$unit.offsets[,1]
     ys <- ys + s$unit.offsets[,2]
@@ -2197,7 +2178,7 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=FALSE,
               circles=radii,
               xaxt="n", yaxt="n", xlab='', ylab='',
               inches=FALSE,
-              xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
+              xlim=s$layout$xlim, ylim=s$layout$ylim,
               main=ifelse(show.time,
                 formatC(s$rates$times[frame.num], digits=1, format="f"),
                 "")
@@ -2218,12 +2199,12 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=FALSE,
     if (draw.empty) 
       plot( NA, NA,
            xaxt="n", yaxt="n", xlab='', ylab='',
-           xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
+           xlim=s$layout$xlim, ylim=s$layout$ylim,
            main=formatC(s$rates$times[frame.num], digits=1, format="f"))
   }
 }
 
-plot.rate.mslayout.scale <- function() {
+plot.rate.mslayout.scale <- function(s) {
   ## Draw the scale bar for the plots.
   x <- seq(from=100, to=700, by=100)
   y <- rep(500, length(x))
@@ -2236,7 +2217,7 @@ plot.rate.mslayout.scale <- function() {
           circles=radii,
           xaxt="n", yaxt="n", xlab='', ylab='',
           inches=FALSE,
-          xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
+          xlim=s$layout$xlim, ylim=s$layout$ylim,
           main="legend")
   text(x, y-200, labels=signif(rates,digits=2))
 }
@@ -2256,14 +2237,14 @@ plot.rate.mslayout.col <- function(s, frame.num, show.com=FALSE,
   ## are not drawn.
 
   ## This time, radii are fixed size (e.g. 45um), but colour varies.
-  ## radii <- rep(jay.ms.max.rad, dim(s$pos)[1])
-  radii <- rep(45, dim(s$pos)[1])
+  ## radii <- rep(jay.ms.max.rad, dim(s$layout$pos)[1])
+  radii <- rep(45, dim(s$layout$pos)[1])
 
   cols <- rates.to.cols(s$rates$rates[frame.num,])
 
   ## extract the unit positions and optionally update them to account
   ## for offsets, so that cells do not overlap on screen.
-  xs <- s$pos[,1]; ys <- s$pos[,2]
+  xs <- s$layout$pos[,1]; ys <- s$layout$pos[,2]
   if (!is.null(s$unit.offsets)) {
     xs <- xs + s$unit.offsets[,1]
     ys <- ys + s$unit.offsets[,2]
@@ -2276,7 +2257,7 @@ plot.rate.mslayout.col <- function(s, frame.num, show.com=FALSE,
           circles=radii,
           xaxt="n", yaxt="n", xlab='', ylab='',
           inches=FALSE,
-          xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
+          xlim=s$layout$xlim, ylim=s$layout$ylim,
           main=formatC(s$rates$times[frame.num], digits=1, format="f"))
   if (show.com) {
     com <- centre.of.mass(s, frame.num, frame.num, seconds=FALSE)
@@ -2296,7 +2277,7 @@ rates.to.cols <- function(rates) {
   cols <- pmin(cols, jay.ms.ncols)
 }
 
-plot.rate.mslayout.scale <- function() {
+plot.rate.mslayout.scale <- function(s) {
   ## Draw the scale bar for the plots.
 
   if (plot.rate.colour) {
@@ -2313,7 +2294,7 @@ plot.rate.mslayout.scale <- function() {
             circles=radii,
             xaxt="n", yaxt="n", xlab='', ylab='',
             inches=FALSE,
-            xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
+            xlim=s$layout$xlim, ylim=s$layout$ylim,
             main="legend")
   } else {
     ## show the radius scale bar.
@@ -2328,7 +2309,7 @@ plot.rate.mslayout.scale <- function() {
             circles=radii,
             xaxt="n", yaxt="n", xlab='', ylab='',
             inches=FALSE,
-            xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
+            xlim=s$layout$xlim, ylim=s$layout$ylim,
             main="legend")
   }
   text(x, y-200, labels=signif(rates,digits=2),cex=0.5)
@@ -2356,7 +2337,7 @@ plot.rate.mslayout.old <- function(s, frame.num) {
   ## The biggest character size is set by jay.ms.max.firingrate.
   ## xaxt and yaxt control whether or not the axes are plotted.
   
-  plot(s$pos[,1], s$pos[,2], pch=19, xaxt="n", yaxt="n",
+  plot(s$layout$pos[,1], s$layout$pos[,2], pch=19, xaxt="n", yaxt="n",
        cex=pmin(s$rates$rates[frame.num,],jay.ms.max.firingrate),
        xlab='', ylab='',
        main=formatC(s$rates$times[frame.num], digits=1, format="f"))
@@ -2416,6 +2397,28 @@ op.picture <- function(pos, rates, iteration) {
 ## Code for Sanger MEA analysis,
 ######################################################################
 
+make.sanger1.layout <- function(positions) {
+  ## make the layout for SANGER MEA
+
+
+  xlim <- ylim <- c(50, 1700)
+  spacing <- 200
+
+  cols <- as.integer(substring(positions, 1,1)) * spacing
+  rows <- (9-as.integer(substring(positions, 2,2))) * spacing
+  pos <- cbind(cols, rows)
+  
+  rownames(pos) <- positions
+  
+  layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
+                 pos=pos)
+
+  class(layout) <- "mealayout"
+
+  layout
+
+}
+
 sanger.read.spikes <- function(filename, scale=200, ids=NULL,
                                time.interval=1,
                                beg=NULL, end=NULL) {
@@ -2472,12 +2475,14 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
 
   if (!is.null(end)) {
     spikes <- lapply(spikes, jay.filter.for.max, max=end)
-    sweep.stop <- end
+  } else {
+    end <- sweep.stop
   }
 
   if (!is.null(beg)) {
     spikes <- lapply(spikes, jay.filter.for.min, min=beg)
-    sweep.start <- beg
+  } else {
+    beg <- sweep.start
   }
 
   if (!is.null(ids) ) {
@@ -2495,7 +2500,7 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
 
   ## meanfiring rate is the number of spikes divided by the (time of
   ## last spike - time of first spike).  
-  meanfiringrate <- nspikes/ ( sweep.stop - sweep.start)
+  meanfiringrate <- nspikes/ ( end - beg)
 
   ## Parse the channel names to get the cell positions.
   ## Note that we currently ignore any label that comes after the digits
@@ -2506,11 +2511,15 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
   ## In Jay's prog, rows are numbered from the top, downwards.  In R, we
   ## have the reverse.  To align them in R, we would need to subtract 9 from
   ## rows.
-  
-  cols <- as.integer(substring(channels, 4,4)) * scale
-  rows <- as.integer(substring(channels, 5,5)) * scale
-  pos <- cbind(cols, rows)
-  class(pos) <- "jay.pos"
+
+  layout <- make.sanger1.layout(substring(channels, 4, 5))
+
+  ## TODO: DELETE
+  ##cols <- as.integer(substring(channels, 4,4)) * scale
+  ##rows <- as.integer(substring(channels, 5,5)) * scale
+  ##pos <- cbind(cols, rows)
+  ##class(pos) <- "jay.pos"
+
 
   ## temporary test: shuffle electrode positions.
   ## pos <- pos[sample(1:num.channels),]
@@ -2518,7 +2527,7 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
 
-  dists <- make.distances(pos)
+  dists <- make.distances(layout$pos)
 
   ## Test code:
   ## corr <- matrix(data=c(0, 0, 0, 4, 0, 0, 5, 7, 0),nrow=3)
@@ -2546,7 +2555,8 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
     corr.id.means <- NA
   }
 
-  rates <- make.spikes.to.frate(spikes, time.interval=time.interval)
+  rates <- make.spikes.to.frate(spikes, time.interval=time.interval,
+                                beg=beg, end=end)
   
   ## See if we need to shift any units.  this affects only the
   ## visualisation of the units in the movies.  We assume that "shifted"
@@ -2586,7 +2596,8 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
               spikes=spikes, nspikes=nspikes, NCells=length(spikes),
               meanfiringrate=meanfiringrate,
               file=filename,
-              pos=pos,
+              ##pos=pos,
+              layout=layout,
               scale=scale,
               dists=dists, dists.bins=dists.bins,
               corr.indexes=corr.indexes,
@@ -2597,11 +2608,26 @@ sanger.read.spikes <- function(filename, scale=200, ids=NULL,
               distance.breaks.strings=jay.distance.breaks.strings,
               rates=rates,
               unit.offsets=unit.offsets,
-              rec.time=c(sweep.start, sweep.stop)
+              rec.time=c(beg, end)
               )
   class(res) <- "mm.s"
   res
 
+}
+
+
+plot.mealayout <- function(x, use.rownames=FALSE, ...) {
+  ## Plot the MEA layout.
+
+  pos <- x$pos
+  plot(NA, asp=1,
+       xlim=x$xlim, ylim=x$ylim,
+       bty="n",
+       xlab="", ylab="", type="n")
+  if (use.rownames)
+    text(pos[,1], pos[,2], rownames(pos), ...)
+  else
+    text(pos[,1], pos[,2], ...)
 }
 
 
@@ -2831,5 +2857,35 @@ movie.window <- function(s, beg=NULL, end=NULL) {
 
 
 
+######################################################################
+## DELETE these functions soon! Mon 15 Jan 2007
 
+
+old.plot.jay.pos <- function(x, use.rownames=FALSE, ...) {
+  ## Plot the layout of the multisite.  X here should be the pos field
+  ## within the structure. ... allows us to specify other params such as
+  ## "col" for colour of text -- see plot.shifted.jay.pos().
+
+  plot(x[,1], x[,2], asp=1,
+       xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
+       bty="n",
+       xlab="", ylab="", type="n")
+  if (use.rownames)
+    text(x[,1], x[,2], rownames(x), ...)
+  else
+    text(x[,1], x[,2], ...)
+}
+
+
+old.plot.shifted.jay.pos <- function(s) {
+  ## Add the shifted unit positions, if present, before plotting
+  ## the electrode layout.  Shifted units are coloured red.
+  pos <- s$pos
+  cols <- rep("blue", s$NCells)
+  if (!is.null(s$unit.offsets)) {
+    pos <- pos + s$unit.offsets
+    cols[which(apply(s$unit.offsets^2, 1, sum)>0)] <- "red"
+  }
+  plot.jay.pos(pos, col=cols)
+}
 
