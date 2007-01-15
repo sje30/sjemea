@@ -137,11 +137,6 @@ plot.corr.index <- function(s, identify=FALSE,
 
   xlabel <- expression(paste("distance (", mu, "m)"))
 
-#   if (is.null(s$scale)) 
-#     xlabel <- "uncorrected distance (um)"
-#   else
-#     xlabel <- paste("distance (um) [scale=",s$scale,"]",sep='')
-  
   plot.default(dists, corrs, xlab=xlabel,
                ylab="correlation index", bty="n",
                main=main,
