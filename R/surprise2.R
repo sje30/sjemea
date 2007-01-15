@@ -1,4 +1,5 @@
 ## Burst analysis, surprise method.
+## Wed 03 Jan 2007 -- move into sjemea package.
 
 s.min = 5                               #threshold on suprise index.
 
@@ -146,7 +147,7 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
       cat(sprintf("starting phase 1 n %d s %.4f\n", n, s))
     ## Phase 1 - add spikes to the train.
     phase1 = TRUE
-    i.asn = n+i                         #current end index of spike train.
+    i.asn = n+i-1 #current end index of spike train.
 
     ## in Phase1, check that we still have spikes to add to the train.
     while( phase1 && (i.asn < nspikes) ) {
@@ -192,10 +193,13 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
     ## End of burst detection; accumulate result.
 
     ## compute the ISIs, and then the mean ISI.
+
+    ## Fencepost issue: I is the number of spikes in the burst, so if
+    ## the first spike is N, the last spike is at N+I-1, not N+I.
     isis = diff(spikes[n+(0:(i-1))])
     mean.isis = mean(isis)
     
-    durn = spikes[n+i] - spikes[n]
+    durn = spikes[n+i-1] - spikes[n]
     res <- c(n=n, i=i, s=s, durn=durn, mean.isis=mean.isis)
   } else {
     res <- rep(NA, burst.info.len)
