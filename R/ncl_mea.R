@@ -65,11 +65,9 @@ mcd.data.to.array <- function(file, beg=NULL, end=NULL) {
 ncl.read.spikes <- function(filename, ids=NULL,
                             time.interval=1, beg=NULL, end=NULL) {
 
-  ## Read in Ncl data set.  Scale gives the distance in um between
-  ## adjacent channels.  This is 200um by default.  This can be
-  ## changed to cope with the developmental changes in retina.  IDS is
-  ## an optional vector of cell numbers that should be analysed -- the
-  ## other channels are read in but then ignored.
+  ## Read in Ncl data set.  IDS is an optional vector of cell numbers
+  ## that should be analysed -- the other channels are read in but
+  ## then ignored.
 
 
   ## Tue 25 Jul 2006 -- I'm not sure if this is the cleanest way to read in the
