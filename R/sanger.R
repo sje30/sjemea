@@ -76,12 +76,20 @@ sanger.read.spikes <- function(filename, ids=NULL,
   dim(times) <- c(n.cols, ntimes/n.cols)
 
   ## Remove the last two rows, as they just the sweep_start and
-  ## sweep_stop times.
+  ## sweep_stop times.  drop=F is needed so that if there is one
+  ## channel, the resulting times will remain an array.
+  times <- times[1:num.channels,,drop=FALSE]
 
-  ## drop=F is needed so that if there is one channel, the resulting times
-  ## will remain an array.
-  spikes <- apply(times[1:num.channels,,drop=FALSE],
-                  1, jay.filter.for.na)
+  ## Now convert each row of TIMES into a spike train, removing any
+  ## NAs from the end of each row.  This used to be an apply() command
+  ## but is messy when either you have just one spike train, or
+  ## perhaps two spike trains with same number of spikes in each
+  ## train.
+
+  spikes <- list()
+  for (i in 1:num.channels) {
+    spikes[[i]] <- jay.filter.for.na(times[i,])
+  }
 
 
   if (!is.null(end)) {
@@ -207,7 +215,7 @@ sanger.read.spikes <- function(filename, ids=NULL,
 }
 
 
-make.file.cache <- function(dir) {
+make.meafile.cache <- function(dir) {
   ## Remake the file cache.
   ## Search recursively through DIR to find all filenames.
   files <- dir(dir, recursive=TRUE, full.names=TRUE)
@@ -246,5 +254,25 @@ meatable <- function(file) {
   if (!file.exists(file))
     stop(file, " not found")
   file
+}
+
+read.cond.tab <- function(file) {
+  dat <- read.csv(file, as.is=T)
+
+
+  ## Handle some sanger specific stuff:
+  browser()
+
+  ## "Age (DIV)" is quite cumbersome, so shorten it to "Age"
+  long.age <- pmatch("Age..DIV.", names(dat))
+  if (length(long.age)==1)
+    names(dat)[long.age] = "Age"
+
+  ## strip trailing empty lines.
+  empty.lines <- which(dat[,1] == "")
+  if ( any(empty.lines) )
+    dat <- dat[-empty.lines,]
+
+  dat
 }
 
