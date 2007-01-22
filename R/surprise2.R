@@ -60,7 +60,7 @@ spikes.to.bursts.surprise <- function(s) {
   ##ncells <- 10                           #temp
   allb <- list()
   for (train in 1:ncells) {
-    cat(sprintf("** analyse train %d\n", train))
+    ## cat(sprintf("** analyse train %d\n", train))
     spikes <- s$spikes[[train]]
 
     bursts <- find.bursts(spikes)
@@ -175,7 +175,8 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
       if (debug)
         cat(sprintf("phase 2: n %d i %d s.new %.4f\n", n, i, s.new))        
       if (s.new > s) {
-        print("in phase 2 acceptance\n")
+        if (debug) 
+          print("in phase 2 acceptance\n")
         n = n+1; i = i-1
         s = s.new
         if (i==2) {
