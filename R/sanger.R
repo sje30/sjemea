@@ -261,7 +261,6 @@ read.cond.tab <- function(file) {
 
 
   ## Handle some sanger specific stuff:
-  browser()
 
   ## "Age (DIV)" is quite cumbersome, so shorten it to "Age"
   long.age <- pmatch("Age..DIV.", names(dat))
@@ -273,6 +272,11 @@ read.cond.tab <- function(file) {
   if ( any(empty.lines) )
     dat <- dat[-empty.lines,]
 
+  ## Remove any rows that should be ignored.
+  ignore <- which(dat$Ignore == 1)
+  if (any (ignore))
+
+    dat <- dat[-ignore,]
   dat
 }
 
