@@ -267,9 +267,9 @@ bursts.to.active <- function(bursts, tmin, tmax, dt) {
 }
 
 
-write.burst.summary <- function(s, outfile) {
-  ## Write out a summary text file (some information is computed here,
-  ## rather than just collation of info).
+calc.burst.summary <- function(s) {
+  ## Compute the summary burst information.  Use a separate function
+  ## to write the burst information.
   
   allb <- s$allb
   
@@ -331,7 +331,9 @@ write.burst.summary <- function(s, outfile) {
                    sd.IBIs=sd.IBIs,
                    cv.IBIs=cv.IBIs
                    )
-  write.csv(df, file=outfile)
+  ##write.csv(df, file=outfile)
+
+  df
 
 }
 
