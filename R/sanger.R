@@ -189,10 +189,12 @@ sanger.read.spikes <- function(filename, ids=NULL,
     unit.offsets <- pos*0               #initialise all elements to zero.
     unit.offsets[units,] <- updates[,2:3]
   }
-  
-  
+
+  ## Compute CV of ISI.
+  cv.isi = sapply(spikes, cv.isi)
   
   res <- list( channels=channels,
+              totalspikes=sum(nspikes),
               spikes=spikes, nspikes=nspikes, NCells=length(spikes),
               meanfiringrate=meanfiringrate,
               file=filename,
@@ -207,7 +209,8 @@ sanger.read.spikes <- function(filename, ids=NULL,
               distance.breaks.strings=jay.distance.breaks.strings,
               rates=rates,
               unit.offsets=unit.offsets,
-              rec.time=c(beg, end)
+              rec.time=c(beg, end),
+              cv.isi = sapply(spikes, cv.isi)
               )
   class(res) <- "mm.s"
   res
