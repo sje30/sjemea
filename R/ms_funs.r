@@ -2041,11 +2041,29 @@ fano.plot <- function(s, fano.timebins=c(0.05, 0.1, 1.0, 2.0)) {
 isi <- function(train) {
   ## Compute the ISI for one spike train.
   n <- length(train)
-  isi <- train[2:n] - train[1:(n-1)]
-
+  if (n>1) {
+    isi <- diff(train)
+  } else {
+    isi <- NA                           #cannot compute ISI with 0 or 1 spike.
+  }
   isi
 }
 
+cv.isi <- function(train) {
+  ## Given a spike train, compute the CV.ISI.
+  n = length(train)
+  if ( n >1) {
+    isi = diff(train)
+    isi.mean = mean(isi)
+    isi.sd = sd(isi)
+    cv = isi.sd / isi.mean
+  } else {
+    cv = NA                     #cannot compute ISI with 0 or 1 spike.
+  }
+  cv
+}
+  
+  
 
 ## store the maximum and minimum firing rate.  Any firing rate bigger
 ## than this value is set to this value; this prevents the circles
