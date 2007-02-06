@@ -3,38 +3,17 @@
 ## Taking ideas from Eytan & Marom (2006).
 
 
-if( !interactive()) {
-  pdf(file="ns.pdf", width=11, height=8)
-  par(bty='n')
-  on.exit(dev.off())
+ns.T = 0.003                             #bin time for network spikes
+
+ns.N = 10                               #number of active electrodes.
+
+
+kurtosis <- function (x, na.rm = FALSE) {
+  ## Copied from e1071 package.
+  if (na.rm) 
+    x <- x[!is.na(x)]
+  sum((x - mean(x))^4)/(length(x) * var(x)^2) - 3
 }
-
-library(sjemea)
-library(e1071)                          #needed for "kurtosis"?
-
-## should put this common stuff into the  package..?
-windows <- .Platform$OS.type !='unix'
-
-if (windows) {
-  ## Set up on Windows machine.
-  ## Scripts are stored in meadev/scripts.
-  setwd("c:/meadev/scripts")
-  mea.data.dir <- "c:/meadev/data/"
-  mea.table.dir <- "c:/meadev/tables/"
-} else {
-  ## Set up for linux.
-  mea.data.dir <- "~/proj/sangermea/data/"
-  mea.table.dir <- "~/proj/sangermea/tables/"
-
-}
-
-## Create the cache of datafiles.
-mea.data.files <- make.meafile.cache(mea.data.dir)
-
-
-######################################################################
-
-
 
 
 spikes.to.count <- function(spikes,
@@ -147,8 +126,13 @@ find.peaks <- function(trace) {
   }
 
   ## tidy up result at end.
-  peaks = peaks[1:n,,drop=FALSE]
 
+  if (n > 0) {
+    peaks = peaks[1:n,,drop=FALSE]
+  } else {
+    ## no peaks found.
+    peaks = NULL
+  }
 }
 
 
@@ -157,6 +141,12 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
 
   ## This code does not check to worry if there is a spike right at either
   ## end of the recording.  naughty!
+
+  if (is.null(p)) {
+    cat("*** No network spikes found\n")
+    return (NULL)
+  }
+
   old.par <- par(mfrow=c(nrow,ncol), mar=c(1,1,1,1),ask=ask)
   sur = 100
   ave = rep(0, (2*sur)+1)
@@ -243,90 +233,4 @@ check.ns.plot <- function(counts, p, xlim) {
 ######################################################################
 ## End of functions
 ######################################################################
-
-
-ns.T = 0.003                             #bin time for network spikes
-
-ns.N = 10                               #number of active electrodes.
-
-## testing on just the first 400 sec to keep computation short.
-
-
-s <- sanger.read.spikes(meafile("TC2_PSD93homo_DIV11_B.nexTimestamps"),
-                        end=400)
-
-fourplot(s)
-counts <- spikes.to.count(s$spikes, time.interval=ns.T)
-
-
-trace <- counts$sum
-
-
-
-
-## Find the peaks, and then demonstrate that they have been found okay;
-## blue circles should sit atop all peaks.
-
-## show at different scales.
-p <- find.peaks(trace)
-
-
-check.ns.plot(counts, p, xlim=c(0,400))
-check.ns.plot(counts, p, xlim=c(10,50))
-check.ns.plot(counts, p, xlim=c(45,48))
-
-m <- show.ns(p)
-
-hist(p[,2], main='histogram of peak sizes: unimodal')
-
-
-## 11, Control case:
-
-s <- sanger.read.spikes(meafile("TC2_PSD93homo_DIV11_A.nexTimestamps"),
-                        end=400)
-
-fourplot(s)
-counts <- spikes.to.count(s$spikes, time.interval=ns.T)
-
-
-trace <- counts$sum
-
-
-
-
-## Find the peaks, and then demonstrate that they have been found okay;
-## blue circles should sit atop all peaks.
-
-## show at different scales.
-p <- find.peaks(trace)
-
-
-check.ns.plot(counts, p, xlim=c(0,400))
-check.ns.plot(counts, p, xlim=c(10,50))
-check.ns.plot(counts, p, xlim=c(42,48))
-
-show.ns(p)
-
-
-## Theta bursts are again going to be a problem...
-s <- sanger.read.spikes(meafile("TC89_DIV15_A.nexTimestamps"), end=400)
-fourplot(s)
-
-counts <- spikes.to.count(s$spikes, time.interval=ns.T)
-trace <- counts$sum
-
-
-## Find the peaks, and then demonstrate that they have been found okay;
-## blue circles should sit atop all peaks.
-
-## show at different scales.
-p <- find.peaks(trace)
-
-check.ns.plot(counts, p, xlim=c(0,400))
-check.ns.plot(counts, p, xlim=c(10,50))
-check.ns.plot(counts, p, xlim=c(29,31))
-show.ns(p)
-
-
-hist(p[,2], main='histogram of peak sizes: biomodal?')
 
