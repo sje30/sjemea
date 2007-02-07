@@ -4,8 +4,10 @@
 s.min = 5                               #threshold on suprise index.
 
 burst.isi.threshold = FALSE             #do we want to use threshold on ISI?
-burst.isi.max = 0.1 #ISI within burst must be smaller than this.
 
+##burst.isi.max = 0.1 #ISI within burst must be smaller than this.
+
+burst.isi.max = NULL                    #set non-null to be the threshold between spikes.
 
 ######################################################################
 
@@ -36,7 +38,6 @@ plot.burst.info <- function(allb, index, ylab=NULL, max=-1,title='') {
 
   if (max>0) {
     values <- sapply(values, pmin, max)
-    ##browser()
   }
   mins <- min(sapply(values, min), na.rm=TRUE)
   maxs <- max(sapply(values, max), na.rm=TRUE)
@@ -71,12 +72,16 @@ spikes.to.bursts.surprise <- function(s) {
 }
 
 find.bursts <- function(spikes,debug=FALSE) {
-
+  ## For one spike train, find the bursts.
   ## e.g.
   ## find.bursts(s$spikes[[5]])
   ## init.
   nspikes = length(spikes)
-  mean.isi = nspikes/ (spikes[nspikes] - spikes[1])
+
+  ### OOOOPS!!!!  mean.isi was actually the mean firing rate!
+  mean.isi = mean(diff(spikes))
+  
+  ##mean.isi = nspikes/ (spikes[nspikes] - spikes[1])
   threshold = mean.isi/2
 
   n = 1
@@ -93,7 +98,8 @@ find.bursts <- function(spikes,debug=FALSE) {
       print(n)
     if( ((spikes[n+1] - spikes[n]  ) < threshold) &&
        ((spikes[n+2] - spikes[n+1]) < threshold)) {
-      res <- find.burst(n, spikes, nspikes, mean.isi, threshold,debug)
+      ##res <- find.burst(n, spikes, nspikes, mean.isi, threshold,debug)
+      res <- find.burst2(n, spikes, nspikes, mean.isi, burst.isi.max,debug)
 
       if (is.na(res[1])) {
         ## no burst found, just move on one spike.
@@ -106,7 +112,15 @@ find.bursts <- function(spikes,debug=FALSE) {
           browser()
         }
         bursts[burst,] <- res
-        n <- n + res[2]                 #move to end of burst.
+        ## WRONG!!! This assumes no phase 2!!!
+        ## n <- n + res[2]                 #move to end of burst.
+        ## move on to spike after n.
+        ##n <- res["n"] + res["i"]
+        ## TODO: why does names(res) change?
+        ## Could try "0 + res[1] + res[2]"???
+        n <- res[1] + res[2]
+        names(n) <- NULL                #TODO HHHHH???
+        ##browser()
       }
     } else {
       ## no triple-spike.
@@ -115,6 +129,7 @@ find.bursts <- function(spikes,debug=FALSE) {
   }
 
   ## At end of spike train, now truncate bursts to right length.
+  ## TODO -- use drop=F? in matrix handling.
   if (burst > 0) {
     ## need to handle one burst as special case?
     if (burst==1) {
@@ -135,8 +150,6 @@ find.bursts <- function(spikes,debug=FALSE) {
 
 find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
   ## Find a burst starting at spike N.
-  ## TODO -- need to worry about running out of spikes at the end of the
-  ## spike train!
 
   if (debug) 
     cat(sprintf("** find.burst %d\n", n))
@@ -210,6 +223,133 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
   
 }
 
+
+printf <- function (...) {
+  ## Helper function.
+  cat(sprintf(...))
+}
+
+find.burst2 <- function(n, spikes, nspikes, mean.isi, threshold=NULL,
+                        debug=FALSE) {
+  ## Find a burst starting at spike N.
+  ## Include a better phase 1.
+
+
+  ## Determine ISI threshold.
+  if (is.null(threshold)) 
+    isi.thresh = 2 * mean.isi
+  else
+    isi.thresh = threshold
+  
+  if (debug) 
+    cat(sprintf("** find.burst %d\n", n))
+  
+  i=3  ## First three spikes are in burst.
+  s = surprise(n, i, spikes, nspikes, mean.isi)
+
+  ## Phase 1 - add spikes to the train.
+  phase1 = TRUE
+  ##browser()
+
+  ## in Phase1, check that we still have spikes to add to the train.
+  while( phase1 ) {
+
+    ##printf("phase 1 s %f\n", s);
+    
+    i.cur = i;
+
+    ## CHECK controls how many spikes we can look ahead until SI is maximised.
+    ## This is normally 10, but will be less at the end of the train.
+    check = min(10, nspikes-(i+n-1))
+
+    looking = TRUE; okay = FALSE;
+    while (looking) {
+
+      if (check==0) {
+        ## no more spikes left to check.
+        looking=FALSE;
+        break;
+      }
+      check=check-1; i=i+1
+      s.new = surprise(n, i, spikes, nspikes, mean.isi)
+      if (debug) 
+        printf("s.new %f s %f n %d i %d check %d\n", s.new, s, n, i, check)
+
+      if (s.new > s) {
+        okay=TRUE; looking=FALSE;
+      } else {
+        ## See if we should keep adding spikes?
+        if ( (spikes[i] - spikes[i-1]) > isi.thresh ) {
+          looking = FALSE;
+        }
+          
+      }
+    }
+    ## No longer checking, see if we found an improvement.
+    if (okay) {
+      if (s > s.new) {
+        ## This should not happen.
+        printf("before s %f s.new %f\n", s, s.new)
+        browser()
+      }
+      s = s.new
+    } else {
+      ## Could not add more spikes onto the end of the train.
+      phase1 = FALSE
+      i = i.cur
+    }
+  }
+
+
+  ## start deleting spikes from the start of the burst.
+  phase2 = TRUE
+  while(phase2) {
+    if (i==3) {
+      ## minimum length of a burst must be 3.
+      phase2=FALSE
+    } else {
+      s.new = surprise(n+1, i-1, spikes, nspikes, mean.isi)
+      if (debug)
+        cat(sprintf("phase 2: n %d i %d s.new %.4f\n", n, i, s.new))        
+      if (s.new > s) {
+        if (debug) 
+          print("in phase 2 acceptance\n")
+        n = n+1; i = i-1
+        s = s.new
+      } else {
+        ## removing front spike did not improve SI.
+        phase2 = FALSE
+      }
+    }
+  }
+  
+
+  ## End of burst detection; accumulate result.
+  if ( s > s.min) {
+
+
+    ## compute the ISIs, and then the mean ISI.
+    
+    ## Fencepost issue: I is the number of spikes in the burst, so if
+    ## the first spike is N, the last spike is at N+I-1, not N+I.
+    isis = diff(spikes[n+(0:(i-1))])
+    mean.isis = mean(isis)
+    
+    durn = spikes[n+i-1] - spikes[n]
+    res <- c(n=n, i=i, s=s, durn=durn, mean.isis=mean.isis)
+
+    if (debug) 
+      print(res)
+
+  } else {
+    ## burst did not have high enough SI.
+    res <- rep(NA, burst.info.len)
+  }
+  ##browser()
+  res
+  
+}
+
 surprise <- function(n, i, spikes, nspikes, mean.isi) {
   ## Calculate surprise.
 
@@ -268,8 +408,8 @@ bursts.to.active <- function(bursts, tmin, tmax, dt) {
 
 
 calc.burst.summary <- function(s) {
-  ## Compute the summary burst information.  Use a separate function
-  ## to write the burst information.
+  ## Compute the summary burst information.  Use a separate 
+  ## call (write.csv() for example) to write the burst information to file.
   
   allb <- s$allb
   
