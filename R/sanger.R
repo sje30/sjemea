@@ -30,13 +30,19 @@ make.sanger1.layout <- function(positions) {
 
 sanger.read.spikes <- function(filename, ids=NULL,
                                time.interval=1,
-                               beg=NULL, end=NULL) {
+                               beg=NULL, end=NULL,
+                               min.rate=0) {
 
   ## Read in Sanger data set.  
-  ## IDS is
+  ## IDS (IGNORE FOR NOW)is
   ## an optional vector of cell numbers that should be analysed -- the
   ## other channels are read in but then ignored.
 
+  ## MIN.RATE (when >0) is the mininum firing rate (Hz) that a channel
+  ## must have for it to be analysed.  e.g. a sensible threshold would
+  ## be 1/60 to indicate it must on average make one spike/minute to
+  ## be analysed.
+  
 
   ## Tue 25 Jul 2006 -- I'm not sure if this is the cleanest way to read in the
   ## data files, as it probably can be read in using just
@@ -104,6 +110,33 @@ sanger.read.spikes <- function(filename, ids=NULL,
     beg <- sweep.start
   }
 
+  if (min.rate > 0 ) {
+    
+    ## Check for inactive channels -- those with a mean firing rate
+    ## below some average rate.
+
+    ## This catches the odd situation when a channel has no spikes on
+    ## it -- this can happen when a duration (beg, end) is given where
+    ## no spikes occur on that channel.
+    
+    
+    nspikes <- sapply(spikes,length)
+    durn <- sweep.stop - sweep.start
+    rates <- nspikes/durn
+    inactive <- which(rates < min.rate)
+    if (any(inactive)) {
+      cat(paste("Removing spikes with low firing rates: ",
+                paste(inactive, collapse=' '), "\n"
+                ))
+      spikes = spikes[-inactive]
+      channels = channels[-inactive]
+    }
+    
+    
+  }
+
+
+  
   if (!is.null(ids) ) {
     if (any(ids>length(spikes)))
       stop(paste("some ids not in this data set:",
@@ -191,6 +224,8 @@ sanger.read.spikes <- function(filename, ids=NULL,
   }
 
   ## Compute CV of ISI.
+  mean.isi = sapply(spikes, function(s) { mean(isi(s))})
+  
   cv.isi = sapply(spikes, cv.isi)
   
   res <- list( channels=channels,
@@ -210,6 +245,7 @@ sanger.read.spikes <- function(filename, ids=NULL,
               rates=rates,
               unit.offsets=unit.offsets,
               rec.time=c(beg, end),
+              mean.isi=mean.isi,
               cv.isi = sapply(spikes, cv.isi)
               )
   class(res) <- "mm.s"
