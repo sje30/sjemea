@@ -127,7 +127,7 @@ plotCI <- function (x, y = NULL, uiw, liw = uiw,
 
 
 plot.corr.index <- function(s, identify=FALSE,
-                            main=paste(s$file, "dt:", s$corr.indexes.dt),
+                            main=paste(basename(s$file), "dt:", s$corr.indexes.dt),
                             ...) {
   ## Plot the correlation indices as a function of distance.
   ## If identify is TRUE, we can locate cell pairs on the plot using
@@ -360,7 +360,8 @@ make.jay.layout <- function(positions) {
 
 jay.read.spikes <- function(filename, ids=NULL,
                             time.interval=1,
-                            beg=NULL, end=NULL) {
+                            beg=NULL, end=NULL,
+                            min.rate=0) {
   ## Read in Jay's data set.
   ## IDS is an optional vector of cell numbers that should be analysed
   ## -- the other channels are read in but then ignored.
@@ -407,6 +408,8 @@ jay.read.spikes <- function(filename, ids=NULL,
   if (!is.null(beg))
     spikes <- lapply(spikes, jay.filter.for.min, min=beg)
 
+
+  
   if (!is.null(ids) ) {
     if (any(ids>length(spikes)))
       stop(paste("some ids not in this data set:",
@@ -420,7 +423,26 @@ jay.read.spikes <- function(filename, ids=NULL,
   if (is.null(beg))  beg <-  spikes.range[1]
   if (is.null(end))  end <-  spikes.range[2]
   rec.time <- c(beg, end)
+  browser()
+  if (min.rate > 0 ) {
+    
+    ## Check for inactive channels.
+    nspikes <- sapply(spikes,length)
+    durn <- diff(rec.time)
+    rates <- nspikes/durn
+    inactive <- which(rates < min.rate)
+    if (any(inactive)) {
+      paste("Removing spikes with low firing rates: ",
+            paste(inactive, collapse=' '))
+      spikes   =   spikes[-inactive]
+      channels = channels[-inactive]
+    }
+    
+    
+  }
 
+
+  
   ## Count the number of spikes per channel, and label them.
   nspikes <- sapply(spikes, length)
   names(nspikes) <- channels
@@ -664,9 +686,8 @@ make.corr.indexes <- function(spikes, dt) {
                                    (as.double(n1) * n2 * (2*dt))
       }
     }
-    
     if (any(is.na(corrs))) {
-      stop("corrs has some NA values -- possible integer overflow in n1*n2?")
+      stop("corrs has some NA values -- possible integer overflow in n1*n2, or zero spikes in one of the trains?")
     }
     corrs
   }
@@ -1968,7 +1989,7 @@ plot.meanfiringrate <- function (s, beg, end, ...) {
   if (missing(end)) end <- s$rates$times[length(s$rates$times)]
   plot(s$rates$times, s$rates$av.rate, type = "h", xlab = "time (s)",
        xlim=c(beg,end), bty="n", lwd=0.2,
-       ylab = "mean firing rate", main = s$file, ...)
+       ylab = "mean firing rate", main = basename(s$file), ...)
 }
 
 "setrates<-" <- function(s, value) {
@@ -2063,7 +2084,41 @@ cv.isi <- function(train) {
   cv
 }
   
+
+plot.cumisi <- function(s, xlim=c(0.01, 30)) {
+
+  ## Show the ISI cumulative historgrams.
+  ## Each black line is ISI from one channel.
+  ## Red line is the mean ISI across the whole array...
   
+  show.isi.cdf <- function(spikes, col='black',lwd=1) {
+    if (length(spikes)>1) {
+      isi1 <- isi(spikes)
+      s <- sort(isi1)
+      n <- length(s)
+      y <- (1:n)/n
+      lines(s, y, col=col,lwd=lwd)
+    }
+  }
+
+  plot(NA, NA, log='x', xlim=xlim, ylim=c(0,1),
+       xlab='ISI (s)', ylab='cumulative probability', type='n', bty='n')
+
+  title(basename(s$file))
+  res <- sapply(s$spikes, show.isi.cdf)
+
+  ## This is a hacky way to get the average -- since "tt" will be very long...
+  tt <- unlist(s$spikes)
+  show.isi.cdf(tt, col='red', lwd=2)
+
+  ## Other ideas for plotting the ISI histogram
+  ##x = density(isi1)
+  ## plot(x, log='x')
+  ##x = hist(isi1, breaks=100)
+  
+}
+
+
 
 ## store the maximum and minimum firing rate.  Any firing rate bigger
 ## than this value is set to this value; this prevents the circles
