@@ -151,7 +151,8 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
   sur = 100
   ave = rep(0, (2*sur)+1)
   npts = length(counts$sum)
-  measures = matrix(NA, nrow=nrow(p), ncol=2)
+  measures = matrix(NA, nrow=nrow(p), ncol=3)
+  
   n.ns = 0                              #Number of valid network spikes found
   for (i in 1:nrow(p)) {
     peak.i = p[i,1]; lo = (peak.i-sur); hi = peak.i+sur
@@ -159,10 +160,20 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
     ## Check that enough data can be found:
     if ( (lo >0) && ( hi < npts) ) {
       n.ns = n.ns + 1
+
+
+      measures[n.ns, 3] = peak.i
       dat = counts$sum[lo:hi]
-      k = kurtosis(dat)
+
+      hm = find.halfmax(dat, peak.n=sur+1, frac=0.5)
+      measures[n.ns, 2] = hm$durn
+
+      dat2 = dat;
+      ##dat2[1:(hm$xl-1)] = 0;
+      ##dat2[(hm$xr+1):((2*sur)+1)] = 0;
+      
+      k = kurtosis(dat2)
       measures[n.ns, 1] = k
-      ##try(find.halfmax(ave))
       ave = ave + dat
       plot(dat, xaxt='n', yaxt='n', ylim=c(0,60),
            bty='n', type='l',xlab='', ylab='')
@@ -179,14 +190,21 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
     find.halfmax(ave)
     stripchart(measures[,1], ylab='K', method='jitter', vert=T, pch=19,
                main=paste('kurtosis', round(mean(measures[,1]),3)))
+
+    stripchart(measures[,2], ylab='durn (bins)', method='jitter',
+               vert=TRUE, pch=19,
+               main=paste('FWHM durn', round(mean(measures[,2]),3)))
   }
   par(old.par)
 
   list(measures, ave=ave)
 }
 
-find.halfmax <- function(y) {
+find.halfmax.cute <- function(y) {
   ## Given a peak within DAT, find the FWHM.
+  ## This is a cute method, but not robust enough -- since it assumes
+  ## that the peak is unimodel -- which may not be the case.
+  
 
   x = 1:length(y)
   p.t = 101                             #HACK!!!
@@ -198,6 +216,75 @@ find.halfmax <- function(y) {
 
   segments(l$root, f(l$root), r$root, f(r$root), col='blue')
 
+}
+
+
+
+find.halfmax <- function(y, peak.n=NULL, plot=TRUE, frac=0.5) {
+
+  ## Given a peak somwhere with Y, find the FWHM.
+  ##
+  ## If PEAK.N is not null, it will be location of the peak -- this is helpful
+  ## when there are multiple peaks within one window, and we want to find
+  ## the FWHM of the non-major peak.
+  ## By default, frac = 0.5, to find the half max.  Change this to some other
+  ## value, e.g. 10% to find 10% onset and offset.
+  ## 
+  ##
+  ## This may fail for a few reasons, e.g. not finding half-max values within
+  ## the range, running out of data...
+  ## all of which should be counted for!
+  n = length(y)
+
+  if (is.null(peak.n))
+    peak.n = which.max(y)
+  
+  peak.val = y[peak.n]
+
+  half.max = peak.val * frac
+  
+  ## Break the data into three segments:
+
+  ## llllllllllllllllllPrrrrrrrrrrrrrrrrr
+  ## P is the peak; examine curve to the left (lll) and to the right (rrr) to
+  ## find when the peak has decayed to half max.
+
+  left.y = y[1:(peak.n-1)]
+  right.y = y[(peak.n+1):n]
+
+  underhalf.l = which(left.y < half.max)
+  xl1 = underhalf.l[length(underhalf.l)]   #get last point under halfmax.
+  xl2 = xl1+1
+
+  yl1 = y[xl1]; yl2 = y[xl2];
+  dy = half.max - yl1
+
+  ## below, (xl2 - xl1) should equal 1.
+  dx = (dy  *(xl2-xl1))/ (yl2-yl1)
+
+  ##xl.half = xl1 + dx
+  xl.half = xl1 + dx
+
+  ## Now work on right of curve.  find first point at which y falls below
+  ## half max value.
+  underhalf.r = which(right.y < half.max)
+  xr2 = underhalf.r[1] + peak.n
+  xr1 = xr2 - 1
+
+  yr1 = y[xr1]; yr2 = y[xr2]
+  dy = half.max - yr2
+
+  dx = dy * (xr1-xr2)/(yr1-yr2)
+  stopifnot(dx<0)
+  xr.half = xr2 + dx
+
+  
+  if(plot) {
+    abline(h=peak.val * frac, col='red')
+    segments(xl.half, half.max, xr.half, half.max, col='blue')
+  }
+
+  list(xl=xl.half, xr=xr.half, durn=xr.half-xl.half)
 }
 
 ## now interpolate -- hard way
