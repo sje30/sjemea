@@ -148,13 +148,14 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
   }
 
   old.par <- par(mfrow=c(nrow,ncol), mar=c(1,1,1,1),ask=ask)
-  sur = 100
+  sur = 40                              #100 normally
   ave = rep(0, (2*sur)+1)
   npts = length(counts$sum)
   measures = matrix(NA, nrow=nrow(p), ncol=3)
   
   n.ns = 0                              #Number of valid network spikes found
-  for (i in 1:nrow(p)) {
+  ##for (i in 1:nrow(p)) {
+  for (i in 1:2) {
     peak.i = p[i,1]; lo = (peak.i-sur); hi = peak.i+sur
 
     ## Check that enough data can be found:
@@ -164,7 +165,7 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
 
       measures[n.ns, 3] = peak.i
       dat = counts$sum[lo:hi]
-
+      abline(v=sur+1)
       hm = find.halfmax(dat, peak.n=sur+1, frac=0.5)
       measures[n.ns, 2] = hm$durn
 
@@ -178,7 +179,7 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
       plot(dat, xaxt='n', yaxt='n', ylim=c(0,60),
            bty='n', type='l',xlab='', ylab='')
       legend("topleft", paste(round(max(dat))), bty='n')
-      title(paste('k ', signif(k,3)))
+      ##title(paste('k ', signif(k,3)))
     }
   }
 
@@ -188,8 +189,9 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE) {
     plot(ave, xaxt='n', yaxt='n', bty='n', type='l',xlab='', ylab='')
     legend("topleft", paste("m", round(max(ave))), bty='n')
     find.halfmax(ave)
-    stripchart(measures[,1], ylab='K', method='jitter', vert=T, pch=19,
-               main=paste('kurtosis', round(mean(measures[,1]),3)))
+
+    ##stripchart(measures[,1], ylab='K', method='jitter', vert=T, pch=19,
+    ##main=paste('kurtosis', round(mean(measures[,1]),3)))
 
     stripchart(measures[,2], ylab='durn (bins)', method='jitter',
                vert=TRUE, pch=19,
@@ -234,6 +236,7 @@ find.halfmax <- function(y, peak.n=NULL, plot=TRUE, frac=0.5) {
   ## This may fail for a few reasons, e.g. not finding half-max values within
   ## the range, running out of data...
   ## all of which should be counted for!
+
   n = length(y)
 
   if (is.null(peak.n))
@@ -280,6 +283,7 @@ find.halfmax <- function(y, peak.n=NULL, plot=TRUE, frac=0.5) {
 
   
   if(plot) {
+    abline(v=xl.half, col='green'); abline(v=xr.half, col='green'); #temp
     abline(h=peak.val * frac, col='red')
     segments(xl.half, half.max, xr.half, half.max, col='blue')
   }
