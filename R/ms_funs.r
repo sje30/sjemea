@@ -423,7 +423,6 @@ jay.read.spikes <- function(filename, ids=NULL,
   if (is.null(beg))  beg <-  spikes.range[1]
   if (is.null(end))  end <-  spikes.range[2]
   rec.time <- c(beg, end)
-  browser()
   if (min.rate > 0 ) {
     
     ## Check for inactive channels.
@@ -1251,7 +1250,7 @@ check.similarity <- function(s, tmax=0.001) {
 xcorr.plot.xaxistimes <- FALSE
 
 xcorr.plot <-  function(spikes.a, spikes.b,
-                        plot.label,
+                        plot.label='',
                         xcorr.maxt=4, bi= TRUE,
                         nbins=100,
                         show.poisson=TRUE,
@@ -1527,7 +1526,8 @@ make.animated.gif <- function (x, beg=1,
                                delay=10,
                                output="anim.gif",
                                delete.frames=TRUE) {
-
+  ## THIS FUNCTION IS NOW DEPRECATED -- USE MAKE.MOVIEFRAMES INSTEAD.
+  ##
   ## Loop over each frame, making a temporary .pbm (black/white) and
   ## then convert it to a GIF.  Temporary gif file names are written
   ## as /tmp/ms.movNNNNN.gif where NNNNN is the frame number.  The
@@ -1565,8 +1565,10 @@ make.movieframes <- function (x, beg=1,
                                end=dim(x$rates$rates)[1],
                               outputdir=dirname(tempfile()),
                               prefix="mea",
+                              show.frames = interactive(),
                               seconds=TRUE,
-                              delete.first=FALSE) {
+                              delete.first=FALSE,
+                              anim.delay=0) {
 
   ## Loop over each frame, making a PNG (mono) file.
   ## The frame number normally has leading zeros (e.g. 00050 rather than
@@ -1578,8 +1580,16 @@ make.movieframes <- function (x, beg=1,
   ## If SECONDS is true, beg,end are interpreted as time in seconds,
   ## not frames.  These times are then first converted into frame numbers.
   ##
+  ## If SHOW.FRAMES is true, we view the frames on the screen as well as
+  ## writing them to PNGs.
+  ##
   ## Once the frames are made, quicktime on PC can then make a movie of these
   ## frames; or on unix, try: "animate -delay 5 mea*png"
+  ##
+  ## On unix, we can also use "convert" to make the movies
+  ## automatically.  WE can do this by setting ANIM.DELAY to the delay
+  ## (in 1/100ths of a second) required between frames.
+  
   
   if (substring(outputdir, first=nchar(outputdir))=="/")
     stop(paste("outputdir should not end in slash", outputdir))
@@ -1598,18 +1608,43 @@ make.movieframes <- function (x, beg=1,
     if (length(files)>0)
       file.remove(files)
   }
-  
-  for (i in beg:end) {
-    plot.rate.mslayout(x, i)
-    file <- paste(outputdir, "/", prefix,
-                  formatC(i,width=5,flag="0"),
-                  ".png", sep='')
-                  ##".ppm", sep='')
-    ## Depending on whether we are colour coding or radius coding, change
-    ## the device -- this will keep the files small.
-    dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "pngmono"))
-    ##dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "ppm"))
+
+
+  if (show.frames) {
+    ## Show frames on screen whilst also copying them to file.
+    ## This may require ghostscript to be installed.
+    for (i in beg:end) {
+      plot.rate.mslayout(x, i)
+      file <- paste(outputdir, "/", prefix,
+                    formatC(i,width=5,flag="0"),
+                    ".png", sep='')
+      ##".ppm", sep='')
+      ## Depending on whether we are colour coding or radius coding, change
+      ## the device -- this will keep the files small.
+      dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "pngmono"))
+      ##dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "ppm"))
+    }
+  } else {
+    ## Do not show frames interactively...
+    for (i in beg:end) {
+      file <- paste(outputdir, "/", prefix,
+                    formatC(i,width=5,flag="0"),
+                    ".png", sep='')
+      png(file)
+      plot.rate.mslayout(x, i)
+      dev.off()
+      ##dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "pngmono"))
+    }
   }
+
+  if (anim.delay > 0) {
+    ## We want to make an animation...
+    cmd = sprintf("cd %s; convert -delay %d %s*png mea.gif",
+      outputdir, anim.delay, prefix)
+    ##browser()
+    system(cmd)
+  }
+  cat(paste("Movie frames stored in", outputdir, "\n"))
 }
 
 time.to.frame <- function(times, time) {
