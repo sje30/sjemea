@@ -239,10 +239,10 @@ plot.mm.s <- function(s, whichcells=NULL,
         odd <- (1:nbursts) %% 2 == 1
         ys[odd] <- ys[odd] + shimmy
 
-        start.burst <- ts[burst.times[,"first"]]
+        start.burst <- ts[burst.times[,"beg"]]
         ## for the end of the burst, -1 is needed since if start spike
         ## is 20, and i=3, last spike in burst is 22 (spikes 20, 21, 22)
-        end.burst <- ts[ burst.times[,"first"] + burst.times[,"len"] -1]
+        end.burst <- ts[ burst.times[,"beg"] + burst.times[,"len"] -1]
         segments(start.burst, ys,
                  end.burst, ys,
                  col="red", lwd=2)

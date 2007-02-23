@@ -11,7 +11,7 @@ burst.isi.max = NULL                    #set non-null to be the threshold betwee
 
 ######################################################################
 
-burst.info <- c("first", "len", "SI", "durn", "mean.isis")
+burst.info <- c("beg", "len", "SI", "durn", "mean.isis")
 burst.info.len = length(burst.info)
 
 
@@ -363,10 +363,10 @@ calc.ibi <- function(spikes, b) {
       res = NA                          #cannot compute  IBI w/only 1 burst.
     } else {
       ## find end spike in each burst.
-      end = b[,"first"] + b[,"len"] - 1
+      end = b[,"beg"] + b[,"len"] - 1
 
       ## for NBURST bursts, there will be NBURST-1 IBIs.
-      start.spikes = b[2:nburst,"first"]
+      start.spikes = b[2:nburst,"beg"]
       end.spikes   = end[1:(nburst-1)]
       res = spikes[start.spikes] - spikes[end.spikes]
     }
@@ -545,7 +545,8 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
 }
 
 plot.spikes <- function(xlim=NULL, show.bursts=TRUE) {
-  ## This requires SPIKES to be defined somwehwere... 
+  ## This requires SPIKES to be defined somwehwere...
+  nspikes = length(spikes)
   min.t <- spikes[1]
   max.t <- spikes[nspikes]
 
