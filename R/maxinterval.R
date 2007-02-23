@@ -1,7 +1,6 @@
 ## Implement maxinterval method for burst detection.
 ## Fri 23 Feb 2007
 
-
 mi.find.bursts <- function(spikes,debug=FALSE) {
 
   ## For one spike train, find the burst using max interval method.
@@ -19,12 +18,6 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
   min.spikes = mi.par$min.spikes
   
   nspikes = length(spikes)
-
-  ### OOOOPS!!!!  mean.isi was actually the mean firing rate!
-  mean.isi = mean(diff(spikes))
-  
-  ##mean.isi = nspikes/ (spikes[nspikes] - spikes[1])
-  threshold = mean.isi/2
 
   n = 1
 
