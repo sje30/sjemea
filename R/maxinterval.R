@@ -114,21 +114,15 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
   merge.bursts = which(ibis < min.ibi)
   
   if (any(merge.bursts)) {
-    ## Remove bursts one by one.
-    ## This might be inefficient.
-    offset = 0
-    ##browser()
-    for (burst in merge.bursts) {
-      
-      ##print(bursts)
-      burst = burst-offset; offset=offset+1
-      ## update "end" information.
+    ## Merge bursts efficiently.  Work backwards through the list, and
+    ## then delete the merged lines afterwards.  This works when we
+    ## have say 3+ consecutive bursts that merge into one.
+
+    for (burst in rev(merge.bursts)) {
       bursts[burst-1, "end"] = bursts[burst, "end"]
-      bursts = bursts[-burst,,drop=F] #delete this row.
-      
-      ##bursts[burst,"end"] = NA #signal that is corrupt, but removed later.
-      
+      bursts[burst, "end"] = NA         #not needed, but helpful.
     }
+    bursts = bursts[-merge.bursts,,drop=F] #delete the unwanted info.
   }
 
   if (debug) {
