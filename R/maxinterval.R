@@ -57,7 +57,6 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
         
         ibi =  spikes[beg] - last.end; last.end = spikes[end]
         res = c(beg, end, ibi)
-        ##printf("found burst %d %d %.3f \n", beg, end, ibi)
         burst = burst + 1
         if (burst > max.bursts) {
           print("too many bursts!!!")
@@ -154,7 +153,7 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
     ## Compute mean ISIS
     len = bursts[,"end"] - bursts[,"beg"] + 1
     durn = spikes[bursts[,"end"]] - spikes[bursts[,"beg"]]
-    mean.isis = durn/(len-1)                  #TODO -- CHECK.
+    mean.isis = durn/(len-1)
 
     ## Recompute IBI (only needed if phase 3 deleted some cells).
     if (nrow(bursts)>1) {
@@ -166,7 +165,6 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
     
     SI = rep(1, length(mean.isis ))
     bursts = cbind(bursts, mean.isis, SI)
-    ## If any bursts were rejected, we now need to recalc IBI.
   }
   
   ## End -- return burst structure.
