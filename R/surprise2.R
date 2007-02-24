@@ -290,9 +290,14 @@ calc.burst.summary <- function(s) {
   mean.dur <- round(sapply(durations, mean), 3)
   sd.dur <- round(sapply(durations, sd), 3)
 
-  mean.isis <- burstinfo(allb, "mean.isis")
-  mean.mean.isis <- round(sapply(mean.isis, mean), 3)
-  sd.mean.isis <- round(sapply(mean.isis, sd), 3)
+  
+  
+  ##mean.isis <- burstinfo(allb, "mean.isis")
+  ##mean.mean.isis <- round(sapply(mean.isis, mean), 3)
+  ##sd.mean.isis <- round(sapply(mean.isis, sd), 3)
+  ISIs = calc.all.isi(s, allb)
+  mean.ISIs = sapply(ISIs, mean)
+  sd.ISIs = unlist( sapply(ISIs, sd, na.rm=TRUE))
 
   
   ns <- burstinfo(allb, "len")
@@ -323,8 +328,8 @@ calc.burst.summary <- function(s) {
                    per.spikes.in.burst=per.spikes.in.burst,
                    per.spikes.out.burst=round(100.0-per.spikes.in.burst,3),
                    mean.si=mean.si,
-                   mean2.isis=mean.mean.isis,
-                   sd.mean.isis=sd.mean.isis,
+                   mean2.isis=mean.ISIs,
+                   sd.mean.isis=sd.ISIs,
                    mean.IBIs=mean.IBIs,
                    sd.IBIs=sd.IBIs,
                    cv.IBIs=cv.IBIs
@@ -383,6 +388,37 @@ calc.all.ibi <- function (s, allb) {
   }
 
   IBIs
+}
+
+
+calc.all.isi <- function (s, allb) {
+  ## Compute ISI within bursts for all spike trains.
+
+  calc.isi = function(spikes, b) {
+    ## for one spike train, get all ISIs within bursts in that train.
+    if (num.bursts(b)==0) {
+      return ( NA )
+    }
+
+    ## as.vector is needed below in case each burst is of the same
+    ## length (in which case an array is returned by apply).  In
+    ## normal cases, bursts are of different lengths, so "apply"
+    ## returns a list.
+    
+    isis = as.vector(
+      unlist(apply(b, 1,
+      function(x) {
+        diff(spikes[ x[1]:x[2]])
+      } )))
+  }
+  
+  nchannels <- s$NCells
+  ISIs = list()
+  for (i in 1:nchannels) {
+    ISIs[[i]]  = calc.isi(s$spikes[[i]], allb[[i]])
+  }
+
+  ISIs
 }
 
 
