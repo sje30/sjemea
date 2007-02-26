@@ -373,6 +373,10 @@ calc.ibi <- function(spikes, b) {
       ## for NBURST bursts, there will be NBURST-1 IBIs.
       start.spikes = b[2:nburst,"beg"]
       end.spikes   = end[1:(nburst-1)]
+      ## NEX uses a strange definition of IBI -- it counts the time between
+      ## the first spike of burst N and the first spike of burst N+1 as the
+      ## IBI.  If we want to use that definition, use the following line:
+      ##end.spikes   = b[1:(nburst-1),"beg"]
       res = spikes[start.spikes] - spikes[end.spikes]
     }
   }
