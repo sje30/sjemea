@@ -99,45 +99,12 @@ ncl.read.spikes <- function(filename, ids=NULL,
 
   meanfiringrate <- nspikes/ ( end - beg)
 
-  ## correct the above in the sanger data set; it should not be
-  ## guessing at the time of the recording.
-  
-  ## todo: spike names need to be found.
-  
   ## Parse the channel names to get the cell positions.
-
   layout <- make.sanger1.layout(substring(channels, 1,2))
   
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
 
-  dists <- make.distances(layout$pos)
-
-  ## Test code:
-  ## corr <- matrix(data=c(0, 0, 0, 4, 0, 0, 5, 7, 0),nrow=3)
-  ## dists <- matrix(data=c(0,0,0, 1, 0,0, 9,8,0),nrow=3)
-  ## cbind( my.upper(dists), my.upper(corr))
-
-  ## Electrodes are spaced 100um apart in Jay's rectangular array.
-  ## Sanger- add 2000 bin!
-  jay.distance.breaks <- c(0, 150, 250, 350, 450, 550, 650, 1000, 2000)
-  jay.distance.breaks.strings <-
-    levels(cut(0, jay.distance.breaks, right=FALSE, include.lowest=TRUE))
-
-  dists.bins   <- bin.distances(dists, jay.distance.breaks)
-
-  ## Mon 25 Nov 2002: explore longer timescales?
-  corr.indexes.dt <- 0.05               #time window for coincident spikes
-  ##corr.indexes.dt <- 10.00 # try longer, such as 1s, 5s or 10s.
-  if (length(spikes) > 1) {
-    corr.indexes <- make.corr.indexes(spikes, corr.indexes.dt)
-    corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))
-    corr.id.means <- corr.get.means(corr.id)
-  } else {
-    corr.indexes <- NA
-    corr.id <- NA
-    corr.id.means <- NA
-  }
 
   rates <- make.spikes.to.frate(spikes, time.interval=time.interval,
                                 beg=beg, end=end)
@@ -181,18 +148,15 @@ ncl.read.spikes <- function(filename, ids=NULL,
               meanfiringrate=meanfiringrate,
               file=filename,
               layout=layout,
-              dists=dists, dists.bins=dists.bins,
-              corr.indexes=corr.indexes,
-              corr.indexes.dt=corr.indexes.dt,
-              corr.id=corr.id,
-              corr.id.means=corr.id.means,
-              distance.breaks=jay.distance.breaks,
-              distance.breaks.strings=jay.distance.breaks.strings,
               rates=rates,
               unit.offsets=unit.offsets,
               rec.time=rec.time
               )
   class(res) <- "mm.s"
+
+  ncl.breaks = c(0, 150, 250, 350, 450, 550, 650, 1000, 2000)
+  res$corr = corr.index(res, ncl.breaks)
+
   res
 
 }
