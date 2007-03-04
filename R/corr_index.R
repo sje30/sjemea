@@ -1,5 +1,6 @@
 ## Compute the correlation index.
-## Code is to be cleaned up a bit.
+## All of the correlation index code is in this file, rather than
+## in the main ms_funs.R area.
 ## Sun 04 Mar 2007
 
 corr.index <- function(s, distance.breaks, dt=0.05) {
@@ -18,12 +19,74 @@ corr.index <- function(s, distance.breaks, dt=0.05) {
     corr.id.means = NA
   }
 
+  ## distance.breaks.strings used only by Mutual Information Code?
+  distance.breaks.strings =
+    levels(cut(0, distance.breaks, right=FALSE, include.lowest=TRUE))
+
   res = list(dists=dists, dists.bins = dists.bins,
     corr.indexes = corr.indexes,
     dt = dt,
     corr.id = corr.id,
-    corr.id.means = corr.id.means)
+    corr.id.means = corr.id.means,
+    distance.breaks=distance.breaks,
+    distance.breaks.strings=distance.breaks.strings)
 
+  res
+}
+
+make.distances <- function(posns) {
+  ## POSNS should be a (N,2) array.  Returns a NxN upper triangular
+  ## array of the distances between all pairs of cells.
+
+  ## Currently store distances to the nearest micron, so that it makes
+  ## the job of binning distances easier when computing the mean of
+  ## correlation index for each "distance".  In Figure 9 of the
+  ## Meister 1991 paper, distances are binned into 20um bins to get
+  ## round this problem.
+
+  n <- dim(posns)[1]
+  dists <- array(0, dim=c(n,n))
+  for ( a in 1:n-1)
+    for (b in (a+1):n) {
+      delta <- posns[a,] - posns[b,]
+      dists[a,b] <- round(sqrt( sum(delta**2)))
+    }
+
+  dists
+}
+
+bin.distances <- function(dists, breaks) {
+  ## DISTS is a upper NxN array.
+  ## breaks is a vector of breakpoints.
+  ## Return an array of the same size where each distance value is
+  ## given a corresponding bin number.
+
+  ## e.g.
+  ## dists <- matrix( c(0,0,0, 400,0,0, 80, 1000, 0), nrow=3)
+  ## jay.bin.distances(dists)
+  ## This binning procedure can then be checked by comparing the
+  ## distances and their bins:
+  ## plot(my.upper(s$dists.bins), my.upper(s$dists))
+  ## boxplot(my.upper(s$dists)~ my.upper(s$dists.bins))
+  
+  distances <- my.upper(dists)
+  ## These breaks are hardcoded.
+
+  ##data <- c(0, 100, 700, 900, 400)
+
+  ## Make each bin [low, high) with exception that highest bin is
+  ## [low,high]. Labels is false so that we just return numeric count
+  ## of bin, rather than a factor.
+  bins <- cut(distances, breaks, right=FALSE,
+              include.lowest=TRUE, labels=FALSE)
+  invalid <- is.na(bins)
+  if (any(invalid))
+    stop(paste("distances not binned:",
+                  paste(distances[which(invalid)],collapse=" ")))
+  n <- dim(dists)[1]
+  res <- matrix(0, nrow=n, ncol=n)
+  res[which(upper.tri(res))] <- bins
+  
   res
 }
 
@@ -35,9 +98,10 @@ plot.corr.index <- function(s, log='', identify=FALSE,
   ## If identify is TRUE, we can locate cell pairs on the plot using
   ## left mouse button.
   
-  dists = s$corr$dists[which(upper.tri(s$corr$dists))]
-  corrs = s$corr$corr.indexes[which(upper.tri(s$corr$corr.indexes))]
-
+  ##dists = s$corr$dists[which(upper.tri(s$corr$dists))]
+  ##corrs = s$corr$corr.indexes[which(upper.tri(s$corr$corr.indexes))]
+  dists = my.upper(s$corr$dists)
+  corrs = my.upper(s$corr$corr.indexes)
   if (is.null(main)) {
     main = paste(basename(s$file), "dt:", s$corr$dt)
   }
@@ -60,6 +124,35 @@ plot.corr.index <- function(s, log='', identify=FALSE,
          xlab="distance", ylab="correlation index", 
          pch=19, add=TRUE)
   corr.do.fit(s$corr$corr.id,plot=TRUE)
+}
+
+write.corr.indexes <- function(s, file=NULL) {
+  ## Write out the correlation index values to a CSV file for
+  ## further processing.
+  ncells = s$NCells
+  op = matrix(0, nrow= (ncells*(ncells-1)/2), ncol=4)
+
+  colnames(op) = c("unit.i", "unit.j", "distance (um)", "corr index")
+  d = s$corr$dists                      #distance matrix
+  c = s$corr$corr.indexes               #correlation matrix
+  n=1;
+  for (j in 1:(ncells-1)) {
+    for (i in (j+1):ncells) {
+      op[n,1] = j;
+      op[n,2] = i;
+      op[n,3] = d[j,i];
+      op[n,4] = c[j,i];
+      n=n+1
+    }
+  }
+
+  if (is.null(file)) {
+    file = paste(basename(s$file), "_corrs.csv", sep='')
+    cat(sprintf("Writing correlations to %s\n", file))
+  }
+  write.csv(op, file=file, row.names=FALSE)
+  ## Return the file as well in case we want it.
+  invisible(op)
 }
 
 plot.corr.index.fit <- function(s, ...) {
@@ -198,7 +291,7 @@ corr.check.fit <- function() {
 my.upper <- function (x,diag=FALSE) {
   ## Return the upper triangular elements of a matrix on a
   ## column-by-column basis.
-  ## e.g. my.upper(matrix(1:9, nrow=3), diag=TRUE)
+  ## e.g. my.upper(matrix(1:9, nrow=3), diag=TRUE).
   ## returns >>1 4 5 7 8 9<<
   if (is.matrix(x)) {
    x[ which(upper.tri(x,diag))]
