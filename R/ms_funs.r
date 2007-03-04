@@ -541,26 +541,6 @@ fourplot <- function(s) {
   }
 }
 
-make.distances <- function(posns) {
-  ## POSNS should be a (N,2) array.  Returns a NxN upper triangular
-  ## array of the distances between all pairs of cells.
-
-  ## Currently store distances to the nearest micron, so that it makes
-  ## the job of binning distances easier when computing the mean of
-  ## correlation index for each "distance".  In Figure 9 of the
-  ## Meister 1991 paper, distances are binned into 20um bins to get
-  ## round this problem.
-
-  n <- dim(posns)[1]
-  dists <- array(0, dim=c(n,n))
-  for ( a in 1:n-1)
-    for (b in (a+1):n) {
-      delta <- posns[a,] - posns[b,]
-      dists[a,b] <- round(sqrt( sum(delta**2)))
-    }
-
-  dists
-}
 
 ######################################################################
 ## Mutual information code.
