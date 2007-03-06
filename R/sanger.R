@@ -6,6 +6,28 @@
 ## Code for Sanger MEA analysis,
 ######################################################################
 
+sanger.init <- function() {
+  ## Run for initialisation of analysis of Sanger data.
+
+  windows <- .Platform$OS.type !='unix'
+
+  if (windows) {
+    ## Set up on Windows machine.
+    ## Scripts are stored in meadev/scripts.
+    setwd("c:/meadev/scripts")
+    assign("mea.data.dir", "c:/meadev/data/", env = .GlobalEnv)
+    assign("mea.table.dir", "c:/meadev/tables/", env = .GlobalEnv)
+  } else {
+    ## Set up for linux.
+    assign("mea.data.dir",  "~/proj/sangermea/data/", env = .GlobalEnv)
+    assign("mea.table.dir", "~/proj/sangermea/tables/", env = .GlobalEnv)
+  }
+
+  ## Create the cache of datafiles.
+  assign("mea.data.files",  make.meafile.cache(mea.data.dir),
+         env  = .GlobalEnv)
+}
+
 make.sanger1.layout <- function(positions) {
   ## make the layout for SANGER MEA
 
