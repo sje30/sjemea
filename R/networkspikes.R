@@ -39,8 +39,8 @@ spikes.to.count <- function(spikes,
     h <- hist(spikes, breaks=breaks,plot=FALSE)
     res = h$counts
 
-     ## We may want to check presence/absence of spike within a bin.
-     multi.spikes = which(res>1)
+    ## We may want to check presence/absence of spike within a bin.
+    multi.spikes = which(res>1)
     if (any(multi.spikes)) {
       res[multi.spikes] = 1
     }
