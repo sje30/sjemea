@@ -37,7 +37,15 @@ spikes.to.count <- function(spikes,
     ## helper function.  Convert one spike train into a count of how many
     ## spikes are within each bin.
     h <- hist(spikes, breaks=breaks,plot=FALSE)
-    h$counts
+    res = h$counts
+
+     ## We may want to check presence/absence of spike within a bin.
+     multi.spikes = which(res>1)
+    if (any(multi.spikes)) {
+      res[multi.spikes] = 1
+    }
+    
+    res
   }
   
   time.breaks <- seq(from=beg, to=end, by=time.interval)
@@ -154,7 +162,7 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
   ave = rep(0, (2*sur)+1)
   npts = length(counts$sum)
   measures = matrix(NA, nrow=nrow(p), ncol=3)
-  
+  colnames(measures) = c("index", "peak.val", "durn")
   n.ns = 0                              #Number of valid network spikes found
   for (i in 1:nrow(p)) {
     peak.i = p[i,1]; lo = (peak.i-sur); hi = peak.i+sur
@@ -163,29 +171,34 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
     if ( (lo >0) && ( hi < npts) ) {
       n.ns = n.ns + 1
 
-      measures[n.ns, 3] = peak.i
       dat = counts$sum[lo:hi]
+      peak.val = dat[sur+1]
+
+      measures[n.ns, 1] = peak.i
+      measures[n.ns, 2] = peak.val
+
       if (plot) {
         plot(dat, xaxt='n', yaxt='n', ylim=c(0,60),
              bty='n', type='l',xlab='', ylab='')
         ##abline(v=sur+1)
         axis(1, at=c(0,1,2)*sur,
              labels=c('-300 ms', '0 ms', '+300 ms'))
+        legend("topleft", paste(round(peak.val)), bty='n')
       }
       
 
       hm = find.halfmax(dat, peak.n=sur+1, frac=0.5, plot=plot)
-      measures[n.ns, 2] = hm$durn
+      measures[n.ns, 3] = hm$durn
 
       dat2 = dat;
       ##dat2[1:(hm$xl-1)] = 0;
       ##dat2[(hm$xr+1):((2*sur)+1)] = 0;
       
-      k = kurtosis(dat2)
-      measures[n.ns, 1] = k
+      ##k = kurtosis(dat2)
+      ##measures[n.ns, 1] = k
       ave = ave + dat
-      legend("topleft", paste(round(max(dat))), bty='n')
-      ##title(paste('k ', signif(k,3)))
+
+
     }
   }
 
@@ -212,7 +225,7 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
   }
 
 
-  list(measures, ns.mean=ave)
+  list(measures=measures, ns.mean=ave)
 }
 
 find.halfmax.cute <- function(y) {
