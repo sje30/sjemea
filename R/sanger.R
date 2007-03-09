@@ -17,15 +17,22 @@ sanger.init <- function() {
     setwd("c:/meadev/scripts")
     assign("mea.data.dir", "c:/meadev/data/", env = .GlobalEnv)
     assign("mea.table.dir", "c:/meadev/tables/", env = .GlobalEnv)
+    assign("mea.op.dir", "c:/meadev/op/", env = .GlobalEnv)
   } else {
     ## Set up for linux.
-    assign("mea.data.dir",  "~/proj/sangermea/data/", env = .GlobalEnv)
-    assign("mea.table.dir", "~/proj/sangermea/tables/", env = .GlobalEnv)
+    assign("mea.data.dir",   "~/proj/sangermea/data/", env = .GlobalEnv)
+    assign("mea.table.dir",  "~/proj/sangermea/tables/", env = .GlobalEnv)
+    assign("mea.op.dir",     "~/proj/sangermea/op/", env = .GlobalEnv)
   }
 
   ## Create the cache of datafiles.
   assign("mea.data.files",  make.meafile.cache(mea.data.dir),
          env  = .GlobalEnv)
+}
+
+mea.op <- function(f) {
+  ## Create a new output file.
+  sprintf("%s%s", mea.op.dir, f)
 }
 
 make.sanger1.layout <- function(positions) {
