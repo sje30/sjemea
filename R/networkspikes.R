@@ -202,6 +202,14 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
     }
   }
 
+  if (n.ns < nrow(p)) {
+    ## Some peaks could not be averaged, since they were at either
+    ## beg/end of the recording.
+    ## So, in this case, truncate the matrix of results to correct
+    ## number of rows.
+    measures = measures[1:n.ns,,drop=FALSE]
+  }
+  
   ## now show the average
   if (n.ns > 0) {
     ave = ave/n.ns
