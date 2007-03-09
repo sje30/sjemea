@@ -9,6 +9,10 @@ burst.isi.threshold = FALSE             #do we want to use threshold on ISI?
 
 burst.isi.max = NULL                    #set non-null to be the threshold between spikes.
 
+## Threshold for burstiness; how many burst/minute are there to count as a
+## bursty unit.
+bursty.threshold = 1
+
 ######################################################################
 
 burst.info <- c("beg", "len", "SI", "durn", "mean.isis")
@@ -286,6 +290,8 @@ calc.burst.summary <- function(s) {
   bursts.per.min <- bursts.per.sec * 60
 
 
+  bursty = ifelse(bursts.per.min >= bursty.threshold, 1, 0)
+
   durations <- burstinfo(allb, "durn")
   mean.dur <- round(sapply(durations, mean), 3)
   sd.dur <- round(sapply(durations, sd), 3)
@@ -321,6 +327,7 @@ calc.burst.summary <- function(s) {
                    nbursts=nbursts,
                    bursts.per.sec=bursts.per.sec,
                    bursts.per.min=bursts.per.min,
+                   bursty = bursty,
                    mean.dur=mean.dur,
                    sd.dur=sd.dur,
                    mean.spikes=mean.spikes,
@@ -339,6 +346,32 @@ calc.burst.summary <- function(s) {
   df
 
 }
+
+mean.burst.summary = function(allb.sum) {
+  ## Summarise the burst information.  This does not handle per.spikes.in.burst
+  subset = allb.sum[which(allb.sum$bursty==1),]
+  
+  fields = c("spikes", "mean.dur", "cv.IBI", "bursts.per.min", "per.spikes.in.burst")
+  res = rep(0, length(fields)*2)
+  names(res) = paste(rep(fields, each=2), c("m", "sd"), sep=".")
+  n = 1
+  for (field in fields) {
+    dat = subset[[field]]
+    if (length(dat) > 0 ) {
+      mean = mean(dat, na.rm=T); sd = sd(dat, na.rm=T);
+    } else {
+      mean = sd = NA;
+    }
+    res[n] = mean; res[n+1] = sd
+    n = n +2
+  }
+
+  res
+
+}
+
+
+
 
 burstinfo <- function(allb, index) {
   ## Extra some part of the Burst information, for each channel.
