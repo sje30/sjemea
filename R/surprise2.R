@@ -383,7 +383,7 @@ burstinfo <- function(allb, index) {
     } else {
       0
     }
-  })
+  }, simplify=FALSE)
 }
   
 
