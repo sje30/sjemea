@@ -3,9 +3,8 @@
 ## Taking ideas from Eytan & Marom (2006).
 
 
-ns.T = 0.003                             #bin time for network spikes
-
-ns.N = 10                               #number of active electrodes.
+##ns.T = 0.003                             #bin time for network spikes
+##ns.N = 10                               #number of active electrodes.
 
 
 kurtosis <- function (x, na.rm = FALSE) {
@@ -55,21 +54,36 @@ spikes.to.count <- function(spikes,
     time.breaks <- c(time.breaks,
                      time.breaks[length(time.breaks)]+time.interval)
   }
-  counts1 <- lapply(spikes, spikes.to.counts, breaks=time.breaks,
-                   time.interval=time.interval)
 
-  ## counts1 is a list; we want to convert it into an array.
-  counts <- array(unlist(counts1),
-                  dim=c(length(time.breaks)-1, length(counts1)))
+  very.bad = FALSE
+  if (very.bad) {
+    counts1 <- lapply(spikes, spikes.to.counts, breaks=time.breaks,
+                      time.interval=time.interval)
+    
+    ## counts1 is a list; we want to convert it into an array.
+    counts <- array(unlist(counts1),
+                    dim=c(length(time.breaks)-1, length(counts1)))
+    ## Do the average computation here.
+    ## av.rate == average rate across the array.
+    sum.rate <- apply(counts, 1, sum)
+  } else {
+    ncells <- s$NCells
+    for (i in 1:ncells) {
+      c = spikes.to.counts(s$spikes[[i]], time.breaks, time.interval)
+      if (i == 1) {
+        sum.rate = c
+      } else {
+        sum.rate = sum.rate + c
+      }
+    }
 
+  }
 
   
-  ## Do the average computation here.
-  ## av.rate == average rate across the array.
-  sum.rate <- apply(counts, 1, sum)
   ## We can remove the last "time.break" since it does not correspond
   ## to the start of a time frame.
-  res <- list(counts=counts,
+  res <- list(
+              ##counts=counts,
               times=time.breaks[-length(time.breaks)],
               sum=sum.rate,
               time.interval=time.interval)
@@ -88,7 +102,7 @@ spikes.to.count <- function(spikes,
 ##   result
 ## }
 
-find.peaks <- function(trace) {
+find.peaks <- function(trace, ns.N) {
 
   max.peaks = 2000
 
@@ -144,7 +158,7 @@ find.peaks <- function(trace) {
 }
 
 
-show.ns <- function(p, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
+show.ns <- function(p, counts, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
   ## Show the network spikes.
 
   ## This code does not check to worry if there is a spike right at either
@@ -190,7 +204,7 @@ show.ns <- function(p, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
       hm = find.halfmax(dat, peak.n=sur+1, frac=0.5, plot=plot)
       measures[n.ns, 3] = hm$durn
 
-      dat2 = dat;
+      ##dat2 = dat;
       ##dat2[1:(hm$xl-1)] = 0;
       ##dat2[(hm$xr+1):((2*sur)+1)] = 0;
       
@@ -344,7 +358,7 @@ find.halfmax <- function(y, peak.n=NULL, plot=TRUE, frac=0.5) {
 ## The "R" way of interpolating -- nice!
 
 
-check.ns.plot <- function(counts, p, xlim) {
+check.ns.plot <- function(counts, p, xlim, ns.N) {
 
   plot(counts$times, counts$sum, type='l', xlim=xlim,
        xlab="time (s)", ylab='num active channels')
