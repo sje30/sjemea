@@ -15,7 +15,7 @@ kurtosis <- function (x, na.rm = FALSE) {
 }
 
 
-spikes.to.count <- function(spikes,
+spikes.to.count.old <- function(spikes,
                             time.interval=1, #time bin of 1sec.
                             beg=floor(min(unlist(spikes))),
                             end=ceiling(max(unlist(spikes)))
@@ -24,10 +24,10 @@ spikes.to.count <- function(spikes,
   ## First version: do not use!
   ##  The C version below is much faster:
   ##
-  ## > unix.time(counts2 <- spikes.to.countC(s$spikes, time.interval=ns.T))
+  ## > unix.time(counts2 <- spikes.to.count(s$spikes, time.interval=ns.T))
   ##  user  system elapsed 
   ## 0.027   0.022   0.049 
-  ## > unix.time(counts <- spikes.to.count(s$spikes, time.interval=ns.T))
+  ## > unix.time(counts <- spikes.to.count.old(s$spikes, time.interval=ns.T))
   ## user  system elapsed 
   ## 11.826   7.780  19.613 
   ##
@@ -103,7 +103,7 @@ spikes.to.count <- function(spikes,
 }
 
 
-spikes.to.countC <- function(spikes,
+spikes.to.count <- function(spikes,
                             time.interval=1, #time bin of 1sec.
                             beg=floor(min(unlist(spikes))),
                             end=ceiling(max(unlist(spikes)))
