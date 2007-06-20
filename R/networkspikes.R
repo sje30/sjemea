@@ -21,6 +21,16 @@ spikes.to.count <- function(spikes,
                             end=ceiling(max(unlist(spikes)))
                             )
 {
+  ## First version: do not use!
+  ##  The C version below is much faster:
+  ##
+  ## > unix.time(counts2 <- spikes.to.countC(s$spikes, time.interval=ns.T))
+  ##  user  system elapsed 
+  ## 0.027   0.022   0.049 
+  ## > unix.time(counts <- spikes.to.count(s$spikes, time.interval=ns.T))
+  ## user  system elapsed 
+  ## 11.826   7.780  19.613 
+  ##
   ## Convert the spikes for each cell into a firing rate (in Hz)
   ## We count the number of spikes within time bins of duration
   ## time.interval (measured in seconds).
@@ -35,7 +45,9 @@ spikes.to.count <- function(spikes,
   spikes.to.counts <- function(spikes, breaks, time.interval) {
     ## helper function.  Convert one spike train into a count of how many
     ## spikes are within each bin.
-    h <- hist(spikes, breaks=breaks,plot=FALSE)
+    h <- hist(spikes, breaks=breaks,plot=FALSE,
+              ## right=F makes closer agreement (but not total) with C version.
+              right=F)
     res = h$counts
 
     ## We may want to check presence/absence of spike within a bin.
@@ -86,6 +98,45 @@ spikes.to.count <- function(spikes,
               ##counts=counts,
               times=time.breaks[-length(time.breaks)],
               sum=sum.rate,
+              time.interval=time.interval)
+  res
+}
+
+
+spikes.to.countC <- function(spikes,
+                            time.interval=1, #time bin of 1sec.
+                            beg=floor(min(unlist(spikes))),
+                            end=ceiling(max(unlist(spikes)))
+                            )
+{
+  ## Convert the spikes for each cell into a firing rate (in Hz)
+  ## We count the number of spikes within time bins of duration
+  ## time.interval (measured in seconds).
+  ##
+  ## Currently cannot specify BEG or END as less than the
+  ## range of spike times else you get an error from hist().  The
+  ## default anyway is to do all the spikes within a data file.
+  ##
+  ## C version, which should replace spikes.to.count
+
+  ## time.breaks <- seq(from=beg, to=end, by=time.interval)
+  nbins <- ceiling( (end-beg) / time.interval)
+  
+  z <- .C("ns_count_activity",
+          as.double(unlist(s$spikes)),
+          as.integer(s$nspikes),
+          as.integer(s$NCells),
+          as.double(beg), as.double(end), as.double(time.interval),
+          as.integer(nbins),
+          counts = integer(nbins),
+          PACKAGE="sjemea")
+
+  time.breaks <- seq(from=beg, by=time.interval, length=nbins)
+  ## We can remove the last "time.break" since it does not correspond
+  ## to the start of a time frame.
+  res <- list(
+              times=time.breaks,
+              sum=z$counts,
               time.interval=time.interval)
   res
 }

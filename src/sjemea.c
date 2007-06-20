@@ -189,6 +189,62 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
   }
 }
 
+
+void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
+		       Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+		       int *pnbins,
+		       int *count)
+{
+
+  /* Compute the network spike activity.
+   *
+   * ALLSPIKES = vector of spike times, flattened, so that we get all
+   * spikes for unit 1, then unit 2, and so on
+   *
+   * NSPIKES[j] indicates the number of spikes from cell j.
+   *
+   * NCELLS = number of cells.
+   * BEG, END = first and last spike time.
+   * WID = duration of each network spike bin.
+   * NBINS = number of bins (calculated in R, rather than C)
+   *
+   * COUNT[i] = stores the number of units that were active in bin i.
+   * If a spike train fires more than once during a bin, it counts
+   * only once (using the LAST flag below).
+   */
+  
+  Sfloat *p, beg, end, wid;
+  int ncells, last, b, n, unit, nbins;
+  
+  ncells = *pncells; beg = *pbeg; end = *pend; wid = *pwid;
+  nbins = *pnbins;
+
+  p = allspikes;
+  for (unit=0; unit<ncells; unit++) {
+    /* Count the spikes on electrode UNIT. */
+    n = nspikes[unit];
+    last = -1;			/* check to only increment bin once per unit. */
+
+    while(n-- >0) {
+      b = (int) ( (*p++ - beg)/wid); /* calc bin number; increment spike ptr */
+
+      /* Check bin number is valid: shouldn't happen. */
+      if ( (b <0 ) || (b >= nbins))
+	Rprintf("bin number wrong %f %d\n", *(p-1), b);
+      else {
+	/* Update count in relevant bin. */
+	if (last != b) {
+	  count[b]++;
+	  last = b;		/* stop this bin being updated again for
+				 * current unit. */
+	}
+      }
+    }
+  }
+
+}
+
+
 /**********************************************************************/
 /*
 HELP ARRAY_HIST                             David Young, January 1994
