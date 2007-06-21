@@ -1,5 +1,6 @@
 #include <R.h>
 #include <S.h>			/* for seed_in, seed_out */
+#include <assert.h>
 
 /* We use this SMALLVAL to test whether two floating point values can
  * be regarded as "equal": we see if the absolute difference between
@@ -240,6 +241,70 @@ void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
 	}
       }
     }
+  }
+
+}
+
+
+void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
+			Sfloat *pwid,
+			int *pnbins,
+			int *count)
+{
+
+  /* Compute the network spike activity.
+   *
+   * ALLSPIKES = vector of spike times, flattened, so that we get all
+   * spikes for unit 1, then unit 2, and so on
+   *
+   * NSPIKES[j] indicates the number of spikes from cell j.
+   *
+   * NCELLS = number of cells.
+   * WID = duration of each autocorrelation bin.
+   * NBINS = number of bins.
+   *
+   * COUNT[i] = stores the number of times that two spikes on the same
+   * train were within a certain time apart (of width WID).
+   */
+  
+  Sfloat wid, s_i;
+  int ncells, last, b, n, unit, nbins, i, j, looking;
+  int first_spike, last_spike;		/* first, last spike index of any train. */
+  ncells = *pncells; wid = *pwid;
+  nbins = *pnbins;
+
+  first_spike = 0;
+
+  for (unit=0; unit<ncells; unit++) {
+    /* Compute autocorrelation  for spikes on electrode UNIT. */
+    n = nspikes[unit];
+
+    last_spike = first_spike + n;
+    
+    for (i=first_spike; i<last_spike-1; i++) {
+      /* Autocorrelate spike i with "future" spikes.  No need to check
+       * let i equal the last spike of a train, since there are no
+       * future spikes on the train to correlated with. */
+      s_i = allspikes[i];
+      j = i+1;
+      looking = TRUE;
+      while (looking) {
+	b = (int) ( ( allspikes[j] - s_i)/wid);
+	assert(b>=0);
+	if (b > nbins) {
+	  looking = FALSE;
+	} else {
+	  count[b]++;
+	  j++;
+	  if (j==last_spike) {
+	    looking = FALSE;
+	  }
+	}
+      }
+    }
+
+    /* Finished checking all spikes on current train; move onto next train. */
+    first_spike += n;
   }
 
 }
