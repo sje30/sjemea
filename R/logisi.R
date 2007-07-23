@@ -19,7 +19,7 @@ logisi.find.burst <- function(spikes, debug=FALSE) {
   no.bursts = NA;                       #value to return if no bursts found.
 
 
-  par = mi.par
+  par = logisi.par
   ##beg.isi =    par$beg.isi
   ##end.isi =    par$end.isi
   min.ibi =      par$min.ibi
