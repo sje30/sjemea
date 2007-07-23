@@ -25,7 +25,7 @@ logisi.find.burst <- function(spikes, debug=FALSE) {
   min.ibi =      par$min.ibi
   min.durn =     par$min.durn
   min.spikes =   par$min.spikes
-
+  isi.low =      par$isi.low
   
   nspikes = length(spikes)
 
