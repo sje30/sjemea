@@ -7,103 +7,35 @@
 ##ns.N = 10                               #number of active electrodes.
 
 
-kurtosis <- function (x, na.rm = FALSE) {
-  ## Copied from e1071 package.
-  if (na.rm) 
-    x <- x[!is.na(x)]
-  sum((x - mean(x))^4)/(length(x) * var(x)^2) - 3
-}
+compute.ns <- function(s, ns.T, ns.N, sur, plot=FALSE) {
+  ## Main entrance function to compute network spikes.
+  ## Typical values:
+  ## ns.T: 3
+  ## ns.N: 10
+  ## sur: 100
 
-
-spikes.to.count.old <- function(spikes,
-                            time.interval=1, #time bin of 1sec.
-                            beg=floor(min(unlist(spikes))),
-                            end=ceiling(max(unlist(spikes)))
-                            )
-{
-  ## First version: do not use!
-  ##  The C version below is much faster:
-  ##
-  ## > unix.time(counts2 <- spikes.to.count(s$spikes, time.interval=ns.T))
-  ##  user  system elapsed 
-  ## 0.027   0.022   0.049 
-  ## > unix.time(counts <- spikes.to.count.old(s$spikes, time.interval=ns.T))
-  ## user  system elapsed 
-  ## 11.826   7.780  19.613 
-  ##
-  ## Convert the spikes for each cell into a firing rate (in Hz)
-  ## We count the number of spikes within time bins of duration
-  ## time.interval (measured in seconds).
-  ##
-  ## Currently cannot specify BEG or END as less than the
-  ## range of spike times else you get an error from hist().  The
-  ## default anyway is to do all the spikes within a data file.
-  ##
-  ## This has adapted from make.spikes.to.frate
-
-  
-  spikes.to.counts <- function(spikes, breaks, time.interval) {
-    ## helper function.  Convert one spike train into a count of how many
-    ## spikes are within each bin.
-    h <- hist(spikes, breaks=breaks,plot=FALSE,
-              ## right=F makes closer agreement (but not total) with C version.
-              right=F)
-    res = h$counts
-
-    ## We may want to check presence/absence of spike within a bin.
-    multi.spikes = which(res>1)
-    if (any(multi.spikes)) {
-      res[multi.spikes] = 1
-    }
-    
-    res
-  }
-  
-  time.breaks <- seq(from=beg, to=end, by=time.interval)
-  if (time.breaks[length(time.breaks)] < end) {
-    ## extra time bin needs adding.
-    ## e.g seq(1,6, by = 3) == 1 4, so we need to add 7 ourselves.
-    time.breaks <- c(time.breaks,
-                     time.breaks[length(time.breaks)]+time.interval)
-  }
-
-  very.bad = FALSE
-  if (very.bad) {
-    counts1 <- lapply(spikes, spikes.to.counts, breaks=time.breaks,
-                      time.interval=time.interval)
-    
-    ## counts1 is a list; we want to convert it into an array.
-    counts <- array(unlist(counts1),
-                    dim=c(length(time.breaks)-1, length(counts1)))
-    ## Do the average computation here.
-    ## av.rate == average rate across the array.
-    sum.rate <- apply(counts, 1, sum)
+  counts <- spikes.to.count2(s$spikes, time.interval=ns.T)
+  p <- find.peaks(counts, ns.N)
+  ns <- list(counts=counts, ns.N=ns.N, ns.T=ns.T)
+  class(ns) <- "ns"
+  m <- mean.ns(ns, p, plot=plot, nrow=4, ncol=4, ask=F, sur=sur)
+  if (is.null(m)) {
+    ## No network spikes found.
+    ns$brief <- c(n=0, peak.m=NA, peak.sd=NA, durn.m=NA, durn.sd=NA)
   } else {
-    ncells <- s$NCells
-    for (i in 1:ncells) {
-      c = spikes.to.counts(s$spikes[[i]], time.breaks, time.interval)
-      if (i == 1) {
-        sum.rate = c
-      } else {
-        sum.rate = sum.rate + c
-      }
-    }
+    ns$mean <- m$ns.mean; ns$measures <- m$measures
+    peak.val <- ns$measures[,"peak.val"]
+    durn <- ns$measures[,"durn"]
+    ns$brief <- c(n=nrow(ns$measures),
+                  peak.m=mean(peak.val), peak.sd=sd(peak.val),
+                  durn.m=mean(durn), durn.sd=sd(durn))
 
   }
-
   
-  ## We can remove the last "time.break" since it does not correspond
-  ## to the start of a time frame.
-  res <- list(
-              ##counts=counts,
-              times=time.breaks[-length(time.breaks)],
-              sum=sum.rate,
-              time.interval=time.interval)
-  res
+  ns
 }
 
-
-spikes.to.count <- function(spikes,
+spikes.to.count2 <- function(spikes,
                             time.interval=1, #time bin of 1sec.
                             beg=floor(min(unlist(spikes))),
                             end=ceiling(max(unlist(spikes)))
@@ -118,7 +50,8 @@ spikes.to.count <- function(spikes,
   ## default anyway is to do all the spikes within a data file.
   ##
   ## C version, which should replace spikes.to.count
-
+  ## Returns a time series object.
+  
   ## time.breaks <- seq(from=beg, to=end, by=time.interval)
   nbins <- ceiling( (end-beg) / time.interval)
   
@@ -131,27 +64,155 @@ spikes.to.count <- function(spikes,
           counts = integer(nbins),
           PACKAGE="sjemea")
 
-  time.breaks <- seq(from=beg, by=time.interval, length=nbins)
-  ## We can remove the last "time.break" since it does not correspond
-  ## to the start of a time frame.
-  res <- list(
-              times=time.breaks,
-              sum=z$counts,
-              time.interval=time.interval)
+  ## Return counts as a time series.
+  res <- ts(data=z$counts, start=beg, deltat=time.interval)
+
   res
 }
 
-## Ripley: peaks from R-help
-## library(ts)
-## peaks<-function(series,span=3)
-## {
-##   z <- embed(series, span)
-##   s <- span%/%2
-##   v<- max.col(z) == 1 + s
-##   result <- c(rep(FALSE,s),v)
-##   result <- result[1:(length(result)-s)]
-##   result
-## }
+plot.ns <- function(ns, ...) {
+  ## Plot function for "ns" class.
+  plot(ns$counts, ...)
+  abline(h=ns$ns.N, col='red')
+
+  ##peak.times <- times[ ns$peaks[,1]]
+  peak.times <- ns$measures[,"time"]
+  peak.val   <- ns$measures[,"peak.val"]
+  points(peak.times, peak.val, col='blue', pch=19)
+
+}
+
+summary.ns <- function(ns) {
+  ## Summary function for "ns" class.
+  cat(sprintf("%d network spikes\n", nrow(ns$measures)))
+  peak.val <- ns$measures[,"peak.val"]
+  durn <- ns$measures[,"durn"]
+  cat(sprintf("recruitment %.2f +/- %.2f\n", mean(peak.val), sd(peak.val)))
+  cat(sprintf("FWHM %.3f +/- %.3f (s)\n", mean(durn), sd(durn)))
+}
+
+mean.ns <- function(ns, p, sur=100,
+                    plot=TRUE, nrow=8, ncol=8, ask=FALSE) {
+  ## Compute the mean network spikes, and optionally show the
+  ## individual network spikes.
+
+  ## This code does not check to worry if there is a spike right at either
+  ## end of the recording.  naughty!
+
+  if (is.null(p)) {
+    if (is.null(ns$measures)) {
+      cat("*** No network spikes found\n")
+      return (NULL)
+    } else {
+      ## use info previously stored in measures.
+      p <- ns$measures
+    }
+  }
+
+  
+  if (plot) {
+    old.par <- par(mfrow=c(nrow,ncol), mar=c(2.5,1,1,1),ask=ask)
+  }
+  ave = rep(0, (2*sur)+1)
+  npts = length(ns$counts)
+  times <- time(ns$counts)
+  measures = matrix(NA, nrow=nrow(p), ncol=4)
+  colnames(measures) = c("time", "index", "peak.val", "durn")
+  n.ns = 0                              #Number of valid network spikes found
+  for (i in 1:nrow(p)) {
+    peak.i = p[i,"index"]; lo = (peak.i-sur); hi = peak.i+sur
+
+    ## Check that enough data can be found:
+    if ( (lo >0) && ( hi < npts) ) {
+      n.ns = n.ns + 1
+
+      dat = ns$counts[lo:hi]
+      peak.val = dat[sur+1]
+      measures[n.ns, "time"] = times[peak.i]
+      measures[n.ns, "index"] = peak.i
+      measures[n.ns, "peak.val"] = peak.val
+      
+
+      if (plot) {
+        plot(dat, xaxt='n', yaxt='n', ylim=c(0,60),
+             bty='n', type='l',xlab='', ylab='')
+        ##abline(v=sur+1)
+        max.time <- ns$ns.T * sur
+        axis(1, at=c(0,1,2)*sur,
+             ##labels=c('-300 ms', '0 ms', '+300 ms'))
+             labels=c(-max.time, 0, max.time))
+
+      }
+      
+      hm = find.halfmax(dat, peak.n=sur+1, frac=0.5, plot=plot)
+      measures[n.ns, "durn"] = hm$durn* ns$ns.T
+      if (plot) {
+        text <- sprintf("%d durn %.3f",
+                        round(peak.val), measures[n.ns, "durn"])
+        legend("topleft", text, bty='n')
+      }
+
+      ##dat2 = dat;
+      ##dat2[1:(hm$xl-1)] = 0;
+      ##dat2[(hm$xr+1):((2*sur)+1)] = 0;
+      
+      ##k = kurtosis(dat2)
+      ##measures[n.ns, 1] = k
+      ave = ave + dat
+
+
+    }
+  }
+
+  if (n.ns < nrow(p)) {
+    ## Some peaks could not be averaged, since they were at either
+    ## beg/end of the recording.
+    ## So, in this case, truncate the matrix of results to correct
+    ## number of rows.
+    measures = measures[1:n.ns,,drop=FALSE]
+  }
+  
+  ## now show the average
+  if (n.ns > 0) {
+    ave = ave/n.ns
+    if (plot) {
+      plot(ave, xaxt='n', yaxt='n', bty='n', type='l',xlab='', ylab='')
+      legend("topleft", paste("m", round(max(ave))), bty='n')
+      find.halfmax(ave)
+    }
+
+
+    ##stripchart(measures[,1], ylab='K', method='jitter', vert=T, pch=19,
+    ##main=paste('kurtosis', round(mean(measures[,1]),3)))
+    if (plot) {
+      stripchart(measures[,"durn"], ylab='durn (s)', method='jitter',
+                 vert=TRUE, pch=19,
+                 main=paste('FWHM durn', round(mean(measures[,"durn"]),3)))
+    }
+
+    if (plot) {
+      par(old.par)
+    }
+
+  }
+
+  
+  ns.mean = ts(ave, start=(-sur*ns$ns.T), deltat=ns$ns.T)
+
+  list(measures=measures, ns.mean=ns.mean)
+}
+
+show.ns <- function(ns, ...) {
+  ## Show the individual network spikes after they have been computed.
+  ##
+  ## This is useful if you don't show the individual network spikes
+  ## when they are first iterated over to calculate the mean.
+ 
+  res <- mean.ns(ns, p=NULL, ...)
+  NULL                                  #ignore result
+}
+
+
 
 find.peaks <- function(trace, ns.N) {
 
@@ -210,97 +271,7 @@ find.peaks <- function(trace, ns.N) {
 }
 
 
-show.ns <- function(p, counts, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
-  ## Show the network spikes.
 
-  ## This code does not check to worry if there is a spike right at either
-  ## end of the recording.  naughty!
-
-  if (is.null(p)) {
-    cat("*** No network spikes found\n")
-    return (NULL)
-  }
-  if (plot) {
-    old.par <- par(mfrow=c(nrow,ncol), mar=c(2.5,1,1,1),ask=ask)
-  }
-  
-  sur = 100                              #100 normally
-  ave = rep(0, (2*sur)+1)
-  npts = length(counts$sum)
-  measures = matrix(NA, nrow=nrow(p), ncol=3)
-  colnames(measures) = c("index", "peak.val", "durn")
-  n.ns = 0                              #Number of valid network spikes found
-  for (i in 1:nrow(p)) {
-    peak.i = p[i,1]; lo = (peak.i-sur); hi = peak.i+sur
-
-    ## Check that enough data can be found:
-    if ( (lo >0) && ( hi < npts) ) {
-      n.ns = n.ns + 1
-
-      dat = counts$sum[lo:hi]
-      peak.val = dat[sur+1]
-
-      measures[n.ns, 1] = peak.i
-      measures[n.ns, 2] = peak.val
-
-      if (plot) {
-        plot(dat, xaxt='n', yaxt='n', ylim=c(0,60),
-             bty='n', type='l',xlab='', ylab='')
-        ##abline(v=sur+1)
-        axis(1, at=c(0,1,2)*sur,
-             labels=c('-300 ms', '0 ms', '+300 ms'))
-        legend("topleft", paste(round(peak.val)), bty='n')
-      }
-      
-
-      hm = find.halfmax(dat, peak.n=sur+1, frac=0.5, plot=plot)
-      measures[n.ns, 3] = hm$durn
-
-      ##dat2 = dat;
-      ##dat2[1:(hm$xl-1)] = 0;
-      ##dat2[(hm$xr+1):((2*sur)+1)] = 0;
-      
-      ##k = kurtosis(dat2)
-      ##measures[n.ns, 1] = k
-      ave = ave + dat
-
-
-    }
-  }
-
-  if (n.ns < nrow(p)) {
-    ## Some peaks could not be averaged, since they were at either
-    ## beg/end of the recording.
-    ## So, in this case, truncate the matrix of results to correct
-    ## number of rows.
-    measures = measures[1:n.ns,,drop=FALSE]
-  }
-  
-  ## now show the average
-  if (n.ns > 0) {
-    ave = ave/n.ns
-    if (plot) {
-      plot(ave, xaxt='n', yaxt='n', bty='n', type='l',xlab='', ylab='')
-      legend("topleft", paste("m", round(max(ave))), bty='n')
-      find.halfmax(ave)
-    }
-
-    if (plot) {
-      par(old.par)
-    }
-
-    ##stripchart(measures[,1], ylab='K', method='jitter', vert=T, pch=19,
-    ##main=paste('kurtosis', round(mean(measures[,1]),3)))
-    if (plot) {
-      stripchart(measures[,2], ylab='durn (bins)', method='jitter',
-                 vert=TRUE, pch=19,
-                 main=paste('FWHM durn', round(mean(measures[,2]),3)))
-    }
-  }
-
-
-  list(measures=measures, ns.mean=ave)
-}
 
 find.halfmax.cute <- function(y) {
   ## Given a peak within DAT, find the FWHM.
@@ -425,3 +396,189 @@ check.ns.plot <- function(counts, p, xlim, ns.N) {
 ## End of functions
 ######################################################################
 
+kurtosis <- function (x, na.rm = FALSE) {
+  ## Copied from e1071 package.
+  if (na.rm) 
+    x <- x[!is.na(x)]
+  sum((x - mean(x))^4)/(length(x) * var(x)^2) - 3
+}
+
+
+spikes.to.count.old <- function(spikes,
+                            time.interval=1, #time bin of 1sec.
+                            beg=floor(min(unlist(spikes))),
+                            end=ceiling(max(unlist(spikes)))
+                            )
+{
+  ## First version: do not use!
+  ##  The C version below is much faster:
+  ##
+  ## > unix.time(counts2 <- spikes.to.count(s$spikes, time.interval=ns.T))
+  ##  user  system elapsed 
+  ## 0.027   0.022   0.049 
+  ## > unix.time(counts <- spikes.to.count.old(s$spikes, time.interval=ns.T))
+  ## user  system elapsed 
+  ## 11.826   7.780  19.613 
+  ##
+  ## Convert the spikes for each cell into a firing rate (in Hz)
+  ## We count the number of spikes within time bins of duration
+  ## time.interval (measured in seconds).
+  ##
+  ## Currently cannot specify BEG or END as less than the
+  ## range of spike times else you get an error from hist().  The
+  ## default anyway is to do all the spikes within a data file.
+  ##
+  ## This has adapted from make.spikes.to.frate
+
+  
+  spikes.to.counts <- function(spikes, breaks, time.interval) {
+    ## helper function.  Convert one spike train into a count of how many
+    ## spikes are within each bin.
+    h <- hist(spikes, breaks=breaks,plot=FALSE,
+              ## right=F makes closer agreement (but not total) with C version.
+              right=F)
+    res = h$counts
+
+    ## We may want to check presence/absence of spike within a bin.
+    multi.spikes = which(res>1)
+    if (any(multi.spikes)) {
+      res[multi.spikes] = 1
+    }
+    
+    res
+  }
+  
+  time.breaks <- seq(from=beg, to=end, by=time.interval)
+  if (time.breaks[length(time.breaks)] < end) {
+    ## extra time bin needs adding.
+    ## e.g seq(1,6, by = 3) == 1 4, so we need to add 7 ourselves.
+    time.breaks <- c(time.breaks,
+                     time.breaks[length(time.breaks)]+time.interval)
+  }
+
+  very.bad = FALSE
+  if (very.bad) {
+    counts1 <- lapply(spikes, spikes.to.counts, breaks=time.breaks,
+                      time.interval=time.interval)
+    
+    ## counts1 is a list; we want to convert it into an array.
+    counts <- array(unlist(counts1),
+                    dim=c(length(time.breaks)-1, length(counts1)))
+    ## Do the average computation here.
+    ## av.rate == average rate across the array.
+    sum.rate <- apply(counts, 1, sum)
+  } else {
+    ncells <- s$NCells
+    for (i in 1:ncells) {
+      c = spikes.to.counts(s$spikes[[i]], time.breaks, time.interval)
+      if (i == 1) {
+        sum.rate = c
+      } else {
+        sum.rate = sum.rate + c
+      }
+    }
+
+  }
+
+  
+  ## We can remove the last "time.break" since it does not correspond
+  ## to the start of a time frame.
+  res <- list(
+              ##counts=counts,
+              times=time.breaks[-length(time.breaks)],
+              sum=sum.rate,
+              time.interval=time.interval)
+  res
+}
+
+show.ns.old <- function(p, counts, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
+  ## Show the network spikes.
+
+  ## This code does not check to worry if there is a spike right at either
+  ## end of the recording.  naughty!
+
+  if (is.null(p)) {
+    cat("*** No network spikes found\n")
+    return (NULL)
+  }
+  if (plot) {
+    old.par <- par(mfrow=c(nrow,ncol), mar=c(2.5,1,1,1),ask=ask)
+  }
+  
+  sur = 100                              #100 normally
+  ave = rep(0, (2*sur)+1)
+  npts = length(counts$sum)
+  measures = matrix(NA, nrow=nrow(p), ncol=3)
+  colnames(measures) = c("index", "peak.val", "durn")
+  n.ns = 0                              #Number of valid network spikes found
+  for (i in 1:nrow(p)) {
+    peak.i = p[i,1]; lo = (peak.i-sur); hi = peak.i+sur
+
+    ## Check that enough data can be found:
+    if ( (lo >0) && ( hi < npts) ) {
+      n.ns = n.ns + 1
+
+      dat = counts$sum[lo:hi]
+      peak.val = dat[sur+1]
+
+      measures[n.ns, 1] = peak.i
+      measures[n.ns, 2] = peak.val
+
+      if (plot) {
+        plot(dat, xaxt='n', yaxt='n', ylim=c(0,60),
+             bty='n', type='l',xlab='', ylab='')
+        ##abline(v=sur+1)
+        axis(1, at=c(0,1,2)*sur,
+             labels=c('-300 ms', '0 ms', '+300 ms'))
+        legend("topleft", paste(round(peak.val)), bty='n')
+      }
+      
+
+      hm = find.halfmax(dat, peak.n=sur+1, frac=0.5, plot=plot)
+      measures[n.ns, 3] = hm$durn
+
+      ##dat2 = dat;
+      ##dat2[1:(hm$xl-1)] = 0;
+      ##dat2[(hm$xr+1):((2*sur)+1)] = 0;
+      
+      ##k = kurtosis(dat2)
+      ##measures[n.ns, 1] = k
+      ave = ave + dat
+
+
+    }
+  }
+
+  if (n.ns < nrow(p)) {
+    ## Some peaks could not be averaged, since they were at either
+    ## beg/end of the recording.
+    ## So, in this case, truncate the matrix of results to correct
+    ## number of rows.
+    measures = measures[1:n.ns,,drop=FALSE]
+  }
+  
+  ## now show the average
+  if (n.ns > 0) {
+    ave = ave/n.ns
+    if (plot) {
+      plot(ave, xaxt='n', yaxt='n', bty='n', type='l',xlab='', ylab='')
+      legend("topleft", paste("m", round(max(ave))), bty='n')
+      find.halfmax(ave)
+    }
+
+    if (plot) {
+      par(old.par)
+    }
+
+    ##stripchart(measures[,1], ylab='K', method='jitter', vert=T, pch=19,
+    ##main=paste('kurtosis', round(mean(measures[,1]),3)))
+    if (plot) {
+      stripchart(measures[,2], ylab='durn (bins)', method='jitter',
+                 vert=TRUE, pch=19,
+                 main=paste('FWHM durn', round(mean(measures[,2]),3)))
+    }
+  }
+
+
+  list(measures=measures, ns.mean=ave)
+}
