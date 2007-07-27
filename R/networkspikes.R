@@ -160,6 +160,7 @@ find.peaks <- function(trace, ns.N) {
   npts = length(trace)
   
   peaks = matrix(NA, nrow=max.peaks, ncol=2)
+  colnames(peaks) <- c("index", "peak.val")
   n = 0
 
   inside = FALSE;
