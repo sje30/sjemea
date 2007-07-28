@@ -42,3 +42,4 @@ s <- sanger.read.spikes(data.file)
 s$allb <- spikes.to.bursts.surprise(s)
 if (interactive()) spikeview(s)
 }
+\keyword{Burst analysis, MEA analysis}

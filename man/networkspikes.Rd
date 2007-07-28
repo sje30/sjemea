@@ -1,5 +1,6 @@
 \name{networkspikes}
 \alias{compute.ns}
+\alias{show.ns}
 \title{Compute network spikes}
 \description{
   Compute the network spikes in an MEA recording, by averaging over all
@@ -20,6 +21,10 @@ show.ns(ns, ...)
 
   \item{sur}{How many bins either side of peak to retain when computing
     the mean network spike}
+  \item{ns}{A network spike data structure, returned by
+    \code{\link{compute.ns}}}
+
+  \item{...}{Other plot arguments to pass to \code{\link{show.ns}}}
 }
 \value{A list with the following elements:
   \item{counts}{vector giving the number of active electrodes in each
@@ -58,4 +63,4 @@ s$ns$brief
 
 }
 \author{}
-\keyword{}
+\keyword{Network spikes, MEA analysis}
