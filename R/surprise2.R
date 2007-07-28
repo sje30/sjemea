@@ -31,6 +31,7 @@ spikes.to.bursts <- function(s, method="si") {
 
   if (method == "logisi") {
     isi.low <- logisi.compute(s)$Locmin
+    logisi.par$isi.low <- isi.low
   }
   
   ##ncells <- 10                           #temp
@@ -42,7 +43,7 @@ spikes.to.bursts <- function(s, method="si") {
     bursts = switch(method,
       "mi" = mi.find.bursts(spikes),
       "si" = si.find.bursts(spikes),
-      "logisi" = logisi.find.burst(spikes, isi.low),
+      "logisi" = logisi.find.burst(spikes),
       stop(method, " : no such method for burst analysis")
     )
 
@@ -120,7 +121,7 @@ si.find.bursts <- function(spikes,debug=FALSE) {
   ## At end of spike train, now truncate bursts to right length.
 
   if (burst > 0) {
-    res <- bursts[1:burst,,drop=F]
+    res <- bursts[1:burst,,drop=FALSE]
     colnames(res) <- burst.info
   } else {
     res <- NA
