@@ -6,7 +6,9 @@
 ##ns.T = 0.003                             #bin time for network spikes
 ##ns.N = 10                               #number of active electrodes.
 
-
+## 2007-07-27: Code merged in from second version, temp in
+## ~/proj/sangermea/test_ns.R Old versions of code at bottom of this
+## file can be deleted in a few months.
 compute.ns <- function(s, ns.T, ns.N, sur, plot=FALSE) {
   ## Main entrance function to compute network spikes.
   ## Typical values:
@@ -84,11 +86,16 @@ plot.ns <- function(ns, ...) {
 
 summary.ns <- function(ns) {
   ## Summary function for "ns" class.
-  cat(sprintf("%d network spikes\n", nrow(ns$measures)))
-  peak.val <- ns$measures[,"peak.val"]
-  durn <- ns$measures[,"durn"]
-  cat(sprintf("recruitment %.2f +/- %.2f\n", mean(peak.val), sd(peak.val)))
-  cat(sprintf("FWHM %.3f +/- %.3f (s)\n", mean(durn), sd(durn)))
+  n <- ns$brief["n"]
+  cat(sprintf("%d network spikes\n", n))
+  peak.m <- ns$brief["peak.m"]
+  peak.sd <- ns$brief["peak.sd"]
+
+
+  durn.m <- ns$brief["durn.m"]
+  durn.sd <- ns$brief["durn.sd"]
+  cat(sprintf("recruitment %.2f +/- %.2f\n", peak.m, peak.sd))
+  cat(sprintf("FWHM %.3f +/- %.3f (s)\n", durn.m, durn.sd))
 }
 
 mean.ns <- function(ns, p, sur=100,
