@@ -220,15 +220,13 @@ logisi.compute <- function(s, min.nspikes = 10,
       ## Channel has "enough" spikes for method.
       isi = diff( s$spikes[[i]] )
       total.isi =c(total.isi, isi) 
-      if (plot){    
-      title = sprintf("%d # %d", i, s$nspikes[i])
-      }
       B = sqrt(s$nspikes[i])
       if (B > breaks.max){
           B = breaks.max
       }
       if (plot){
-          h[[i]] = hist(log(isi), br = B, main = title)
+          title = sprintf("%d # %d", i, s$nspikes[i])
+          h[[i]] = hist(log(isi), br = B, main = title, xlab = "logisi")
           abline(h = mean(h[[i]]$counts), col = 'blue')
       } else{
              h[[i]] = hist(log(isi), br = B, plot = FALSE)
@@ -241,27 +239,30 @@ logisi.compute <- function(s, min.nspikes = 10,
       }
     }
   }
- 
+
   ## The log histogram for the grand average.
   B = sqrt(length(total.isi))
   if (B > breaks.max){
     B = breaks.max
   }
+  file = s$file
   if (plot){
-      last.h = hist(log(total.isi), br = B, main = "All", xlab = "log(isi)")                             
+      last.h = hist(log(total.isi), br = B, main = "All", xlab = "logisi")                             
       abline(h = mean(last.h$counts), col = 'red')
+      mtext(file, side=2, outer=TRUE)
   }else{
         last.h = hist(log(total.isi), br = B, plot = FALSE) 
   }
   h[[ncells+1]] = last.h
   counts = h[[channel]]$counts
-  if (plot){
-      mtext(file, side=2, outer=TRUE)
+  breaks = h[[channel]]$breaks
 
+  if (plot){
       ## Find the peaks in the histogram 
       ## either of each channel or of the grand average.
       par(mfrow=c(1,1))
-      plot(counts, type='l', xlab="Breaks", ylab="Frequency")
+      plot(counts, type='l', xlab="Logisi (ms)", ylab="Frequency", xaxt="n")
+      axis(1, 0:length(counts), format(exp(breaks), sci=T))   
   }   
   peaks = locpeaks(counts, span)
  
@@ -279,9 +280,9 @@ logisi.compute <- function(s, min.nspikes = 10,
       span.max = length(counts) -1 
   }
     
-  ## Find the no. of peaks no more than 3, and
+  ## Find the no. of peaks no more than 6, and
   ## the golobal max is one of peaks.
-  while(length(peaks) >3 || MAX!=peak.max){
+  while(length(peaks) >6 || MAX!=peak.max){
         span= span + 1
         peaks = locpeaks(counts, span)
         if (length(peaks)==0){
@@ -294,47 +295,15 @@ logisi.compute <- function(s, min.nspikes = 10,
             break
         }
   }
-  ## Find the no. of peaks no more than 4.
-  if (length(peaks)==1 && peaks==0){
-      span = 1
-      peaks = locpeaks(counts, span)
-      while( length(peaks) >4 || MAX!=peak.max){
-            span= span + 1
-            peaks = locpeaks(counts, span)
-            if (length(peaks)==0){
-                peak.max = -Inf
-            }else{
-                peak.max = max(counts[peaks])
-            }  
-            if (span > span.max){
-                peaks = 0
-                break
-            }
-       }
-   }
-  ## Find the no. of peaks no more than 6.
-  if (length(peaks)==1 && peaks==0){
-      span = 1
-      peaks = locpeaks(counts, span)
-      while( length(peaks) >6 || MAX!=peak.max){
-            span= span + 1
-            peaks = locpeaks(counts, span)
-            if (length(peaks)==0){
-                peak.max = -Inf
-            }else{
-                peak.max = max(counts[peaks])
-            }  
-            if (span > span.max){
-                peaks = 0
-                break
-            }
-       }
-   }
+
+
   if (length(peaks)!=1 || (length(peaks)==1&& peaks!=0)){
       if (plot){  
           points( peaks, counts[peaks], pch=19, col='blue')
       }
-  }
+  }else{
+        browser()
+  }     
 
   ## Find first local minimum between first two peaks. If the peak finding 
   ## algorithm gives some unlikely peaks between them, then the peaks will
@@ -399,6 +368,8 @@ logisi.compute <- function(s, min.nspikes = 10,
   if (length(mini)!=0){
       M = min(counts[mini])
       lowest = mini[counts[mini] == M][1]           # choose the first
+  }else{
+        lowest = -2
   }
 
   if (lowest != -2){
@@ -410,7 +381,7 @@ logisi.compute <- function(s, min.nspikes = 10,
       av.a = (a1+a2)/2
       loc.min = exp(av.a)
   }else{
-      loc.min = NA                      #SJE: better to return NA than inf.
+      loc.min = NA                     
   }  
 
 
