@@ -44,6 +44,7 @@ spikes.to.bursts <- function(s, method="si") {
       "mi" = mi.find.bursts(spikes),
       "si" = si.find.bursts(spikes),
       "logisi" = logisi.find.burst(spikes),
+      "rs" = rs.find.bursts(spikes),
       stop(method, " : no such method for burst analysis")
     )
 
