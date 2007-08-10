@@ -404,6 +404,15 @@ ns.bin.peak <- function(p, nbins=12, wid=5) {
   ## x <- c(0, 4,5, 20, 54,55, 60)
   ## ns.bin.peak(x, wid=10, nbins=7 )
   ##
+
+  if ( is.null(p) ) {
+    ## no valid values, so no need to make the histogram.
+    ## This happens when there are no network spikes.
+    p <- 0; invalid <- TRUE
+  } else {
+    invalid <- FALSE
+  }
+  
   b <- seq(from=0, by=wid, length=nbins+1)
   max.allowed <- max(b)
   if ( any( above <- which(p > max.allowed)) ) {
@@ -412,6 +421,11 @@ ns.bin.peak <- function(p, nbins=12, wid=5) {
   h <- hist(p, plot=F, breaks=b, right=F)
   c <- h$counts
 
+  if (invalid) {
+    ## no valid counts, so set all counts to zero.
+    c <- c*0
+  }
+  
   l <- hist.make.labels(0, max.allowed, nbins)
   names(c) <- l
   c
