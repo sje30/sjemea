@@ -396,6 +396,27 @@ check.ns.plot <- function(counts, p, xlim, ns.N) {
   abline(h=ns.N, col='red')               #threshold line.
 }
 
+ns.bin.peak <- function(p, nbins=12, wid=5) {
+  ## Bin values in P into a set of NBINS bins, of size WID.
+  ## Bins are left-closed (except for last bin).
+  ## Labels are added onto the bins.
+  ##
+  ## x <- c(0, 4,5, 20, 54,55, 60)
+  ## ns.bin.peak(x, wid=10, nbins=7 )
+  ##
+  b <- seq(from=0, by=wid, length=nbins+1)
+  max.allowed <- max(b)
+  if ( any( above <- which(p > max.allowed)) ) {
+    stop("some values above max.allowed")
+  }
+  h <- hist(p, plot=F, breaks=b, right=F)
+  c <- h$counts
+
+  l <- hist.make.labels(0, max.allowed, nbins)
+  names(c) <- l
+  c
+}
+
 
 
 
