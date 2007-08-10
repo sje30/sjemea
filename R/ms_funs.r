@@ -754,7 +754,7 @@ hist.ab <- function(ta, tb, tmax, nbins) {
           as.integer(nbins), PACKAGE="sjemea")
 
   counts <- z$res
-  names(counts) <- hist.make.labels(0, tmax, nbins)
+  names(counts) <- hist.make.labels(0, tmax, nbins, right=FALSE)
   counts
   
 }
@@ -775,13 +775,17 @@ histbi.ab <- function(ta, tb, tmax, nbins) {
           as.integer(nbins), PACKAGE="sjemea")
 
   counts <- z$res
-  names(counts) <- hist.make.labels(-tmax, tmax, nbins)
+  names(counts) <- hist.make.labels(-tmax, tmax, nbins, right=FALSE)
   counts
 }
 
-hist.make.labels <- function(tmin, tmax, nbins) {
-  ## Make the labels for the histogram bins.  Each histogram is of the form
-  ## [low, high), except for the last bin, which is [low,high].
+hist.make.labels <- function(tmin, tmax, nbins, right=TRUE) {
+  ## Make the labels for the histogram bins.
+  ## right=TRUE: Each histogram is of the form
+  ## (lo, hi], except for the first bin, which is [lo,hi].
+  ##
+  ## right=FALSE: Each histogram is of the form
+  ## [lo, hi), except for the last bin, which is [lo,hi].
   ## This is an internal function that is used from hist.ab and histbi.ab.
   breaks <- seq(from=tmin, to=tmax, length=nbins+1)
   dig.lab <- 3
@@ -790,8 +794,15 @@ hist.make.labels <- function(tmin, tmax, nbins) {
     if (ok <- all(ch.br[-1] != ch.br[-(nbins+1)])) 
       break
   }
-  labels <- paste("[", ch.br[-(nbins+1)],",", ch.br[-1], ")",sep="")
-  substring(labels[nbins], nchar(labels[nbins])) <- "]"
+  if (right) {
+    ## right closed
+    labels <- paste("(", ch.br[-(nbins+1)],",", ch.br[-1], "]",sep="")
+    substring(labels[1], 1) <- "["
+  } else {
+    ## left closed
+    labels <- paste("[", ch.br[-(nbins+1)],",", ch.br[-1], ")",sep="")
+    substring(labels[nbins], nchar(labels[nbins])) <- "]"
+  }
 
   labels
 }
