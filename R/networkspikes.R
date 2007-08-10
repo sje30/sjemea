@@ -398,7 +398,7 @@ check.ns.plot <- function(counts, p, xlim, ns.N) {
 
 ns.bin.peak <- function(p, nbins=12, wid=5) {
   ## Bin values in P into a set of NBINS bins, of size WID.
-  ## Bins are left-closed (except for last bin).
+  ## Bins are right-closed (except for first bin, closed at both ends).
   ## Labels are added onto the bins.
   ##
   ## x <- c(0, 4,5, 20, 54,55, 60)
@@ -418,7 +418,7 @@ ns.bin.peak <- function(p, nbins=12, wid=5) {
   if ( any( above <- which(p > max.allowed)) ) {
     stop("some values above max.allowed")
   }
-  h <- hist(p, plot=F, breaks=b, right=F)
+  h <- hist(p, plot=F, breaks=b)
   c <- h$counts
 
   if (invalid) {
