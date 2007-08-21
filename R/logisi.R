@@ -2,7 +2,7 @@
 ## Adapt the code from maxinterval.R.
 ## Sat 14 July 2007
 
-## Main author: Zheng (details here)
+## Main author: Zhengzheng Zhang
 
 logisi.par <- list(min.ibi=0.800,   min.durn=0.05, min.spikes=6,
                    isi.low=0.02)
@@ -305,16 +305,16 @@ logisi.compute <- function(s, min.nspikes = 10,
         browser()
   }     
 
-  ## Find first local minimum between first two peaks. If the peak finding 
-  ## algorithm gives some unlikely peaks between them, then the peaks will
-  ## be filtered out.
+  ## Find the local minimums between two successive peaks, and report the lowest.
+  ## If the peak finding algorithm gives some unlikely peaks between them,
+  ## then the peaks will be filtered out.
   ## Rat = 0.08        # a threhold for filtering unreasonable peaks
 
   pos = -1             # flag
   len = length(peaks)  # initial length
   j = 1
   mini = NULL
-  R = NULL
+  R= NULL
 
   while (pos==-1 || j < len){
          len = length(peaks)
@@ -323,43 +323,39 @@ logisi.compute <- function(s, min.nspikes = 10,
              temp = c(peaks[j]:peaks[j+1])
              pos = temp[counts[peaks[j]:peaks[j+1]]==loc.min]
              pos = pos[length(pos)]           # last local min
-             Diff = counts[peaks[j+1]] - counts[pos]
-             if (Diff==0){
-                 peaks = peaks[-(j+1)]
-                 pos = -1
-             }else{
-                   ## define a ratio
-                   ratio = Diff/(max(counts[peaks][1]) - counts[pos])
-             }
-
+             pair = c(counts[peaks[j]], counts[peaks[j+1]])
+             smallest = c(j,j+1)[which.min(pair)]  
+             Diff = counts[peaks[smallest]] - counts[pos]
              ## If the second peaks occurs after the first in the next 3 
-             ## breaks, then delete it.
+             ## breaks, then remove the smallest peak.
              if (diff(peaks[j:(j+1)])<=3){
-                 peaks = peaks[-2]
+                 peaks = peaks[-smallest]
                  pos = -1
-             }
-             
-             ## If the ratio is less than Rat, remove the second peak.
-             if (ratio < Rat){
-                 peaks = peaks[-2]
-                 pos = -1
-             }else{
-                   if(ratio > 1 && (1/ratio < Rat)){
-                      peaks = peaks[-1]
-                      pos = -1
+                 j=1
+             }else{ 
+                   if (Diff==0){
+                       peaks = peaks[-smallest]
+                       pos = -1
+                       j=1
+                   }else{
+                         ## define a ratio
+                         ratio = Diff/(max(counts[peaks]) - counts[pos])
+                         ## If the ratio is less than Rat, remove the smallest peak.
+                         if (ratio < Rat){
+                             peaks = peaks[-smallest]
+                             pos = -1
+                             j=1
+                         }else{
+                               if (ratio < 0 || ratio > 1){
+                               browser()
+                               }
+                               mini = c(mini, pos)
+                               R = c(R, ratio)
+                               j = j+1
+                         }
                    }  
-             }  
-     
-             if (pos!=-1){
-                 mini = c(mini, pos)
-                 if (ratio > 1){
-                     ratio = 1/ratio
-                 }
-                 R = c(R, ratio)
-                 j = j+1
-             }else{
-                   j=1
-             }
+             } 
+
          }else{
                lowest = -2
                break
