@@ -223,7 +223,7 @@ show.ns <- function(ns, ...) {
 
 find.peaks <- function(trace, ns.N) {
 
-  max.peaks = 2000
+  max.peaks = 20000
 
   npts = length(trace)
   
