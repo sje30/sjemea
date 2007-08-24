@@ -1,6 +1,6 @@
 \name{bursts}
-\alias{spikes.to.bursts.surprise}
 \alias{spikes.to.bursts}
+\alias{spikes.to.bursts.surprise}
 \title{
   Burst detection of MEA spike trains.
 }
