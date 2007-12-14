@@ -56,16 +56,18 @@ spikes.to.count2 <- function(spikes,
   
   ## time.breaks <- seq(from=beg, to=end, by=time.interval)
   nbins <- ceiling( (end-beg) / time.interval)
+
+  nspikes <- sapply(spikes, length)     #already computed elsewhere!
   
   z <- .C("ns_count_activity",
-          as.double(unlist(s$spikes)),
-          as.integer(s$nspikes),
-          as.integer(s$NCells),
+          as.double(unlist(spikes)),
+          as.integer(nspikes),
+          as.integer(length(nspikes)),
           as.double(beg), as.double(end), as.double(time.interval),
           as.integer(nbins),
           counts = integer(nbins),
           PACKAGE="sjemea")
-
+  
   ## Return counts as a time series.
   res <- ts(data=z$counts, start=beg, deltat=time.interval)
 
@@ -429,6 +431,30 @@ ns.bin.peak <- function(p, nbins=12, wid=5) {
   l <- hist.make.labels(0, max.allowed, nbins)
   names(c) <- l
   c
+}
+
+
+ns.identity <- function(s, w=0.1) {
+  ## Return the "NSID" matrix, Network Spike IDentity.
+  ## Which channels contributed to which network spikes?
+  ## W is window of spike identity, +/- 0.1s by default.
+  peak.times <- s$ns$measures[,"time"]
+  nsid <- ns.coincident(peak.times, s$spikes, w)
+}
+ns.coincident <- function(a, bs, w) {
+  spike.lens <- sapply(bs, length)
+  num.channels <- length(spike.lens)
+  z <- .C("coincident_arr", as.double(a), as.integer(length(a)),
+          as.double(unlist(bs)), as.integer(spike.lens),
+          as.integer(num.channels),
+          close = integer(length(a)*num.channels),
+          as.double(w), PACKAGE="sjemea")
+  
+  
+  mat <- matrix(z$close, nrow=num.channels, byrow=T)
+  dimnames(mat) <- list(channel=1:num.channels, ns.peak=a)
+  mat
+
 }
 
 
