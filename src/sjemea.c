@@ -310,6 +310,96 @@ void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
 }
 
 
+
+void coincident(Sfloat *a, int *pna, Sfloat *b, int *pnb, int *close,
+		 Sfloat *pw) {
+  int i, j;
+  int spikes_in_b, looking, res;
+  int n_a, n_b;
+  Sfloat diff, t_a, w;
+
+  w = *pw;
+  i = 0; j = 0;
+  n_a = *pna; n_b = *pnb;
+  
+  spikes_in_b = (n_b > 0);
+  while ( (i < n_a) && spikes_in_b) {
+
+    t_a = a[i];
+    looking = TRUE; res=0;
+    while (looking) {
+      diff = b[j] - t_a;
+
+      if ( diff < -w) {
+	/* case 1 - spike j too early for any event in A */
+	j++;
+	if (j == n_b) {
+	  /* no more spikes in b, so end everything */
+	  spikes_in_b = FALSE; looking = FALSE;
+	}
+      } else {
+	if ( diff < w) {
+	  /* case 2 - good, coincident */
+	  res = 1; looking = FALSE;
+	} else {
+	  /* must be case 3 - spike j too late for current event in A */
+	  /* when debugging, can set res=-1 to see this case */
+	  res = 0; looking = FALSE;
+	}
+      }
+
+    }
+    /* end checking for time i in A */
+    close[i] = res;
+    i++;
+  }
+}
+
+void coincident_arr(Sfloat *a, int *pna,
+		    Sfloat *bs, int *nb, int *pnchannels,
+		    int *close, Sfloat *pw)
+{
+  /* Compute overlap across all channels of the spikes.
+   * It calls "coincident" for each spike train in BS.
+   * 
+   * A = vector (of length *PNA) of all reference times, e.g. times
+   * of peak network spike activity.
+   * BS = all  spikes from all channels collapsed into one long
+   * vector (first, all the spikes for channel 1, then all spikes for
+   * channel 2, and so on.)
+   * NCHANNELS = number of channels.
+   * NB[j] = number of spikes in channel J.  The sum of elements in NB should
+   * equal the total number of spikes, i.e, the length of BS.
+   * CLOSE = long vector of output, coerced into an array by R.
+   * PW = window size.
+   */
+  int nchann;
+  int j, n_a, n_b;
+  Sfloat *b;
+
+
+  /* We use pointer arithmetic in two ways here:
+   * 1. B is incrementally updated to move to the start of the next
+   * spike train within BS.
+   * 2. CLOSE is a vector of length (N_A * N_CHANNELS); for each
+   * channel we fill in N_A values, and so for each channel, CLOSE is
+   * moved on by N_A elements to gradually fill up the whole vector.
+   * R then converts the vector into a matrix. */
+   
+  n_a = *pna;
+  b = bs;			/* point to start of current spike train */
+  nchann = *pnchannels;
+  for (j = 0; j < nchann; j++) {
+    n_b = nb[j];		/* #spikes in current train */
+    coincident(a, pna, b, &n_b, close, pw);
+    close += n_a;		/* move to next free bit of output array */
+    b += n_b;			/* move onto next spike train */
+  }
+
+
+
+}
+
 /**********************************************************************/
 /*
 HELP ARRAY_HIST                             David Young, January 1994
