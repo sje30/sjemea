@@ -53,6 +53,9 @@ spikes.to.count2 <- function(spikes,
   ##
   ## C version, which should replace spikes.to.count
   ## Returns a time series object.
+
+  ## Each bin is of the form [t, t+dt) I believe, as shown by:
+  ## spikes.to.count2(list( c(0, 6.9), c( 2, 4)))
   
   ## time.breaks <- seq(from=beg, to=end, by=time.interval)
   nbins <- ceiling( (end-beg) / time.interval)
@@ -434,13 +437,17 @@ ns.bin.peak <- function(p, nbins=12, wid=5) {
 }
 
 
+
 ns.identity <- function(s, w=0.1) {
   ## Return the "NSID" matrix, Network Spike IDentity.
   ## Which channels contributed to which network spikes?
   ## W is window of spike identity, +/- 0.1s by default.
-  peak.times <- s$ns$measures[,"time"]
+
+  ## peak.times here should be the middle of the NS bin.
+  peak.times <- s$ns$measures[,"time"] + (s$ns$ns.T/2)
   nsid <- ns.coincident(peak.times, s$spikes, w)
 }
+
 ns.coincident <- function(a, bs, w) {
   spike.lens <- sapply(bs, length)
   num.channels <- length(spike.lens)
