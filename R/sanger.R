@@ -77,8 +77,11 @@ sanger.read.spikes <- function(filename, ids=NULL,
   ## data files, as it probably can be read in using just
   ## read.csv(filename, sep='\t')
   ## but since this works, fine.
-  
-  fp <- file(filename, open="r")
+
+  ## gzfile can also open uncompresed files, so this should work for
+  ## both compressed and uncompressed text files.
+  fp <- gzfile(filename, open="r")
+
 
   header <- readLines(fp, n=1)
   header.split <- strsplit(header, '\t')[[1]]
@@ -259,11 +262,16 @@ make.meafile.cache <- function(dir) {
   ## Search recursively through DIR to find all filenames.
   files <- dir(dir, recursive=TRUE, full.names=TRUE)
   mea.key <- basename(files)
-
+  mea.key <- handle.gz(mea.key)
+  
   res <- cbind(mea.key, files)
   res
 }
 
+handle.gz <- function(keys) {
+  ## Remove any .gz extension from the keys.
+  gsub("\\.gz$", "", keys)
+}
 
 meafile <- function(file) {
   ## Use the file cache to find where the file is stored.
