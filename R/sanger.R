@@ -80,7 +80,7 @@ sanger.read.spikes <- function(filename, ids=NULL,
 
   ## gzfile can also open uncompresed files, so this should work for
   ## both compressed and uncompressed text files.
-  fp <- gzfile(filename, open="r")
+  fp <- gzfile(file.or.gz(filename), open="r")
 
 
   header <- readLines(fp, n=1)
