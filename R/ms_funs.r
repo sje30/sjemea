@@ -332,7 +332,8 @@ jay.read.spikes <- function(filename, ids=NULL,
   ## IDS is an optional vector of cell numbers that should be analysed
   ## -- the other channels are read in but then ignored.
 
-  fp <- file(filename, open="r")
+  fp <- gzfile(file.or.gz(filename), open="r")
+
   ## todo: in an ideal world, this limit would not be required...
   max.channels <- 200                   #should typically be 64 or less.
   channels <- character(max.channels)
@@ -440,7 +441,7 @@ jay.read.spikes <- function(filename, ids=NULL,
   ## must be called again for the new values to be read in.
   ## The shifted positions are used only by the movie functions and
   ## by the function plot.shifted.jay.pos(s) [this shows all units].
-  shift.filename <- sub("\\.txt$", ".sps", filename)
+  shift.filename <- sub("\\.txt(\\.gz)?$", ".sps", filename)
   unit.offsets <- NULL                  #default value.
   if (file.exists(shift.filename)) {
     updates <- scan(shift.filename)
