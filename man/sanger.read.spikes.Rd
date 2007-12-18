@@ -35,8 +35,13 @@ sanger.read.spikes(filename)
 }
 \seealso{
   \code{\link{jay.read.spikes}}
+  \code{\link{compute.ns}}
 }
 \examples{
+data.file <- system.file("examples", "TC89_DIV15_A.nexTimestamps",
+                         package = "sjemea")
+s <- sanger.read.spikes( data.file, beg=400, end=700)
+fourplot(s)
 }
 \author{Stephen Eglen}
 \keyword{}
