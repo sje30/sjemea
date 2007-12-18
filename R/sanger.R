@@ -304,7 +304,7 @@ meatable <- function(file) {
 }
 
 read.cond.tab <- function(file) {
-  dat <- read.csv(file, as.is=T)
+  dat <- read.csv(file, as.is=T, comment.char='#')
 
 
   ## Handle some sanger specific stuff:
