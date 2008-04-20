@@ -57,7 +57,187 @@ make.sanger1.layout <- function(positions) {
 
 }
 
+
 sanger.read.spikes <- function(filename, ids=NULL,
+                               time.interval=1,
+                               beg=NULL, end=NULL,
+                               min.rate=0) {
+
+  ## Read in Sanger data set.  
+  ## IDS (IGNORE FOR NOW)is
+  ## an optional vector of cell numbers that should be analysed -- the
+  ## other channels are read in but then ignored.
+
+  ## MIN.RATE (when >0) is the mininum firing rate (Hz) that a channel
+  ## must have for it to be analysed.  e.g. a sensible threshold would
+  ## be 1/60 to indicate it must on average make one spike/minute to
+  ## be analysed.
+  
+
+
+  ## gzfile can also open uncompresed files, so this should work for
+  ## both compressed and uncompressed text files.
+  f2 <- file.or.gz(filename)
+
+  if (any(grep('.gz$', f2))) {
+    con <- gzfile(f2)
+  } else {
+    con <- file(filename)
+  }
+
+  ## read in all the data.
+  raw <- read.table( con, sep='\t', as.is=T, header=T)
+
+  if ( colnames(raw)[1] == "StartStop") {
+    dat <- raw[,-(1:3)]
+    dat.start <- raw[1,2]
+    dat.stop  <- raw[1,3]
+  } else {
+    raw.ncol <- ncol(raw)
+    if ( colnames(raw)[raw.ncol] ==  "Sweep_Stop") {
+      dat <- raw[,1:(raw.ncol-2)]
+      dat.start <- raw[1, raw.ncol-1]
+      dat.stop  <- raw[1, raw.ncol]
+    } else {
+      stop("Cannot read this file\n")
+    }
+  }
+
+  sweep.start <- dat.start; sweep.stop <- dat.stop
+  channels <- colnames(dat)
+
+  ## remove the NA from the end of each list.
+  spikes <- sapply(dat, simplify=F, jay.filter.for.na)
+
+
+  if (!is.null(end)) {
+    spikes <- lapply(spikes, jay.filter.for.max, max=end)
+  } else {
+    end <- sweep.stop
+  }
+
+  if (!is.null(beg)) {
+    spikes <- lapply(spikes, jay.filter.for.min, min=beg)
+  } else {
+    beg <- sweep.start
+  }
+
+  if (min.rate > 0 ) {
+    
+    ## Check for inactive channels -- those with a mean firing rate
+    ## below some average rate.
+
+    ## This catches the odd situation when a channel has no spikes on
+    ## it -- this can happen when a duration (beg, end) is given where
+    ## no spikes occur on that channel.
+    
+    
+    nspikes <- sapply(spikes,length)
+    durn <- sweep.stop - sweep.start
+    rates <- nspikes/durn
+    inactive <- which(rates < min.rate)
+    if (any(inactive)) {
+      cat(paste("Removing spikes with low firing rates: ",
+                paste(inactive, collapse=' '), "\n"
+                ))
+      spikes = spikes[-inactive]
+      channels = channels[-inactive]
+    }
+    
+    
+  }
+
+
+  
+  if (!is.null(ids) ) {
+    if (any(ids>length(spikes)))
+      stop(paste("some ids not in this data set:",
+                 paste(ids[ids>length(spikes)],collapse=" ")))
+    
+    spikes <- spikes[ids];
+    channels <- channels[ids];
+  }
+
+  ## Count the number of spikes per channel, and label them.
+  nspikes <- sapply(spikes, length)
+  names(nspikes) <- channels
+
+  ## meanfiring rate is the number of spikes divided by the (time of
+  ## last spike - time of first spike).  
+  meanfiringrate <- nspikes/ ( end - beg)
+
+  ## Parse the channel names to get the cell positions.
+  layout <- make.sanger1.layout(substring(channels, 4, 5))
+
+  ## check that the spikes are monotonic.
+  check.spikes.monotonic(spikes)
+
+
+  rates <- make.spikes.to.frate(spikes, time.interval=time.interval,
+                                beg=beg, end=end)
+  
+  ## See if we need to shift any units.  this affects only the
+  ## visualisation of the units in the movies.  We assume that "shifted"
+  ## positions are stored in the file with same name as data file
+  ## except that the .txt is replaced with .sps.  Then each line of this
+  ## file contains three numbers:
+  ## c dx dy
+  ## where c is the cell number to move, and dx,dy is the amount (in um)
+  ## by which to move the cells.  If you edit the file, this function
+  ## must be called again for the new values to be read in.
+  ## The shifted positions are used only by the movie functions and
+  ## by the function plot.shifted.jay.pos(s) [this shows all units].
+
+
+  ## Tue 19 Dec 2006: this assumes filename ends in .txt; do not worry
+  ## about this for now.
+  
+  shift.filename <- sub("\\.txt$", ".sps", filename)
+  unit.offsets <- NULL                  #default value.
+  if (FALSE && file.exists(shift.filename)) { #TODO -- why running?
+    updates <- scan(shift.filename)
+    ## must be 3 data points per line
+    stopifnot(length(updates)%%3 == 0)
+    updates <- matrix(updates, ncol=3, byrow=TRUE)
+    units <- updates[,1]
+    if (any(units> length(spikes))) {
+      stop(paste("some units not in recording...",
+                 paste(units[units>=length(spikes)],collapse=",")))
+    }
+    unit.offsets <- pos*0               #initialise all elements to zero.
+    unit.offsets[units,] <- updates[,2:3]
+  }
+
+  ## Compute CV of ISI.
+  mean.isi = sapply(spikes, function(s) { mean(isi(s))})
+  
+  cv.isi = sapply(spikes, cv.isi)
+  
+  res <- list( channels=channels,
+              totalspikes=sum(nspikes),
+              spikes=spikes, nspikes=nspikes, NCells=length(spikes),
+              meanfiringrate=meanfiringrate,
+              file=filename,
+              ##pos=pos,
+              layout=layout,
+              rates=rates,
+              unit.offsets=unit.offsets,
+              rec.time=c(beg, end),
+              mean.isi=mean.isi,
+              cv.isi = sapply(spikes, cv.isi)
+              )
+  class(res) <- "mm.s"
+
+  ## Compute the correlation index.
+  distance.breaks = c(0, 150, 250, 350, 450, 550, 650, 1000, 2000)
+  res$corr = corr.index(res, distance.breaks)
+
+  res
+
+}
+
+
+sanger.read.spikes.backup <- function(filename, ids=NULL,
                                time.interval=1,
                                beg=NULL, end=NULL,
                                min.rate=0) {
