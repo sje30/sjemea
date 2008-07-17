@@ -19,10 +19,21 @@ sanger.init <- function() {
     assign("mea.table.dir", "c:/meadev/tables/", env = .GlobalEnv)
     assign("mea.op.dir", "c:/meadev/op/", env = .GlobalEnv)
   } else {
-    ## Set up for linux.
-    assign("mea.data.dir",   "~/proj/sangermea/data/", env = .GlobalEnv)
-    assign("mea.table.dir",  "~/proj/sangermea/tables/", env = .GlobalEnv)
-    assign("mea.op.dir",     "~/proj/sangermea/op/", env = .GlobalEnv)
+    if (file.exists("/nfs/g2c_electrophys/meadev/") ) {
+
+      ## Set up for Sanger deskpro15402 machine.
+      assign("mea.data.dir",   "/nfs/g2c_electrophys/meadev/data/",
+             env = .GlobalEnv)
+      assign("mea.table.dir",  "/nfs/g2c_electrophys/meadev/tables/",
+             env = .GlobalEnv)
+      assign("mea.op.dir",     "/nfs/g2c_electrophys/meadev/op/",
+             env = .GlobalEnv)
+    } else {
+      ## Set up for linux.
+      assign("mea.data.dir",   "~/proj/sangermea/data/", env = .GlobalEnv)
+      assign("mea.table.dir",  "~/proj/sangermea/tables/", env = .GlobalEnv)
+      assign("mea.op.dir",     "~/proj/sangermea/op/", env = .GlobalEnv)
+    }
   }
 
   ## Create the cache of datafiles.
