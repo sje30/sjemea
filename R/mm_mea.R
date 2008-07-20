@@ -1,4 +1,6 @@
-## Code for Markus Meister MEA
+## mm_mea.R --- Code for reading Markus Meister's MEA data.
+## Author: Stephen Eglen
+## Copyright: GPL
 ## Mon 15 Jan 2007
 ## This is code for the array data from Markus Meister (MM)
 ## not likely to be useful for CARMEN, as it was a handbuilt array
