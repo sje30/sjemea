@@ -1,5 +1,8 @@
-## Implement maxinterval method for burst detection.
+## maxinterval.R --- maxinterval burst detection (from Neuroexplorer).
+## Author: Stephe Eglen
+## Copyright: GPL
 ## Fri 23 Feb 2007
+
 
 mi.find.bursts <- function(spikes,debug=FALSE) {
 
