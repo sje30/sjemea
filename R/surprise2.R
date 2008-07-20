@@ -1,5 +1,6 @@
-## Burst analysis, surprise method.
-## Wed 03 Jan 2007 -- move into sjemea package.
+## Poisson surprise method for burst analysis -- L'egendy and Salcman (1985)
+## Author: Stephen J Eglen
+## Copyright: GPL
 
 s.min = 5                               #threshold on suprise index.
 
@@ -132,12 +133,6 @@ si.find.bursts <- function(spikes,debug=FALSE) {
   
 }
 
-
-
-printf <- function (...) {
-  ## Helper function.
-  cat(sprintf(...))
-}
 
 si.find.burst2 <- function(n, spikes, nspikes, mean.isi, threshold=NULL,
                         debug=FALSE) {
