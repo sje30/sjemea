@@ -1,3 +1,7 @@
+## ncl_mea.R --- Specifics of analysising MEA data from Newcastle.
+## Author: Stephen J Eglen
+## Copyright: GPL
+
 mcd.data.to.array <- function(file, beg=NULL, end=NULL) {
 
   ## Read in the MCD data file.  Return the spike trains and the channel
