@@ -1,6 +1,6 @@
-## Compute the correlation index.
-## All of the correlation index code is in this file, rather than
-## in the main ms_funs.R area.
+## Compute the correlation index, as defined by Meister et al (1991).
+## Author: Stephen J Eglen
+## Copyright: GPL
 ## Sun 04 Mar 2007
 
 corr.index <- function(s, distance.breaks, dt=0.05) {
@@ -147,7 +147,7 @@ write.corr.indexes <- function(s, file=NULL) {
   }
 
   if (is.null(file)) {
-    file = paste(basename2(s$file), "_corrs.csv", sep='')
+    file = paste(basenamepy(s$file)[2], "_corrs.csv", sep='')
     cat(sprintf("Writing correlations to %s\n", file))
   }
   write.csv(op, file=file, row.names=FALSE)
@@ -301,19 +301,3 @@ my.upper <- function (x,diag=FALSE) {
 }
 
 
-basename2 <- function(f) {
-  ## remove any suffix from the basename.
-  ## check if this vectorises okay?
-
-  file = basename(f)
-  parts = strsplit(file, ".", fixed=T)
-  nparts = length(parts[[1]])
-  if (nparts > 1) {
-    res = paste(parts[[1]][1:(nparts-1)], collapse='.')
-  } else {
-    res = file
-  }
-  
-  res
-
-}
