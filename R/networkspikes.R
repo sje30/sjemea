@@ -1,14 +1,17 @@
 ## networkspikes.R --- identify and analsyse network spikes
+## Author: Stephen J Eglen
+## Copyright: GPL
 ## Sun 28 Jan 2007
-## Taking ideas from Eytan & Marom (2006).
+## Taking ideas from Eytan & Marom J Neurosci (2006).
+
 
 
 ##ns.T = 0.003                             #bin time for network spikes
 ##ns.N = 10                               #number of active electrodes.
 
 ## 2007-07-27: Code merged in from second version, temp in
-## ~/proj/sangermea/test_ns.R Old versions of code at bottom of this
-## file can be deleted in a few months.
+## ~/proj/sangermea/test_ns.R 
+
 compute.ns <- function(s, ns.T, ns.N, sur, plot=FALSE) {
   ## Main entrance function to compute network spikes.
   ## Typical values:
@@ -445,10 +448,27 @@ ns.identity <- function(s, w=0.1) {
 
   ## peak.times here should be the middle of the NS bin.
   peak.times <- s$ns$measures[,"time"] + (s$ns$ns.T/2)
-  nsid <- ns.coincident(peak.times, s$spikes, w)
+
+  ## We do the transpose here so that one row is one network spike.
+  nsid <- t(ns.coincident(peak.times, s$spikes, w))
+
+  
 }
 
 ns.coincident <- function(a, bs, w) {
+  ## A is a vector of reference times, sorted, lowest first.  (Here
+  ## the times of the peaks of the network spikes.)
+  ## B is a list of vectors of spike times.  (Each vector of spike
+  ## times is sorted, lowest first.)
+
+  ## For each spike train in B, we see if there was a spike within a
+  ## time window +/- W of the time of each event in A.  If there was a
+  ## "close" spike in spike train j from B to event i , then
+  ## MAT[j,i]=1.
+  ## (MAT is a matrix of size CxN, where C is the number of spike
+  ## trains in BS, and N is the number of events in A.)
+  ## MAT is transposed by the higher level function -- it is kept this
+  ## way for ease of the C implementation.
   spike.lens <- sapply(bs, length)
   num.channels <- length(spike.lens)
   z <- .C("coincident_arr", as.double(a), as.integer(length(a)),
@@ -457,203 +477,13 @@ ns.coincident <- function(a, bs, w) {
           close = integer(length(a)*num.channels),
           as.double(w), PACKAGE="sjemea")
   
-  
   mat <- matrix(z$close, nrow=num.channels, byrow=T)
   dimnames(mat) <- list(channel=1:num.channels, ns.peak=a)
   mat
 
 }
 
-
-
-
 ######################################################################
 ## End of functions
 ######################################################################
 
-kurtosis <- function (x, na.rm = FALSE) {
-  ## Copied from e1071 package.
-  if (na.rm) 
-    x <- x[!is.na(x)]
-  sum((x - mean(x))^4)/(length(x) * var(x)^2) - 3
-}
-
-
-spikes.to.count.old <- function(spikes,
-                            time.interval=1, #time bin of 1sec.
-                            beg=floor(min(unlist(spikes))),
-                            end=ceiling(max(unlist(spikes)))
-                            )
-{
-  ## First version: do not use!
-  ##  The C version below is much faster:
-  ##
-  ## > unix.time(counts2 <- spikes.to.count(s$spikes, time.interval=ns.T))
-  ##  user  system elapsed 
-  ## 0.027   0.022   0.049 
-  ## > unix.time(counts <- spikes.to.count.old(s$spikes, time.interval=ns.T))
-  ## user  system elapsed 
-  ## 11.826   7.780  19.613 
-  ##
-  ## Convert the spikes for each cell into a firing rate (in Hz)
-  ## We count the number of spikes within time bins of duration
-  ## time.interval (measured in seconds).
-  ##
-  ## Currently cannot specify BEG or END as less than the
-  ## range of spike times else you get an error from hist().  The
-  ## default anyway is to do all the spikes within a data file.
-  ##
-  ## This has adapted from make.spikes.to.frate
-
-  
-  spikes.to.counts <- function(spikes, breaks, time.interval) {
-    ## helper function.  Convert one spike train into a count of how many
-    ## spikes are within each bin.
-    h <- hist(spikes, breaks=breaks,plot=FALSE,
-              ## right=F makes closer agreement (but not total) with C version.
-              right=F)
-    res = h$counts
-
-    ## We may want to check presence/absence of spike within a bin.
-    multi.spikes = which(res>1)
-    if (any(multi.spikes)) {
-      res[multi.spikes] = 1
-    }
-    
-    res
-  }
-  
-  time.breaks <- seq(from=beg, to=end, by=time.interval)
-  if (time.breaks[length(time.breaks)] < end) {
-    ## extra time bin needs adding.
-    ## e.g seq(1,6, by = 3) == 1 4, so we need to add 7 ourselves.
-    time.breaks <- c(time.breaks,
-                     time.breaks[length(time.breaks)]+time.interval)
-  }
-
-  very.bad = FALSE
-  if (very.bad) {
-    counts1 <- lapply(spikes, spikes.to.counts, breaks=time.breaks,
-                      time.interval=time.interval)
-    
-    ## counts1 is a list; we want to convert it into an array.
-    counts <- array(unlist(counts1),
-                    dim=c(length(time.breaks)-1, length(counts1)))
-    ## Do the average computation here.
-    ## av.rate == average rate across the array.
-    sum.rate <- apply(counts, 1, sum)
-  } else {
-    ncells <- s$NCells
-    for (i in 1:ncells) {
-      c = spikes.to.counts(s$spikes[[i]], time.breaks, time.interval)
-      if (i == 1) {
-        sum.rate = c
-      } else {
-        sum.rate = sum.rate + c
-      }
-    }
-
-  }
-
-  
-  ## We can remove the last "time.break" since it does not correspond
-  ## to the start of a time frame.
-  res <- list(
-              ##counts=counts,
-              times=time.breaks[-length(time.breaks)],
-              sum=sum.rate,
-              time.interval=time.interval)
-  res
-}
-
-show.ns.old <- function(p, counts, nrow=8, ncol=8, ask=FALSE, plot=TRUE) {
-  ## Show the network spikes.
-
-  ## This code does not check to worry if there is a spike right at either
-  ## end of the recording.  naughty!
-
-  if (is.null(p)) {
-    cat("*** No network spikes found\n")
-    return (NULL)
-  }
-  if (plot) {
-    old.par <- par(mfrow=c(nrow,ncol), mar=c(2.5,1,1,1),ask=ask)
-  }
-  
-  sur = 100                              #100 normally
-  ave = rep(0, (2*sur)+1)
-  npts = length(counts$sum)
-  measures = matrix(NA, nrow=nrow(p), ncol=3)
-  colnames(measures) = c("index", "peak.val", "durn")
-  n.ns = 0                              #Number of valid network spikes found
-  for (i in 1:nrow(p)) {
-    peak.i = p[i,1]; lo = (peak.i-sur); hi = peak.i+sur
-
-    ## Check that enough data can be found:
-    if ( (lo >0) && ( hi < npts) ) {
-      n.ns = n.ns + 1
-
-      dat = counts$sum[lo:hi]
-      peak.val = dat[sur+1]
-
-      measures[n.ns, 1] = peak.i
-      measures[n.ns, 2] = peak.val
-
-      if (plot) {
-        plot(dat, xaxt='n', yaxt='n', ylim=c(0,60),
-             bty='n', type='l',xlab='', ylab='')
-        ##abline(v=sur+1)
-        axis(1, at=c(0,1,2)*sur,
-             labels=c('-300 ms', '0 ms', '+300 ms'))
-        legend("topleft", paste(round(peak.val)), bty='n')
-      }
-      
-
-      hm = find.halfmax(dat, peak.n=sur+1, frac=0.5, plot=plot)
-      measures[n.ns, 3] = hm$durn
-
-      ##dat2 = dat;
-      ##dat2[1:(hm$xl-1)] = 0;
-      ##dat2[(hm$xr+1):((2*sur)+1)] = 0;
-      
-      ##k = kurtosis(dat2)
-      ##measures[n.ns, 1] = k
-      ave = ave + dat
-
-
-    }
-  }
-
-  if (n.ns < nrow(p)) {
-    ## Some peaks could not be averaged, since they were at either
-    ## beg/end of the recording.
-    ## So, in this case, truncate the matrix of results to correct
-    ## number of rows.
-    measures = measures[1:n.ns,,drop=FALSE]
-  }
-  
-  ## now show the average
-  if (n.ns > 0) {
-    ave = ave/n.ns
-    if (plot) {
-      plot(ave, xaxt='n', yaxt='n', bty='n', type='l',xlab='', ylab='')
-      legend("topleft", paste("m", round(max(ave))), bty='n')
-      find.halfmax(ave)
-    }
-
-    if (plot) {
-      par(old.par)
-    }
-
-    ##stripchart(measures[,1], ylab='K', method='jitter', vert=T, pch=19,
-    ##main=paste('kurtosis', round(mean(measures[,1]),3)))
-    if (plot) {
-      stripchart(measures[,2], ylab='durn (bins)', method='jitter',
-                 vert=TRUE, pch=19,
-                 main=paste('FWHM durn', round(mean(measures[,2]),3)))
-    }
-  }
-
-
-  list(measures=measures, ns.mean=ave)
-}
