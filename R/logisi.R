@@ -1,8 +1,6 @@
 ## Implement logisi method for burst detection.
-## Adapt the code from maxinterval.R.
-## Sat 14 July 2007
-
-## Main author: Zhengzheng Zhang
+## Author: Zhengzheng Zhang
+## Copyright: GPL.
 
 logisi.par <- list(min.ibi=0.800,   min.durn=0.05, min.spikes=6,
                    isi.low=0.02)
@@ -181,7 +179,8 @@ logisi.find.burst <- function(spikes, debug=FALSE) {
 }
 
 
-## Peak finding algorithm
+## Peak finding algorithm; taken from R-help mailing list.
+## Author: Brian Ripley.
 locpeaks <- function (series, span = 3)
 {
     z <- embed(series, span)
