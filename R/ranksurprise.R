@@ -1,6 +1,6 @@
 ## ranksurprise.R --- Rank Surprise method for burst detection.
-## Author: ZZZ
-## Copyright: ??? TODO.
+## Author: Zhengzheng Zhang
+## Copyright: GPL.
 ## Following method in Gourevitch and Eggermont (2007)
 
 ## "Rank Surprise" method for burst detection. The method and algorithm are 
