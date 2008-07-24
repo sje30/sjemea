@@ -1,4 +1,7 @@
-## Copied from ~/nobackup/stephen/langs/R/tripack/R/zzz.R
+## zzz.R --- general functions for loading/unloading package.
+## Author: Stephen J Eglen
+## Copyright: GPL
+
 .First.lib <- function(lib, pkg) {
   library.dynam("sjemea", pkg, lib)
 }

@@ -1,129 +1,14 @@
-## Functions for reading multisite data (both Markus/Rachel's and Jay's)
+## ms_funs.r --- General functions for multisite data (both Markus/Rachel's and Jay's)
+## Author: Stephen J Eglen
+## Copyright: GPL
 ## Mon 10 Sep 2001
 
 ## Functions and variables with "mm" in them are mainly for Markus Meister's
 ## data; those with "jay" in them are for Jay.  Some functions are suitable
 ## for both types.
 
-
-
-## plotCI() is taken from Ben Bolker's bbmisc package.
-## http://www.zoo.ufl.edu/bolker/R/src/
-## Update Tue 28 Nov 2006, now need clean.args also.
-
-## remove arguments not intended for a particular function from a string
-
 ## Some of this code requires code from the tcltk package; this is loaded
 ## by using the DEPENDS: field in the package description.
-
-## repeated from bbfuns/misc.R
-clean.args <- function(argstr,fn,exclude.repeats=FALSE,
-                       exclude.other=NULL,dots.ok=TRUE) {
-  fnargs <- names(formals(fn))
-  if (length(argstr)>0 && !("..." %in% fnargs && dots.ok))  {
-    badargs <- names(argstr)[!sapply(names(argstr),"%in%",c(fnargs,""))]
-    for (i in badargs)
-      argstr[[i]] <- NULL
-  }
-  if (exclude.repeats) {
-    ntab <- table(names(argstr))
-    badargs <- names(ntab)[ntab>1 & names(ntab)!=""]
-    for (i in badargs)
-      argstr[[i]] <- NULL
-  }
-  for (i in exclude.other)  ## additional arguments to exclude.other
-    argstr[[i]] <- NULL
-  argstr
-}
-
-
-plotCI <- function (x, y = NULL, uiw, liw = uiw,
-                    ui=NULL, li=NULL,
-                    err="y",
-                    sfrac = 0.01, gap=0, slty=par("lty"),
-                    add=FALSE,
-                    scol=NULL,
-                    pt.bg=par("bg"),
-                    ...)  {
-  ## from Bill Venables, R-list, modified with contributions and ideas
-  ## from Gregory Warnes and the list
-  ## requires clean.args()
-  ## process arguments:
-  arglist <- list(...)
-  if (is.list(x)) {
-    y <- x$y
-    x <- x$x
-  }
-  if (is.null(y)) {
-    if (is.null(x)) 
-      stop("both x and y NULL")
-    y <- as.numeric(x)
-    x <- seq(along = x)
-  }
-  if (missing(uiw) && (is.null(ui) || is.null(li)))
-    stop("must specify either relative limits or both lower and upper limits")
-  if (!missing(uiw)) {  ## 
-    if (err=="y") z <- y else z <- x
-    ui <- z + uiw
-    li <- z - liw
-  }
-  ## fill in default arguments
-  if (is.null(arglist$"xlab"))
-    arglist$"xlab" <- deparse(substitute(x))
-  if (is.null(arglist$"ylab"))
-    arglist$"ylab" <- deparse(substitute(y))
-  if (err=="y" && is.null(arglist$"ylim"))
-    arglist$"ylim" <- range(c(y, ui, li), na.rm=TRUE)
-  if (err=="x" && is.null(arglist$"xlim"))
-    arglist$"xlim" <- range(c(x, ui, li), na.rm=TRUE)
-  if (missing(scol)) {
-    if (!is.null(arglist$"col")) scol <- arglist$"col"
-    else scol <- par("col")
-  }
-  plotpoints <- TRUE
-  if (!is.null(arglist$"pch") && is.na(arglist$"pch")) {
-    arglist$"pch" <- 1
-    plotpoints <- FALSE
-  }
-  ## 
-  if (!add)
-    do.call("plot",c(list(x,y,type="n"),
-                          clean.args(arglist,plot)))
-  if (gap==TRUE) gap <- 0.01  ## default gap size: maybe too complicated?
-  ul <- c(li, ui)
-  if (err=="y") {
-    gap <- rep(gap,length(x))*diff(par("usr")[3:4])
-    smidge <- par("fin")[1] * sfrac
-    arrow.args <- c(list(lty=slty,angle=90,length=smidge,code=1,
-                         col=scol),
-                    clean.args(arglist,arrows,exclude.other=c("col","lty")))
-    do.call("arrows",c(list(x , li, x, pmax(y-gap,li)),
-                       arrow.args))
-    do.call("arrows",c(list(x , ui, x, pmin(y+gap,ui)),
-                       arrow.args))
-  }
-  else if (err=="x") {
-    gap <- rep(gap,length(x))*diff(par("usr")[1:2])
-    smidge <- par("fin")[2] * sfrac
-    arrow.args <- c(list(lty=slty,angle=90,length=smidge,code=1),
-                    clean.args(arglist,arrows,exclude.other=c("col","lty")))
-    do.call("arrows",c(list(li, y, pmax(x-gap,li), y),
-                       arrow.args))
-    do.call("arrows",c(list(ui, y, pmin(x+gap,ui), y),
-                       arrow.args))
-  }
-  ## now draw the points (in case we want to have "bg" set for points)
-  if (plotpoints)
-    do.call("points",c(list(x, y, bg=pt.bg),
-                       clean.args(arglist,points,
-                                  exclude.other=c("xlab","ylab","xlim","ylim",
-                                    "axes"))))
-  invisible(list(x = x, y = y))
-}
-
-
-
-
 
 plot.mm.s <- function(s, whichcells=NULL,
                       beg=min(unlist(s$spikes), na.rm=TRUE),
@@ -545,7 +430,7 @@ fourplot <- function(s) {
 
 ######################################################################
 ## Mutual information code.
-## taken from Dan Butt's paper.
+## taken from Dan Butt's 2002 J Neurosci paper.
 prob.r <- function(s)  {
   ## Given the distance bins, return the probability of finding
   ## two neurons a distance r apart.
@@ -2498,40 +2383,3 @@ print.mm.s <- function(x) {
   cat(basename(x$file), "\n")
   cat("nchannels ", x$NCells, "\n")
 }
-
-
-
-
-
-######################################################################
-## DELETE these functions soon! Mon 15 Jan 2007
-
-
-old.plot.jay.pos <- function(x, use.rownames=FALSE, ...) {
-  ## Plot the layout of the multisite.  X here should be the pos field
-  ## within the structure. ... allows us to specify other params such as
-  ## "col" for colour of text -- see plot.shifted.jay.pos().
-
-  plot(x[,1], x[,2], asp=1,
-       xlim=jay.ms.lim.x, ylim=jay.ms.lim.y,
-       bty="n",
-       xlab="", ylab="", type="n")
-  if (use.rownames)
-    text(x[,1], x[,2], rownames(x), ...)
-  else
-    text(x[,1], x[,2], ...)
-}
-
-
-old.plot.shifted.jay.pos <- function(s) {
-  ## Add the shifted unit positions, if present, before plotting
-  ## the electrode layout.  Shifted units are coloured red.
-  pos <- s$pos
-  cols <- rep("blue", s$NCells)
-  if (!is.null(s$unit.offsets)) {
-    pos <- pos + s$unit.offsets
-    cols[which(apply(s$unit.offsets^2, 1, sum)>0)] <- "red"
-  }
-  plot.jay.pos(pos, col=cols)
-}
-

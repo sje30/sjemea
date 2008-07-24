@@ -1,3 +1,7 @@
+## basenamepy.R --- Implementation of python's basename function.
+## Author: Stephen J Eglen
+## Copyright: GPL
+
 basenamepy <- function (f) {
   ## Separate file name F into dir, base, and extn.
   dir <- dirname(f)
