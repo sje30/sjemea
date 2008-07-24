@@ -1,5 +1,5 @@
 ## maxinterval.R --- maxinterval burst detection (from Neuroexplorer).
-## Author: Stephe Eglen
+## Author: Stephen Eglen
 ## Copyright: GPL
 ## Fri 23 Feb 2007
 
