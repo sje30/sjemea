@@ -1950,24 +1950,6 @@ plot.rate.mslayout.rad <- function(s, frame.num, show.com=FALSE,
   }
 }
 
-plot.rate.mslayout.scale <- function(s) {
-  ## Draw the scale bar for the plots.
-  x <- seq(from=100, to=700, by=100)
-  y <- rep(500, length(x))
-  rates <- seq(from=jay.ms.min.firingrate, to=jay.ms.max.firingrate,
-               length=length(x))
-  radii <-  rates.to.radii(rates)
-
-  symbols( x, y,
-          fg="black", bg="black",
-          circles=radii,
-          xaxt="n", yaxt="n", xlab='', ylab='',
-          inches=FALSE,
-          xlim=s$layout$xlim, ylim=s$layout$ylim,
-          main="legend")
-  text(x, y-200, labels=signif(rates,digits=2))
-}
-
 ## Number of colours to have in the firing rate colourmap
 ## +the colourmap itself.  Reverse the list so that white is low
 ## and black is high.
@@ -2072,7 +2054,7 @@ movie.postage <- function(s, tmin, tmax, file="movies.ps") {
   show.movie(s, seconds=TRUE, delay=0,
              beg=tmin, end=tmax,
              show.com=TRUE, skip.empty=TRUE)
-  plot.rate.mslayout.scale()
+  plot.rate.mslayout.scale(s)
   dev.off()
 }
 
