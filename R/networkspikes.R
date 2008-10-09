@@ -33,7 +33,7 @@ compute.ns <- function(s, ns.T, ns.N, sur, plot=FALSE) {
     durn <- ns$measures[,"durn"]
     ns$brief <- c(n=nrow(ns$measures),
                   peak.m=mean(peak.val), peak.sd=sd(peak.val),
-                  durn.m=mean(durn), durn.sd=sd(durn))
+                  durn.m=mean(durn, na.rm=T), durn.sd=sd(durn, na.rm=T))
 
   }
   
@@ -341,37 +341,60 @@ find.halfmax <- function(y, peak.n=NULL, plot=TRUE, frac=0.5) {
   left.y = y[1:(peak.n-1)]
   right.y = y[(peak.n+1):n]
 
+  ## When finding the halfmax value in the left and right side, we
+  ## have to check that first all of the halfmax value can be found.
+  ## e.g. if the peak value is 50 and all values to the left are 45,
+  ## there is no value to the left which is under 25, and so the half
+  ## max value cannot be computed.
+  
+
+  ## Assume the half max point can be found, we interpolate to find
+  ## the point, see below.
+  
   underhalf.l = which(left.y < half.max)
-  xl1 = underhalf.l[length(underhalf.l)]   #get last point under halfmax.
-  xl2 = xl1+1
+  if ( any(underhalf.l) ) {
+    xl1 = underhalf.l[length(underhalf.l)]   #get last point under halfmax.
+    xl2 = xl1+1
+    
+    yl1 = y[xl1]; yl2 = y[xl2]
+    dy = half.max - yl1
 
-  yl1 = y[xl1]; yl2 = y[xl2];
-  dy = half.max - yl1
 
-  ## below, (xl2 - xl1) should equal 1.
-  dx = (dy  *(xl2-xl1))/ (yl2-yl1)
-
-  ##xl.half = xl1 + dx
-  xl.half = xl1 + dx
+    ## see picture.
+    ## below, (xl2 - xl1) should equal 1.
+    dx = (dy  *(xl2-xl1))/ (yl2-yl1)
+    
+    xl.half = xl1 + dx
+  } else {
+    xl.half = NA                        # could not find half-max to left.
+  }
 
   ## Now work on right of curve.  find first point at which y falls below
   ## half max value.
   underhalf.r = which(right.y < half.max)
-  xr2 = underhalf.r[1] + peak.n
-  xr1 = xr2 - 1
+  if ( any(underhalf.r) ) {
+    xr2 = underhalf.r[1] + peak.n
+    xr1 = xr2 - 1
+    
+    yr1 = y[xr1]; yr2 = y[xr2]
+    dy = half.max - yr2
+    
+    dx = dy * (xr1-xr2)/(yr1-yr2)
 
-  yr1 = y[xr1]; yr2 = y[xr2]
-  dy = half.max - yr2
-
-  dx = dy * (xr1-xr2)/(yr1-yr2)
-  stopifnot(dx<0)
-  xr.half = xr2 + dx
+    ##stopifnot(dx<0)
+    xr.half = xr2 + dx
+  } else {
+    xr.half = NA
+  }
 
   
   if(plot) {
     ##abline(v=xl.half, col='green'); abline(v=xr.half, col='green'); #temp
     abline(h=peak.val * frac, col='red')
-    segments(xl.half, half.max, xr.half, half.max, col='blue')
+    if (! any(is.na(c(xl.half, xr.half)))) {
+      ## check first that both half-maxes are valid.
+      segments(xl.half, half.max, xr.half, half.max, col='blue')
+    }
   }
 
   list(xl=xl.half, xr=xr.half, durn=xr.half-xl.half)
