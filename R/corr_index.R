@@ -91,12 +91,16 @@ bin.distances <- function(dists, breaks) {
 }
 
 
-plot.corr.index <- function(s, log='', identify=FALSE,
+plot.corr.index <- function(s, identify=FALSE,
                             main=NULL,
                             ...) {
   ## Plot the correlation indices as a function of distance.
   ## If identify is TRUE, we can locate cell pairs on the plot using
   ## left mouse button.
+
+  ## Use 'log=y' as one of the extra args if the y-axis should be
+  ## drawn on a log scale.
+  
   
   ##dists = s$corr$dists[which(upper.tri(s$corr$dists))]
   ##corrs = s$corr$corr.indexes[which(upper.tri(s$corr$corr.indexes))]
