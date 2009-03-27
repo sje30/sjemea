@@ -229,8 +229,14 @@ show.ns <- function(ns, ...) {
 
 
 
+
 find.peaks <- function(trace, ns.N) {
 
+  ## Peaks are defined as being all elements between two zero entries
+  ## (one at start, one at end) in the time series.  An alternate
+  ## definiton might be to require some number N of consecutive zero
+  ## entries to surround a peak.
+   
   max.peaks = 20000
 
   npts = length(trace)
