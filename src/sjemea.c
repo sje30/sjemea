@@ -268,7 +268,7 @@ void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
    */
   
   Sfloat wid, s_i;
-  int ncells, last, b, n, unit, nbins, i, j, looking;
+  int ncells, b, n, unit, nbins, i, j, looking;
   int first_spike, last_spike;		/* first, last spike index of any train. */
   ncells = *pncells; wid = *pwid;
   nbins = *pnbins;
