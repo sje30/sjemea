@@ -97,7 +97,7 @@ logisi.find.burst <- function(spikes, debug=FALSE) {
   ## Check if any bursts were found.
   if (burst > 0 ) {
     ## truncate to right length, as bursts will typically be very long.
-    bursts = bursts[1:burst,,drop=F]
+    bursts = bursts[1:burst,,drop=FALSE]
   } else {
     ## no bursts were found, so return an empty structure.
     return(no.bursts)
@@ -127,7 +127,7 @@ logisi.find.burst <- function(spikes, debug=FALSE) {
       bursts[burst-1, "end"] = bursts[burst, "end"]
       bursts[burst, "end"] = NA         #not needed, but helpful.
     }
-    bursts = bursts[-merge.bursts,,drop=F] #delete the unwanted info.
+    bursts = bursts[-merge.bursts,,drop=FALSE] #delete the unwanted info.
   }
 
   if (debug) {
@@ -211,7 +211,7 @@ logisi.compute <- function(s, min.nspikes = 10,
   total.isi = NULL
   ncells <- s$NCells
   if (plot){
-      par(mfrow=c(8,8), mar=c(3,3,1,1), ask=F, oma=c(0,1.5,0,0))
+      par(mfrow=c(8,8), mar=c(3,3,1,1), ask=FALSE, oma=c(0,1.5,0,0))
   }
   
   for (i in 1:ncells){
@@ -261,7 +261,7 @@ logisi.compute <- function(s, min.nspikes = 10,
       ## either of each channel or of the grand average.
       par(mfrow=c(1,1))
       plot(counts, type='l', xlab="Logisi (ms)", ylab="Frequency", xaxt="n")
-      axis(1, 0:length(counts), format(exp(breaks), sci=T))   
+      axis(1, 0:length(counts), format(exp(breaks), sci=TRUE))   
   }   
   peaks = locpeaks(counts, span)
  

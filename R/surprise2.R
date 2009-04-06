@@ -361,7 +361,7 @@ mean.burst.summary = function(allb.sum) {
   for (field in fields) {
     dat = subset[[field]]
     if (length(dat) > 0 ) {
-      mean = mean(dat, na.rm=T); sd = sd(dat, na.rm=T);
+      mean = mean(dat, na.rm=TRUE); sd = sd(dat, na.rm=TRUE);
     } else {
       mean = sd = NA;
     }
@@ -508,7 +508,7 @@ plot.burst.info <- function(allb, index, ylab=NULL, max=-1,title='') {
   if(is.null(ylab))
     ylab=index
 
-  stripchart(values, method="jitter", pch=20, vert=T,main=title,
+  stripchart(values, method="jitter", pch=20, vert=TRUE,main=title,
              ylim=c(mins,maxs),
              xlab='channel', ylab=ylab)
 

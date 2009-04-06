@@ -10,7 +10,7 @@ mcd.data.to.array <- function(file, beg=NULL, end=NULL) {
   ## BEG and END are given in seconds.
   ## Recall that blank lines will not be read into the data matrix.
   
-  data <- read.table(file, as.is=T, skip=2, fill=T)
+  data <- read.table(file, as.is=TRUE, skip=2, fill=TRUE)
   
 
   ## Row number of the start of each spike train.

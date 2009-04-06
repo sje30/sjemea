@@ -14,11 +14,11 @@ val2rk <- function(values) {
   
   lp = length(values)
   rk = rk2 = rep(0,lp)
-  S = sort(values, index.return = T)
+  S = sort(values, index.return = TRUE)
   y = S$x
   cl = S$ix
   rk[cl] = c(1:lp)
-  cl2 = sort(-values, index.return = T)$ix
+  cl2 = sort(-values, index.return = TRUE)$ix
   rk2[cl2] = c(1:lp)
   ranks = (lp+1-rk2+rk)/2
   ranks
@@ -112,7 +112,7 @@ rs.find.burst <- function(s, limit = NULL, RSalpha = -log(0.01)) {
             length_k=length(k) 
             SUM = 0                     
             for (j in 1:q){
-              SUM = SUM + log(u-matrix(rep(k,q),q,length_k, byrow = T)*N
+              SUM = SUM + log(u-matrix(rep(k,q),q,length_k, byrow = TRUE)*N
                 - matrix(rep(c(0:(q-1)),length_k),length(c(0:(q-1))),length_k))[j,]
             }      
             if (length_k<2){
@@ -139,7 +139,7 @@ rs.find.burst <- function(s, limit = NULL, RSalpha = -log(0.01)) {
       if (length(subseq_RS)!=0){
         ## sort RS for all subsequences
         if (!is.vector(subseq_RS)){
-          ind = sort(subseq_RS[,1], decreasing = T, index = T)$ix
+          ind = sort(subseq_RS[,1], decreasing = TRUE, index = TRUE)$ix
           subseq_RS = subseq_RS[ind,]
         }           
         while (length(subseq_RS)!=0){
@@ -170,7 +170,7 @@ rs.find.burst <- function(s, limit = NULL, RSalpha = -log(0.01)) {
     
     ## sort bursts by ascending time
     if (length(archive_burst_RS)!=0){
-      S = sort(archive_burst_start, index.return = T)
+      S = sort(archive_burst_start, index.return = TRUE)
       archive_burst_start = S$x
       ind_sort = S$ix
       archive_burst_RS=archive_burst_RS[ind_sort]
