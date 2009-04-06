@@ -93,6 +93,8 @@ bin.distances <- function(dists, breaks) {
 
 plot.corr.index <- function(s, identify=FALSE,
                             main=NULL,
+                            dot.col='red',
+                            show.fit=TRUE, show.ci=FALSE,
                             ...) {
   ## Plot the correlation indices as a function of distance.
   ## If identify is TRUE, we can locate cell pairs on the plot using
@@ -100,6 +102,10 @@ plot.corr.index <- function(s, identify=FALSE,
 
   ## Use 'log=y' as one of the extra args if the y-axis should be
   ## drawn on a log scale.
+  ## DOT.COL: colour of each dot.
+  ## If SHOW.FIT is true, draw the expoential fit.
+  ## If SHOW.CI is true, draw the confidence intervals estimated every
+  ## 100 um or so.
   
   
   ##dists = s$corr$dists[which(upper.tri(s$corr$dists))]
@@ -114,7 +120,7 @@ plot.corr.index <- function(s, identify=FALSE,
 
   plot.default(dists, corrs, xlab=xlabel, ##log=log,
                ylab="correlation index", bty="n",
-               main=main, col='red',
+               main=main, col=dot.col,
                ...)
 
   if (identify) {
@@ -123,11 +129,13 @@ plot.corr.index <- function(s, identify=FALSE,
     identify(dists, corrs, labels=labs)
   }
 
-  plotCI(s$corr$corr.id.means[,1], s$corr$corr.id.means[,2],
-         s$corr$corr.id.means[,3],
-         xlab="distance", ylab="correlation index", 
-         pch=19, add=TRUE)
-  corr.do.fit(s$corr$corr.id,plot=TRUE)
+  if (show.ci) 
+    plotCI(s$corr$corr.id.means[,1], s$corr$corr.id.means[,2],
+           s$corr$corr.id.means[,3],
+           xlab="distance", ylab="correlation index", 
+           pch=19, add=TRUE)
+  if (show.fit) 
+    corr.do.fit(s$corr$corr.id,plot=TRUE)
 }
 
 write.corr.indexes <- function(s, file=NULL) {
