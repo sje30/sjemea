@@ -1,0 +1,12 @@
+Package: sjemea
+Description: Functions for multi-electrode analysis
+Title: Multi electrode analysis
+Version: 0.20
+Date: Wed 03 Jan 2007
+Depends: R (>= 1.4.0), tcltk
+Author: Stephen Eglen <sje30@cam.ac.uk>
+Maintainer: Stephen Eglen <sje30@cam.ac.uk>
+Description: Multi-electrode analysis (St Louis, Sanger)
+License: GPL (version 2 or later)
+URL: http://www.damtp.cam.ac.uk/user/sje30/
+
