@@ -23,7 +23,7 @@ compute.ns <- function(s, ns.T, ns.N, sur, plot=FALSE) {
   p <- find.peaks(counts, ns.N)
   ns <- list(counts=counts, ns.N=ns.N, ns.T=ns.T)
   class(ns) <- "ns"
-  m <- mean.ns(ns, p, plot=plot, nrow=4, ncol=4, ask=F, sur=sur)
+  m <- mean.ns(ns, p, plot=plot, nrow=4, ncol=4, ask=FALSE, sur=sur)
   if (is.null(m)) {
     ## No network spikes found.
     ns$brief <- c(n=0, peak.m=NA, peak.sd=NA, durn.m=NA, durn.sd=NA)
@@ -33,7 +33,7 @@ compute.ns <- function(s, ns.T, ns.N, sur, plot=FALSE) {
     durn <- ns$measures[,"durn"]
     ns$brief <- c(n=nrow(ns$measures),
                   peak.m=mean(peak.val), peak.sd=sd(peak.val),
-                  durn.m=mean(durn, na.rm=T), durn.sd=sd(durn, na.rm=T))
+                  durn.m=mean(durn, na.rm=TRUE), durn.sd=sd(durn, na.rm=TRUE))
 
   }
   
@@ -237,7 +237,7 @@ find.peaks <- function(trace, ns.N) {
   ## definiton might be to require some number N of consecutive zero
   ## entries to surround a peak.
    
-  max.peaks = 20000
+  max.peaks = 200000
 
   npts = length(trace)
   
@@ -455,7 +455,7 @@ ns.bin.peak <- function(p, nbins=12, wid=5) {
   if ( any( above <- which(p > max.allowed)) ) {
     stop("some values above max.allowed")
   }
-  h <- hist(p, plot=F, breaks=b)
+  h <- hist(p, plot=FALSE, breaks=b)
   c <- h$counts
 
   if (invalid) {
@@ -506,7 +506,7 @@ ns.coincident <- function(a, bs, w) {
           close = integer(length(a)*num.channels),
           as.double(w), PACKAGE="sjemea")
   
-  mat <- matrix(z$close, nrow=num.channels, byrow=T)
+  mat <- matrix(z$close, nrow=num.channels, byrow=TRUE)
   dimnames(mat) <- list(channel=1:num.channels, ns.peak=a)
   mat
 
