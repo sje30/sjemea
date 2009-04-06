@@ -15,7 +15,7 @@ plot.mm.s <- function(s, whichcells=NULL,
                       end=max(unlist(s$spikes), na.rm=TRUE),
                       label.cells = FALSE,
                       show.bursts = FALSE,
-                      main=NULL,
+                      main=NULL, ylab='spikes of cell',
                       for.figure=FALSE,
                       ...) {
   ## Plot the spikes.
@@ -63,7 +63,7 @@ plot.mm.s <- function(s, whichcells=NULL,
   } else {
     plot( c(beg, end), c(0,1), type='n', bty='n',
          yaxt="n", main=main,
-         xlab="time (s)", ylab="spikes of cell", ...)
+         xlab="time (s)", ylab=ylab, ...)
   }
   
   ymin <- 0
