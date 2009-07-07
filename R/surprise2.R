@@ -354,7 +354,7 @@ mean.burst.summary = function(allb.sum) {
   ## Summarise the burst information.  This does not handle per.spikes.in.burst
   subset = allb.sum[which(allb.sum$bursty==1),]
   
-  fields = c("spikes", "mean.dur", "cv.IBI", "bursts.per.min", "per.spikes.in.burst")
+  fields = c("spikes", "mean.dur", "cv.IBIs", "bursts.per.min", "per.spikes.in.burst")
   res = rep(0, length(fields)*2)
   names(res) = paste(rep(fields, each=2), c("m", "sd"), sep=".")
   n = 1
