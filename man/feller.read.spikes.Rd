@@ -37,7 +37,7 @@ feller.read.spikes(filename, ids=NULL, time.interval=1,
 }
 \examples{
 data.file <- system.file('examples', '2002-11-26-1', package='sjemea')
-s <- feller.read.spikes( data.file) ##, beg=400, end=700)
+s <- feller.read.spikes(data.file)
 ejcmealayout.check()
 fourplot(s)
 }
