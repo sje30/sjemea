@@ -7,7 +7,7 @@ make.ejc.layout <- function(positions) {
   xlim <- ylim <- c(-300, 300)
   spacing <- 60
 
-  columns <- match(names(spikes), ejcmealayout$name)
+  columns <- match(positions, ejcmealayout$name)
   pos <- cbind(ejcmealayout$x[columns], ejcmealayout$y[columns])
   
   rownames(pos) <- positions
@@ -116,7 +116,7 @@ feller.spiketimes <- function(dir) {
   
   spikes <- lapply(as.character(channels.ordered$file), function(f) {
     file <- paste(dir, f, sep='/')
-    vals <- scan(file) * to.secs
+    vals <- scan(file, quiet=TRUE) * to.secs
     vals
   })
 
@@ -139,13 +139,25 @@ feller.read.spikes <- function(filename, ids=NULL,
 
 
   spikes <- feller.spiketimes(filename)
-  
+
+  ## Now remove spikes outside of range required.
+  spikes.range <- range(unlist(spikes))
+  if (!is.null(end)) {
+    spikes <- lapply(spikes, jay.filter.for.max, max=end)
+  } else {
+    end <- spikes.range[2]
+  }
+
+  if (!is.null(beg)) {
+    spikes <- lapply(spikes, jay.filter.for.min, min=beg)
+  } else {
+    beg <- spikes.range[1]
+  }
+
+  rec.time <- c(beg, end)
+
   channels <- names(spikes)
 
-  spikes.range <- range(unlist(spikes))
-  if (is.null(beg))  beg <-  spikes.range[1]
-  if (is.null(end))  end <-  spikes.range[2]
-  rec.time <- c(beg, end)
 
   
   ## Count the number of spikes per channel, and label them.
