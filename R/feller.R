@@ -181,7 +181,6 @@ feller.read.spikes <- function(filename, ids=NULL,
   ## Parse the channel names to get the cell positions.
   layout <- make.ejc.layout(channels)
 
-  browser()
   ## TODO; worry about multiple units recorded at the same location?
   unit.offsets <- NULL                  #default value.
   
