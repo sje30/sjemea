@@ -7,7 +7,8 @@ make.ejc.layout <- function(positions) {
   xlim <- ylim <- c(-300, 300)
   spacing <- 60
 
-  columns <- match(positions, ejcmealayout$name)
+  cols.an <- toupper(substring(positions,1,2))
+  columns <- match(cols.an, ejcmealayout$name)
   pos <- cbind(ejcmealayout$x[columns], ejcmealayout$y[columns])
   
   rownames(pos) <- positions
@@ -80,7 +81,8 @@ feller.spiketimes <- function(dir) {
 
   ## TODO:
   ## Assume last three characters contain the electrode position.  How
-  ## valid is this?
+  ## valid is this?  This will be something like "c3a" or "c3b" with
+  ## the first two chars representing the location.
   electrodes <- substring(filenames, first=nchar(filenames)-2)
 
   ## perhaps best to order electrodes by their number, rather than 2
@@ -92,15 +94,20 @@ feller.spiketimes <- function(dir) {
   ## find equivalent channel number.
 
   data(ejcmealayout)
-  electrode.name <- toupper(substring(electrodes, 1,2))
-  channel.num <- match( electrode.name, ejcmealayout$name)
-  channel.num <- ejcmealayout$number[channel.num]
 
+  ## take first two letters of electrode name to get the AN value - A
+  ## is an alphabetic char [A-G] and N is a number [1-8].
+  
+  electrode.an <- toupper(substring(electrodes, 1,2))
+  channel.num <- match( electrode.an, ejcmealayout$name)
+  channel.num <- ejcmealayout$number[channel.num]
   ## If we load in the data, sorted by channel number, nearby neurons
   ## should look most similar.
 
+  ## When ranking by channel.nu, there will be ties!  Need to check that these
+  ## are resolved okay. TODO
   rank <-  rank(channel.num)
-  channels <- data.frame(file=filenames, electrode=electrode.name,
+  channels <- data.frame(file=filenames, electrode=electrodes,
                          num=channel.num, rank=rank)
 
   channels.ordered <- channels[order(rank), ]
@@ -122,6 +129,7 @@ feller.spiketimes <- function(dir) {
 
   names(spikes) <- channels.ordered$electrode
 
+  ## todo: could check that last 3 chars of filename match names(spikes)
   spikes
 }
 
@@ -173,8 +181,9 @@ feller.read.spikes <- function(filename, ids=NULL,
   ## Parse the channel names to get the cell positions.
   layout <- make.ejc.layout(channels)
 
+  browser()
   ## TODO; worry about multiple units recorded at the same location?
-    unit.offsets <- NULL                  #default value.
+  unit.offsets <- NULL                  #default value.
   
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
