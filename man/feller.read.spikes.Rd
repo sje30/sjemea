@@ -40,5 +40,10 @@ data.file <- system.file('examples', '2002-11-26-1', package='sjemea')
 s <- feller.read.spikes(data.file)
 ejcmealayout.check()
 fourplot(s)
+
+## next two examples show electrodes being rejected/accepted.
+s <- feller.read.spikes(data.file, ids=c('-', 'a7a', 'b1a', 'h2a'))
+s <- feller.read.spikes(data.file, ids=c(     'a7a', 'b1a', 'h2a'))
+
 }
 \author{Stephen Eglen}
