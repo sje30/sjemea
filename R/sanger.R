@@ -99,7 +99,7 @@ sanger.read.spikes <- function(filename, ids=NULL,
   }
 
   ## read in all the data.
-  raw <- read.table( con, sep='\t', as.is=T, header=T)
+  raw <- read.table( con, sep='\t', as.is=TRUE, header=TRUE)
 
   if ( colnames(raw)[1] == "StartStop") {
     dat <- raw[,-(1:3)]
@@ -120,7 +120,7 @@ sanger.read.spikes <- function(filename, ids=NULL,
   channels <- colnames(dat)
 
   ## remove the NA from the end of each list.
-  spikes <- sapply(dat, simplify=F, jay.filter.for.na)
+  spikes <- sapply(dat, simplify=FALSE, jay.filter.for.na)
 
 
   if (!is.null(end)) {
@@ -296,7 +296,7 @@ meatable <- function(file) {
 }
 
 read.cond.tab <- function(file) {
-  dat <- read.csv(file, as.is=T, comment.char='#')
+  dat <- read.csv(file, as.is=TRUE, comment.char='#')
 
 
   ## Handle some sanger specific stuff:
