@@ -133,6 +133,20 @@ feller.spiketimes <- function(dir) {
   spikes
 }
 
+remove.empty.channels <- function(spikes) {
+  ## Remove any spike trains that are empty, i.e. zero spikes in them.
+  ## This can happen if the beg, end range is too narrow, or if a
+  ## datafile is empty, which happens sometime for the Feller data.
+  ## TODO: currentlly only used by the Feller reader, perhaps it could
+  ## also be used for other routines too?
+  
+  nspikes <- sapply(spikes, length)
+  empty <- which(nspikes==0)
+  if ( any(empty) ) {
+    spikes <- spikes[-empty]
+  }
+  spikes 
+}
 
 
 feller.read.spikes <- function(filename, ids=NULL,
@@ -144,6 +158,7 @@ feller.read.spikes <- function(filename, ids=NULL,
   ## channel per file.
   ## IDS: an optional vector of cell numbers that should be analysed
   ## -- the other channels are read in but then ignored.
+  ## TODO: yet to implement for this routine..
 
 
   spikes <- feller.spiketimes(filename)
@@ -162,10 +177,14 @@ feller.read.spikes <- function(filename, ids=NULL,
     beg <- spikes.range[1]
   }
 
+  ## Remove any channels that have zero spikes (which can happen if
+  ## the beg, end range is too narrow, or if a datafile is empty,
+  ## which happens sometime for the Feller data.
+  spikes <- remove.empty.channels(spikes)
+  
   rec.time <- c(beg, end)
 
   channels <- names(spikes)
-
 
   
   ## Count the number of spikes per channel, and label them.
