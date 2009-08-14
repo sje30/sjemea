@@ -148,17 +148,44 @@ remove.empty.channels <- function(spikes) {
   spikes 
 }
 
+filter.channel.names <- function(spikes, ids) {
+  ## Filter out some channel names.
+  ##Keep only the channels mention in
+  ## IDS; (or exclude only the elements in IDS if the first element is
+  ## '-', to indicate minus indexing notation.)
+  ## e.g.
+  ## spikes2 <- filter.channel.names(spikes, c('-', 'g4a', 'a6a'))
+  ## spikes2 <- filter.channel.names(spikes, c('g4a', 'a6a'))
+  ## first call throws away two channels; second call keeps just two channels.
+  if (ids[1] == '-') {
+    exclude = TRUE
+    ids <- ids[-1]              #throw away minus sign!
+  } else {
+    exclude = FALSE
+  }
+  ## where are the electrodes mentioned?
+  i <- match(ids, names(spikes))
+  i <-  sort(i)                         #keep in order, even if IDS weren't.
+  if (any(is.na(i)))
+    stop('IDS contains channel names that are not in spikes.')
+  if (exclude) {
+    spikes <- spikes[-i]
+  } else {
+    spikes <- spikes[i]
+  }
+  spikes
+}
+             
+  
+
 
 feller.read.spikes <- function(filename, ids=NULL,
                                time.interval=1, beg=NULL, end=NULL) {
-
   ## Read in data from Marla Feller.
-
   ## FILENAME: directory that contains the spike times, one
   ## channel per file.
   ## IDS: an optional vector of cell numbers that should be analysed
   ## -- the other channels are read in but then ignored.
-  ## TODO: yet to implement for this routine..
 
 
   spikes <- feller.spiketimes(filename)
@@ -181,6 +208,12 @@ feller.read.spikes <- function(filename, ids=NULL,
   ## the beg, end range is too narrow, or if a datafile is empty,
   ## which happens sometime for the Feller data.
   spikes <- remove.empty.channels(spikes)
+
+
+  if (!is.null(ids)) {
+    ## Filter out some channel names, either inclusively or exclusively.
+    spikes <- filter.channel.names(spikes, ids)
+  }
   
   rec.time <- c(beg, end)
 
