@@ -1255,34 +1255,19 @@ make.movieframes <- function (x, beg=1,
       file.remove(files)
   }
 
-
-  if (show.frames) {
-    ## Show frames on screen whilst also copying them to file.
-    ## This may require ghostscript to be installed.
-    for (i in beg:end) {
-      plot.rate.mslayout(x, i)
-      file <- paste(outputdir, "/", prefix,
-                    formatC(i,width=5,flag="0"),
-                    ".png", sep='')
-      ##".ppm", sep='')
-      ## Depending on whether we are colour coding or radius coding, change
-      ## the device -- this will keep the files small.
-      dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "pngmono"))
-      ##dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "ppm"))
-    }
-  } else {
-    ## Do not show frames interactively...
-    for (i in beg:end) {
-      file <- paste(outputdir, "/", prefix,
-                    formatC(i,width=5,flag="0"),
-                    ".png", sep='')
-      png(file)
-      plot.rate.mslayout(x, i)
-      dev.off()
-      ##dev2bitmap(file=file, type=ifelse(plot.rate.colour, "pnggray", "pngmono"))
-    }
+  ## Show the frames.
+  for (i in beg:end) {
+    if (show.frames)
+      plot.rate.mslayout(x,i)
+    
+    file <- paste(outputdir, "/", prefix,
+                  formatC(i,width=5,flag="0"),
+                  ".png", sep='')
+    png(file)
+    plot.rate.mslayout(x, i)
+    dev.off()
   }
-
+  
   if (anim.delay > 0) {
     ## We want to make an animation...
     cmd = sprintf("cd %s; convert -delay %d %s*png mea.gif",
