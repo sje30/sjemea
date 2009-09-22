@@ -1216,7 +1216,8 @@ make.movieframes <- function (x, beg=1,
   ## The frame number normally has leading zeros (e.g. 00050 rather than
   ## 50) so that the frames are ordered correctly by the * wildcard.
   ## OUTPUTDIR is the directory where the files are to be stored.  This
-  ## should not end in a forward slash (/).
+  ## should not end in a forward slash (/).  If the directory does not
+  ## exist, it is created first.
   ## If DELETE.FIRST is true, we delete all the png files in the output
   ## directory before making any new images.
   ## If SECONDS is true, beg,end are interpreted as time in seconds,
@@ -1236,6 +1237,9 @@ make.movieframes <- function (x, beg=1,
   if (substring(outputdir, first=nchar(outputdir))=="/")
     stop(paste("outputdir should not end in slash", outputdir))
 
+  if (!file.exists(outputdir))
+    dir.create(outputdir)
+  
   if (seconds) {
     ## convert beg, end into frames.
     beg <- time.to.frame(x$rates$times, beg)
@@ -1286,7 +1290,10 @@ make.movieframes <- function (x, beg=1,
     ##browser()
     system(cmd)
   }
+  
   cat(paste("Movie frames stored in", outputdir, "\n"))
+  cat("Convert these to a movie using Quicktime or on Linux:\n")
+  cat("convert -delay 20 *png mea.gif\n")
 }
 
 time.to.frame <- function(times, time) {
@@ -2135,6 +2142,31 @@ plot.mealayout <- function(x, use.rownames=FALSE, ...) {
     text(pos[,1], pos[,2], ...)
 }
 
+spikes.to.ragged.csv <- function(spikes, filename='test.csv') {
+  ## SPIKES is a list of vectors of spike times.
+  ## FILENAME is the name of the CSV file to create.
+  ##
+  ## Each spike train in SPIKES is first padded with NAs at the end of
+  ## each train, so that each train is the same length.  These spikes
+  ## are then written to a CSV file, chaning NAs to blank entries.
+  ## This file can then be read in by other programs, or viewed in a
+  ## spreadsheet.
+
+  ## find longest spike train and then na.pad every other spike train
+  ## to that length.
+  max.nspikes <- max(sapply(spikes, length))
+
+  na.pad <-function(x,n) {
+    ## Pad the end of vector X with NA s.t. it is of length N.
+    l <- length(x)
+    n.na <- n - l
+    c(x, rep(NA, n.na))
+  }
+
+  spikes.pad <- lapply(spikes, na.pad,n=max.nspikes)
+  d <- data.frame(spikes.pad)
+  write.csv(d, filename, na='', row.names=F)
+}
 
 
 
