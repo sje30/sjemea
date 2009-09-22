@@ -12,7 +12,12 @@ iit.read.spikes <- function(filename, ids=NULL,
   
   z <- readMat(filename)
   frame.rates = 7800
-  spikes <- lapply(z, function(e) {e@i/frame.rates})
+  ## each element - E- is a sparse matrix with one column, so find out
+  ## where the non-zero elements are.
+  ##spikes <- lapply(z, function(e) { which(e[,1]>0)/frame.rates})
+  ## this is a hack right now, not sure why we need to add 1 to the sparse
+  ## index values, but it works!
+  spikes <- lapply(z, function(e) { (e@i+1)/frame.rates})
 
   ## Now remove spikes outside of range required.
   spikes.range <- range(unlist(spikes))
@@ -79,7 +84,7 @@ iit.read.spikes <- function(filename, ids=NULL,
               )
   class(res) <- "mm.s"
 
-  max.dist <- sqrt(2*(64*40)^2)
+  max.dist <- sqrt(2*(64*42)^2)
   breaks = seq(from=0, to=max.dist, by=50)
   res$corr = corr.index(res, breaks)
 
@@ -91,7 +96,7 @@ iit.read.spikes <- function(filename, ids=NULL,
 make.iit.layout <- function(positions) {
   ## make the layout for SANGER MEA (cf. make.sanger1.layout)
   ## This is a hexagonal grid.
-  spacing <- 40;  #20um diam electrodes
+  spacing <- 42;  #20um diam electrodes
   xlim <- ylim <- c(0, 64*spacing)
 
 
