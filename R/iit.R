@@ -7,17 +7,23 @@ iit.read.spikes <- function(filename, ids=NULL,
   ## IDS: an optional vector of cell numbers that should be analysed
   ## -- the other channels are read in but then ignored.
 
-  if (!require(R.matlab))
-    stop('The R.matlab package is needed for this routine.  Please install.')
-  
-  z <- readMat(filename)
-  frame.rates = 7800
-  ## each element - E- is a sparse matrix with one column, so find out
-  ## where the non-zero elements are.
-  ##spikes <- lapply(z, function(e) { which(e[,1]>0)/frame.rates})
-  ## this is a hack right now, not sure why we need to add 1 to the sparse
-  ## index values, but it works!
-  spikes <- lapply(z, function(e) { (e@i+1)/frame.rates})
+  if (any(grep('mat$', filename))) {
+    if (!require(R.matlab))
+      stop('The R.matlab package is needed for this routine.  Please install.')
+    
+    z <- readMat(filename)
+    frame.rates = 7800
+    ## each element - E- is a sparse matrix with one column, so find out
+    ## where the non-zero elements are.
+    ##spikes <- lapply(z, function(e) { which(e[,1]>0)/frame.rates})
+    ## this is a hack right now, not sure why we need to add 1 to the sparse
+    ## index values, but it works!
+    spikes <- lapply(z, function(e) { (e@i+1)/frame.rates})
+  } else {
+    ## Assume the file is a regular csv and just read it in.
+    spikes <- read.csv(filename)
+    spikes <- lapply(spikes, jay.filter.for.na)
+  }
 
   ## Now remove spikes outside of range required.
   spikes.range <- range(unlist(spikes))
