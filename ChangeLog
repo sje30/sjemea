@@ -1,4 +1,13 @@
+2009-09-24  Stephen Eglen  <stephen@gnu.org>
+
+	* R/iit.R (iit.read.spikes): Handle the case when FILENAME is a
+	CSV, rather than a .mat file.  This gets around current bug when
+	large .mat files are not read on a windows machine.
+
 2009-09-22  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (make.movieframes): Create output directory if it
+	doesn't exist.
 
 	* R/iit.R: New file to store code for high-density array (64x64).
 	Data from IIT is coming in matlab format, so R.matlab package

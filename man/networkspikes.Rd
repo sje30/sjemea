@@ -47,8 +47,7 @@ show.ns(ns, ...)
 \references{
   Eytan and Marom (2006) J Neuroscience.
 }
-\seealso{
-}
+\seealso{\code{\link{sanger.read.spikes}}}
 \examples{
 data.file <- system.file("examples", "TC89_DIV15_A.nexTimestamps",
                          package = "sjemea")
@@ -62,5 +61,5 @@ summary(s$ns)
 s$ns$brief
 
 }
-\author{}
+\author{Stephen Eglen}
 \keyword{Network spikes, MEA analysis}
