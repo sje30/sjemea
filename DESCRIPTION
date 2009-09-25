@@ -8,6 +8,6 @@ Suggests: R.matlab
 Author: Stephen Eglen <sje30@cam.ac.uk>
 Maintainer: Stephen Eglen <sje30@cam.ac.uk>
 Description: Multi-electrode analysis (St Louis, Sanger, Ncl, IIT)
-License: GPL (version 2 or later)
+License: GPL (>= 2)
 URL: http://www.damtp.cam.ac.uk/user/sje30/r
 
