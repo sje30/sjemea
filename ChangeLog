@@ -1,3 +1,15 @@
+2009-10-06  Stephen Eglen  <stephen@gnu.org>
+
+	* R/corr_index.R (corr.index): Add min.rate argument.
+	(make.corr.indexes): Use min.rate -- now we can introduce NA into
+	correlation scores -- if either electrode is firing at lower than
+	min.rate. 
+	(corr.index.means): Old function? no longer used.
+	(corr.get.means): Check for any NA in correlation indices when
+	computing mean/sd at each distance.
+
+	* R/sanger.R (sanger.write.corrs): New function.
+
 2009-09-24  Stephen Eglen  <stephen@gnu.org>
 
 	* R/iit.R (iit.read.spikes): Handle the case when FILENAME is a
