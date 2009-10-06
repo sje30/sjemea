@@ -3,14 +3,16 @@
 ## Copyright: GPL
 ## Sun 04 Mar 2007
 
-corr.index <- function(s, distance.breaks, dt=0.05) {
+corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
   ## Make a correlation index object.
+  ## MIN.RATE: if greater than zero, we analyse only spike trains whose
+  ## firing rate is greater than this minimal rate.
   dists = make.distances(s$layout$pos)
   dists.bins = bin.distances(dists, distance.breaks)
 
   spikes = s$spikes
   if (length(spikes) > 1) {
-    corr.indexes = make.corr.indexes(spikes, dt)
+    corr.indexes = make.corr.indexes(spikes, dt, min.rate)
     corr.id = cbind(my.upper(dists), my.upper(corr.indexes))
     corr.id.means = corr.get.means(corr.id)
   } else {
@@ -110,8 +112,12 @@ plot.corr.index <- function(s, identify=FALSE,
   
   ##dists = s$corr$dists[which(upper.tri(s$corr$dists))]
   ##corrs = s$corr$corr.indexes[which(upper.tri(s$corr$corr.indexes))]
+
   dists = my.upper(s$corr$dists)
   corrs = my.upper(s$corr$corr.indexes)
+  ## Some of these corrs may be NA if the firing rate is low, but they
+  ## should be safely ignored in the plot.
+  
   if (is.null(main)) {
     main = paste(basename(s$file), "dt:", s$corr$dt)
   }
@@ -177,12 +183,15 @@ plot.corr.index.fit <- function(s, ...) {
 }
 
 
-make.corr.indexes <- function(spikes, dt) {
+make.corr.indexes <- function(spikes, dt, min.rate=0) {
   ## Return the correlation index values for each pair of spikes.
   ## The matrix returned is upper triangular.
-  ## SPIKES should be a list of length N, N is the number of cells.
+  ## SPIKES should be a list of length N, N is the number of electrodes.
   ## "dt" is the maximum time for seeing whether two spikes are coincident.
   ## This is defined in the 1991 Meister paper.
+  ## If MIN.RATE is >0, use the electrode iff the firing rate is above
+  ## MIN.RATE.
+  
   n <- length(spikes)
   if (n == 1) {
     ## If only one spike train, cannot compute the cross-corr indexes.
@@ -190,62 +199,85 @@ make.corr.indexes <- function(spikes, dt) {
   } else {
     Tmax <- max(unlist(spikes))           #time of last spike.
     Tmin <- min(unlist(spikes))           #time of first spike.
+
+    no.minimum <- isTRUE(all.equal(min.rate, 0))
+
+    if (!no.minimum) {
+      ## precompute rates, and find which electrodes are okay.
+      rates <- sapply(spikes, length) / (Tmax - Tmin)
+      rates.ok <- rates > min.rate
+      printf('Rejecting %d electrodes with firing rate below %.3f Hz\n',
+             n-sum(rates.ok), min.rate)
+    }
+    
     corrs <- array(0, dim=c(n,n))
     for ( a in 1:(n-1)) {
       n1 <- length(spikes[[a]])
       for (b in (a+1):n) {
         n2 <- length(spikes[[b]])
-        corrs[a,b] <-  as.double(count.nab(spikes[[a]], spikes[[b]],dt) *
-                                 (Tmax-Tmin)) /
-                                   (as.double(n1) * n2 * (2*dt))
+        if ( no.minimum || (rates.ok[a] && rates.ok[b])) {
+          val <- as.double(count.nab(spikes[[a]], spikes[[b]],dt) *
+                           (Tmax-Tmin)) /
+                             (as.double(n1) * n2 * (2*dt))
+          if (is.na(val)) {
+            stop(sprintf('make.corr.indexes: NA generated for pair %d %d',
+                         a, b))
+          }
+        } else {
+          ## one of the electrodes was below min firing rate.
+          val <- NA
+        }
+        corrs[a,b] <- val
       }
     }
-    if (any(is.na(corrs))) {
-      stop("corrs has some NA values -- possible integer overflow in n1*n2, or zero spikes in one of the trains?")
-    }
+
     corrs
   }
 }
 
 
 
-corr.index.means <- function(x) {
-  ## Compute the mean,sd correlation index at each given distance.
-  dists <- x$dists[which(upper.tri(x$dists))]
-  corrs <- x$corr.indexes[which(upper.tri(x$corr.indexes))]
+## ?? This function not used ?? 2009-10-06
+## corr.index.means <- function(x) {
+##   ## Compute the mean,sd correlation index at each given distance.
+##   dists <- x$dists[which(upper.tri(x$dists))]
+##   corrs <- x$corr.indexes[which(upper.tri(x$corr.indexes))]
 
-  dists.uniq <- unique(dists)
-  num.dists <- length(dists.uniq)       #num of  different distances.
+##   dists.uniq <- unique(dists)
+##   num.dists <- length(dists.uniq)       #num of  different distances.
 
-  ##print(dists.uniq)
-  ## create 4-D array to store results.  Each row stores the
-  ## distance, mean corr, sd, and num of values at that distance.
+##   ##print(dists.uniq)
+##   ## create 4-D array to store results.  Each row stores the
+##   ## distance, mean corr, sd, and num of values at that distance.
 
-  res <- array(0,  dim=c(num.dists,4))
-  colnames(res) <- c("dist","mean corr", "sd", "n")
+##   res <- array(0,  dim=c(num.dists,4))
+##   colnames(res) <- c("dist","mean corr", "sd", "n")
   
-  i <- 1
+##   i <- 1
 
-  for (d in dists.uniq) {
-    ## find all correlations for pairs within 0.01um of given distance.
-    cs <- corrs[ which(abs(dists-d)<0.01)]
-    corrs.mean <- mean(cs)
-    corrs.sd   <- sd(cs)
-    res[i,] <- c(d, corrs.mean, corrs.sd, length(cs))
-    i <- 1+i
-  }
+##   for (d in dists.uniq) {
+##     ## find all correlations for pairs within 0.01um of given distance.
+##     cs <- corrs[ which(abs(dists-d)<0.01)]
+##     corrs.mean <- mean(cs)
+##     corrs.sd   <- sd(cs)
+##     res[i,] <- c(d, corrs.mean, corrs.sd, length(cs))
+##     i <- 1+i
+##   }
 
-  res
-}
+##   res
+## }
 
 corr.get.means <- function(id) {
   ## Compute the mean,sd of the correlation index at each distance.
   ## id is the array of [n,2] values.  Each row is [d,i].
+  ## where d is the distance and i is the correlation.
   ## Returns a matrix.
   
   corr.get.means.helper <- function(x) {
     ## Helper function to create  mean and sd of one set of distances.
-    indexes <- which(id[,1] == x)
+    ## Need to check that the correlation index is not NA.
+    ## X is the distance that we are currently processing.
+    indexes <- which(( id[,1] == x) & !is.na(id[,2]))
     c(x, mean(id[indexes,2]), sd(id[indexes,2]), length(indexes))
     ##c(x, median(id[indexes,2]), mad(id[indexes,2]), length(indexes))
   }
