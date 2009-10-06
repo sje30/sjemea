@@ -319,3 +319,28 @@ read.cond.tab <- function(file) {
   dat
 }
 
+
+
+sanger.write.corrs <- function(s, file, na.rm=TRUE) {
+  ## Write correlation values to FILE as CSV.
+  ## NA.RM: If TRUE, remove rows of the CSV where the correlation index
+  ## is NA (couldn't be computed, as electrode had low firing rate).
+  ## Also, return the raw correlations as a result.
+  dists = s$corr$dists
+  corrs = s$corr$corr.indexes
+  upper = which(upper.tri(dists), arr.ind=T)
+  dist = dists[upper]
+  corr = round(corrs[upper],3)
+  r = s$channels[upper[,1]]
+  c = s$channels[upper[,2]]
+  d = data.frame(r=r, c=c, dist, corr)
+  if (na.rm) {
+    ## Remove rows that have correlation =  NA.
+    na.corr <- which(is.na(corr))
+    if (any(na.corr)) {
+      d <-  d[-na.corr,]
+    }
+  }
+  write.csv(d, file, row.names=F)
+  invisible(corr)
+}
