@@ -58,6 +58,8 @@ mcd.data.to.array <- function(file, beg=NULL, end=NULL) {
   }
 
   channel.ok <- channel.ok[1:n]         #truncate to right length.
+  ## TODO: could filter out spike times at this point, once all data has
+  ## been read in.  Then can use jay.filter.for.max/min code as elsewhere.
   res <- list(spikes=spikes, channels=channel.ok) 
 }
 
