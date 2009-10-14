@@ -35,20 +35,19 @@ mcd.data.to.array <- function(file, beg=NULL, end=NULL) {
 
       ## convert data from msec to seconds.
       this.train <- as.numeric(data[beg.spike:end.spike,1]) / 1000
-
-      if (!is.null(beg)) {
-        rejs <- which(this.train < beg)
+      if ( (length(this.train)>0) && !is.null(beg)) {
+        rejs <- this.train < beg
         if (any(rejs))
-          this.train <- this.train[-rejs]
+          this.train <- this.train[!rejs]
+      }
+      ##browser()
+      if ( (length(this.train)>0) && !is.null(end)) {
+        rejs <- this.train > end
+        if (any(rejs))
+          this.train <- this.train[!rejs]
       }
 
-      if ( any(this.train) && !is.null(end)) {
-        rejs <- which(this.train > end)
-        if (any(rejs))
-          this.train <- this.train[-rejs]
-      }
-
-      if (any(this.train)) {
+      if ((length(this.train)>0)) {
         n <- n + 1
         spikes[[n]] <- this.train
         channel.ok[n] <- channels[channel]
