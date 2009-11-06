@@ -1,3 +1,8 @@
+2009-11-06  Stephen Eglen  <stephen@gnu.org>
+
+	* R/corr_index.R (plot.corr.index): Fix case when there are no
+	valid correlations to plot (e.g. when min firing rate is high).
+
 2009-10-06  Stephen Eglen  <stephen@gnu.org>
 
 	* R/corr_index.R (corr.index): Add min.rate argument.
