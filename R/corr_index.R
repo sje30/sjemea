@@ -115,33 +115,40 @@ plot.corr.index <- function(s, identify=FALSE,
 
   dists = my.upper(s$corr$dists)
   corrs = my.upper(s$corr$corr.indexes)
-  ## Some of these corrs may be NA if the firing rate is low, but they
-  ## should be safely ignored in the plot.
+  if (all(is.na(corrs))) {
+    ## no correlation data to show, so just up empty plot.
+    plot(NA, xlim=range(dists), ylim=c(1,10),
+         xlab='distance', ylab='correlation index',
+         main=paste(basenamepy(s$file)$base, ': no valid corrs'))
+  } else {
+    ## Some of these corrs may be NA if the firing rate is low, but they
+    ## should be safely ignored in the plot.
   
-  if (is.null(main)) {
-    main = paste(basename(s$file), "dt:", s$corr$dt)
-  }
+    if (is.null(main)) {
+      main = paste(basename(s$file), "dt:", s$corr$dt)
+    }
   
-  xlabel = expression(paste("distance (", mu, "m)"))
+    xlabel = expression(paste("distance (", mu, "m)"))
 
-  plot.default(dists, corrs, xlab=xlabel, ##log=log,
-               ylab="correlation index", bty="n",
-               main=main, col=dot.col,
-               ...)
+    plot.default(dists, corrs, xlab=xlabel, ##log=log,
+                 ylab="correlation index", bty="n",
+                 main=main, col=dot.col,
+                 ...)
 
-  if (identify) {
-    labels1 <- outer(seq(1, s$NCells), seq(1,s$NCells), FUN="paste")
-    labs <- labels1[which(upper.tri(labels1))]
-    identify(dists, corrs, labels=labs)
+    if (identify) {
+      labels1 <- outer(seq(1, s$NCells), seq(1,s$NCells), FUN="paste")
+      labs <- labels1[which(upper.tri(labels1))]
+      identify(dists, corrs, labels=labs)
+    }
+
+    if (show.ci) 
+      plotCI(s$corr$corr.id.means[,1], s$corr$corr.id.means[,2],
+             s$corr$corr.id.means[,3],
+             xlab="distance", ylab="correlation index", 
+             pch=19, add=TRUE)
+    if (show.fit) 
+      corr.do.fit(s$corr$corr.id,plot=TRUE)
   }
-
-  if (show.ci) 
-    plotCI(s$corr$corr.id.means[,1], s$corr$corr.id.means[,2],
-           s$corr$corr.id.means[,3],
-           xlab="distance", ylab="correlation index", 
-           pch=19, add=TRUE)
-  if (show.fit) 
-    corr.do.fit(s$corr$corr.id,plot=TRUE)
 }
 
 write.corr.indexes <- function(s, file=NULL) {
