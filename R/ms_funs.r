@@ -1649,7 +1649,7 @@ make.spikes.to.frate <- function(spikes,
   res
 }
 
-plot.meanfiringrate <- function (s, beg, end, main=NULL, ...) {
+plot.meanfiringrate <- function (s, beg, end, main=NULL, lwd=0.2, ...) {
   ## Plot the mean firing rate over all the cells at each time step.
   ## Can optionally specify the beginning (BEG) and end (END) time, in
   ## seconds.
@@ -1661,7 +1661,7 @@ plot.meanfiringrate <- function (s, beg, end, main=NULL, ...) {
     main = basename(s$file)
   
   plot(s$rates$times, s$rates$av.rate, type = "h", xlab = "time (s)",
-       xlim=c(beg,end), bty="n", lwd=0.2,
+       xlim=c(beg,end), bty="n", lwd=lwd,
        ylab = "mean firing rate (Hz)", main = main, ...)
 }
 
