@@ -15,7 +15,7 @@ sun.read.spikes <- function(filename, ids=NULL,
   ## names and spike times.
   
 
-  data <- scan(file, what=character(0), sep='\t')
+  data <- scan(filename, what=character(0), sep='\t')
   
   ## find out which data is a channel name, and which is 
   headers <- grep('^[a-zA-Z]', data)
