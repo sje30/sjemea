@@ -2124,7 +2124,7 @@ op.picture <- function(pos, rates, iteration) {
 }
 
 
-plot.mealayout <- function(x, use.rownames=FALSE, ...) {
+plot.mealayout <- function(x, use.names=FALSE, ...) {
   ## Plot the MEA layout.
 
   pos <- x$pos
@@ -2132,8 +2132,8 @@ plot.mealayout <- function(x, use.rownames=FALSE, ...) {
        xlim=x$xlim, ylim=x$ylim,
        bty="n",
        xlab="", ylab="", type="n")
-  if (use.rownames)
-    text(pos[,1], pos[,2], rownames(pos), ...)
+  if (use.names)
+    text(pos[,1], pos[,2], names(pos), ...)
   else
     text(pos[,1], pos[,2], ...)
 }
