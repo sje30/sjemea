@@ -128,7 +128,7 @@ make.iit.layout <- function(positions) {
 }
 
 
-plot.mealayout.hi <- function(x, use.rownames=FALSE, ...) {
+plot.mealayout.hi <- function(x, use.names=FALSE, ...) {
   ## Plot the MEA layout, high density version
   pos <- x$pos
   plot(pos, asp=1,
