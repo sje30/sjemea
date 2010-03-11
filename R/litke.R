@@ -74,7 +74,7 @@ show.litke.layout <- function() {
   data(litke1layout)
   plot(litke1layout$x, litke1layout$y, asp=1,
        type='n', xlab='', ylab='')
-  text(litke1layout$x, litke1layout$y, litke1layout$electrode, cex=0.5)
+  text(litke1layout$x, litke1layout$y, litke1layout$electrode, cex=0.7)
   title('Litke1 layout')
 }
 
