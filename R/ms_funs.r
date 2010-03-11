@@ -14,6 +14,7 @@ plot.mm.s <- function(s, whichcells=NULL,
                       beg=min(unlist(s$spikes), na.rm=TRUE),
                       end=max(unlist(s$spikes), na.rm=TRUE),
                       label.cells = FALSE,
+                      use.names=TRUE,
                       show.bursts = FALSE,
                       main=NULL, ylab='spikes of cell',
                       for.figure=FALSE,
@@ -27,13 +28,18 @@ plot.mm.s <- function(s, whichcells=NULL,
   ## values need removing.  By default, BEG will be the time of the
   ## first spike, and END will be the time of the last spike.
   ## If SHOW.BURSTS is true, we plots the bursts rather than the spikes.
-  ## If LABELS.CELLS is true, we write the cell number of each spike train
-  ## in the y-axis.
+  ## If LABELS.CELLS is true, we write the index of each spike train
+  ## in the y-axis; if USE.NAMES is true, we use the cell name, rather than
+  ## the index.
   ## If FOR.FIGURE is true, we make a slightly different outline, which
   ## is useful for making the figures.
 
   if (is.null(whichcells)) {
     whichcells <- 1:s$NCells
+  }
+
+  if (is.character(whichcells[1])) {
+    whichcells = names.to.indexes(names(s$spikes), whichcells)
   }
 
   if (is.null(main)) {
@@ -106,7 +112,12 @@ plot.mm.s <- function(s, whichcells=NULL,
 
   if (label.cells) {
     allys <- seq(from=yminadd/2, by=yminadd, length=N)
-    mtext(whichcells, side=2, at=allys, las=1)
+    if (use.names) {
+      labels <- names(spikes)[whichcells]
+    } else {
+      labels <- whichcells
+    }
+    mtext(labels, side=2, at=allys, las=1)
   }
 
 }
@@ -2382,3 +2393,5 @@ print.mm.s <- function(x) {
   cat(basename(x$file), "\n")
   cat("nchannels ", x$NCells, "\n")
 }
+
+
