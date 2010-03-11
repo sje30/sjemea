@@ -148,6 +148,35 @@ remove.empty.channels <- function(spikes) {
   spikes 
 }
 
+
+names.to.indexes <- function(names, elems) {
+  ## Return the indexes of where each element of ELEMS is within NAMES.
+  ## If the first element of ELEMS is '-', then return all indexes except
+  ## those matching ELEMS.
+  ## Example:
+  ## names = c('a', 'b', 'c', 'd', 'e')
+  ## names.to.indexes(names, c('d', 'b', 'a'))  ## 4 2 1
+  ## names.to.indexes(names, c( '-', 'c', 'a')) ## 2 4 5
+
+  if (elems[1] == '-') {
+    invert = TRUE
+    elems = elems[-1]
+  } else {
+    invert = FALSE
+
+  }
+
+  indexes = match(elems, names)
+  if (any(is.na(indexes)))
+    stop('some indexes not found.')
+
+  if (invert)
+    indexes = setdiff(1:(length(names)), indexes)
+
+  indexes
+  
+}
+
 filter.channel.names <- function(spikes, ids) {
   ## Filter out some channel names.
   ##Keep only the channels mention in
@@ -157,23 +186,9 @@ filter.channel.names <- function(spikes, ids) {
   ## spikes2 <- filter.channel.names(spikes, c('-', 'g4a', 'a6a'))
   ## spikes2 <- filter.channel.names(spikes, c('g4a', 'a6a'))
   ## first call throws away two channels; second call keeps just two channels.
-  if (ids[1] == '-') {
-    exclude = TRUE
-    ids <- ids[-1]              #throw away minus sign!
-  } else {
-    exclude = FALSE
-  }
-  ## where are the electrodes mentioned?
-  i <- match(ids, names(spikes))
-  i <-  sort(i)                         #keep in order, even if IDS weren't.
-  if (any(is.na(i)))
-    stop('IDS contains channel names that are not in spikes.')
-  if (exclude) {
-    spikes <- spikes[-i]
-  } else {
-    spikes <- spikes[i]
-  }
-  spikes
+
+  ids = names.to.indexes(names(spikes), ids)
+  spikes[ids]
 }
              
   
