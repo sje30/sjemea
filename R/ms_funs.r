@@ -2133,7 +2133,7 @@ plot.mealayout <- function(x, use.names=FALSE, ...) {
        bty="n",
        xlab="", ylab="", type="n")
   if (use.names)
-    text(pos[,1], pos[,2], names(pos), ...)
+    text(pos[,1], pos[,2], rownames(pos), ...)
   else
     text(pos[,1], pos[,2], ...)
 }
