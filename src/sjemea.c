@@ -400,6 +400,69 @@ void coincident_arr(Sfloat *a, int *pna,
 
 }
 
+#define MAX(X, Y)  ((X) > (Y) ? (X) : (Y))
+#define MIN(X, Y)  ((X) < (Y) ? (X) : (Y))
+
+void bci_calc(int *pn, Sfloat *beg, Sfloat *end,
+	      int *nbursts, int *start,
+	      Sfloat *durn,
+	      Sfloat *res) {
+  int n;
+  int a, b;
+
+  Sfloat olap, this_olap;
+  Sfloat beg_a, end_a, beg_b, end_b;
+  int ind_a, ind_b, a1, b1;
+  int debug=0;
+  
+  n = *pn;			/* number of cells */
+  Rprintf("%d cells\n", n);
+  for (a = 0; a <n-1; ++a) {
+    for (b = a+1; b < n; ++b) {
+      if (debug) Rprintf("%d %d\n", a, b);
+
+      /* Compute overlap between cells A and B. */
+      olap=0.0;
+      ind_a = start[a];
+      for (a1=nbursts[a]; a1>0; a1--) {
+	beg_a = beg[ind_a];
+	end_a = end[ind_a];
+
+	/* Could also optimize not to start at start of bursts for b,
+	 * but use information from previous comparisons as to where to start.
+	 */
+
+	/* Look over bursts in b. */
+	ind_b = start[b];
+	for (b1=nbursts[b]; b1>0; b1--) {
+	  beg_b = beg[ind_b];
+	  end_b = end[ind_b];
+
+	  if (beg_b > end_a) {
+	    /* No more bursts in b can overlap with current burst in a. */
+	    b1=0;
+	  } else {
+	    this_olap = MIN(end_a, end_b) - MAX(beg_a, beg_b);
+	    if (debug) {
+	      Rprintf("%.2f %.2f  vs %.2f %.2f => %.2f\n",
+		      beg_a, end_a, beg_b, end_b, this_olap);
+	    }
+	    olap += MAX(this_olap, 0);
+	  }
+	  ind_b++;
+	}
+	ind_a++;
+      }
+      /* Store results. */
+      res[a + (b*n)] = olap / durn[b]; /* b; */
+      res[b + (a*n)] = olap / durn[a]; /* 0 - a; */
+    }
+  }
+}
+
+
+
+
 /**********************************************************************/
 /*
 HELP ARRAY_HIST                             David Young, January 1994
