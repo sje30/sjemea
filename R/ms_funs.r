@@ -303,11 +303,10 @@ jay.read.spikes <- function(filename, ids=NULL,
     
   }
 
-
+  names(spikes) <- channels
   
-  ## Count the number of spikes per channel, and label them.
+  ## Count the number of spikes per channel
   nspikes <- sapply(spikes, length)
-  names(nspikes) <- channels
 
   ## meanfiring rate is the number of spikes divided by the (time of
   ## last spike - time of first spike).  
