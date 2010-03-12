@@ -49,7 +49,7 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
   n = 2
   in.burst = FALSE
   
-  while ( n < nspikes) {
+  while ( n <= nspikes) {
     
     next.isi = spikes[n] - spikes[n-1]
     if (in.burst) {
