@@ -351,4 +351,16 @@ my.upper <- function (x,diag=FALSE) {
   }
 }
 
+my.lower <- function (x,diag=FALSE) {
+  ## Return the lower triangular elements of a matrix on a
+  ## column-by-column basis.
+  ## e.g. my.lower(matrix(1:9, nrow=3), diag=TRUE).
+  ## returns >>1 2 3 5 6 9<<
+  if (is.matrix(x)) {
+   x[ which(lower.tri(x,diag))]
+  } else {
+    stop(paste(deparse(substitute(x)),"is not a matrix"))
+  }
+}
+
 
