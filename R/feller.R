@@ -179,15 +179,20 @@ names.to.indexes <- function(names, elems) {
 
 filter.channel.names <- function(spikes, ids) {
   ## Filter out some channel names.
-  ##Keep only the channels mention in
-  ## IDS; (or exclude only the elements in IDS if the first element is
-  ## '-', to indicate minus indexing notation.)
+  ## Keep only the channels mentioned in IDS.
+  ## If the elements of IDS are numeric, they are assumed to be the
+  ## indexes of the spike trains; otherwise, they are assumed to be the 
+  ## names of cells.
   ## e.g.
   ## spikes2 <- filter.channel.names(spikes, c('-', 'g4a', 'a6a'))
   ## spikes2 <- filter.channel.names(spikes, c('g4a', 'a6a'))
+  ## spikes2 <- filter.channel.names(spikes, c(5, 3, 1))
   ## first call throws away two channels; second call keeps just two channels.
+  ## third just keeps the three trains mentioned.
 
-  ids = names.to.indexes(names(spikes), ids)
+  if (any(is.character(ids)))
+    ids = names.to.indexes(names(spikes), ids)
+  
   spikes[ids]
 }
              
