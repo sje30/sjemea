@@ -192,6 +192,20 @@ summary.mm.s <- function(object, ...) {
   cat(paste("NCells", object$NCells, "\n"))
 }
 
+read.spikes <- function(reader, ...) {
+  ## General-purpose reader around all the xyz.read.spikes() functions.
+  ## so that e.g.
+  ## jay.read.spikes(...) can be called as:
+  ## read.spikes(..., reader="jay")
+  readers <- c("feller", "iit", "litke", "ncl", "sanger", "sun", "jay")
+  if (reader %in% readers) {
+    fn <- paste(reader, ".read.spikes", sep="")
+    do.call(fn, list(...))
+  } else {
+    stop("No such reader:", reader)
+  }
+}
+  
 ######################################################################
 ## Jay's functions.
 ######################################################################
@@ -362,6 +376,8 @@ jay.read.spikes <- function(filename, ids=NULL,
               rates=rates,
               rec.time=rec.time,
               unit.offsets=unit.offsets
+              ## TODO: how to return arguments, expanding all vars?
+              ##call=match.call()
               )
   class(res) <- "mm.s"
 
