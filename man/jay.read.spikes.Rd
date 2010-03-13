@@ -1,5 +1,6 @@
 \name{jay.read.spikes}
 \alias{jay.read.spikes}
+\alias{read.spikes}
 \title{
 Read in the .txt file from Neuroexplorer and create a "spikes" data structure.
 }
@@ -7,10 +8,14 @@ Read in the .txt file from Neuroexplorer and create a "spikes" data structure.
 Read in .txt file and work out array positions...
 }
 \usage{
-jay.read.spikes(filename)
+jay.read.spikes(filename, beg, end)
+read.spikes(filename, beg, end, reader='jay')
 }
 \arguments{
   \item{filename}{Name of the text file to be read in.}
+  \item{beg}{Optional start time.}
+  \item{end}{Optional end time.}
+  \item{reader}{Name of the reader function to use.}
 }
 
 \value{
@@ -25,6 +30,14 @@ jay.read.spikes(filename)
   different number of spikes.
 
   The txt file of spike times can be compressed (with gzip).
+
+  read.spikes() is a wrapper around each xyz.read.spikes() function, so
+  that they can all be called just by specifying reader='xyz'.  Current
+  readers are: "feller", "iit", "litke", "ncl", "sanger", "sun", "jay".
+
+  By default, all spikes are read in.  If beg is given, only spikes
+  occuring after this time (in seconds) are kept.  Likewise, if end is
+  given, only spikes occuring before this time (in seconds) are kept.
 }
 
 %% No examples yet.
@@ -33,10 +46,11 @@ data.file <- system.file("examples", "P9_CTRL_MY1_1A.txt",
                          package = "sjemea")
 s <- jay.read.spikes( data.file)
 fourplot(s)
-s <- jay.read.spikes( data.file, beg=400, end=700)
+s <- jay.read.spikes(data.file, beg=400, end=700)
 fourplot(s)
+s2 <- read.spikes(data.file, beg=400, end=700, reader='jay')
 \dontrun{
-s <- jay.read.spikes("/home/stephen/ms/jay/p9data.txt")
+s <- jay.read.spikes("~/ms/jay/p9data.txt")
 fourplot(s)                             #summary plot.
 s$mi <- make.mi(s)
 show.prob.t.r(s)                        #conditional distributions.
@@ -51,7 +65,8 @@ xcorr.plot( s$spikes[[1]], s$spikes[[2]], "1 v 2")}
 }
 
 \seealso{
-  \code{\link{sanger.read.spikes}}
+  \code{\link{sanger.read.spikes}}, 
+  \code{\link{feller.read.spikes}}
 }
 
 \references{
