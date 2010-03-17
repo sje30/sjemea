@@ -12,7 +12,9 @@ corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
 
   spikes = s$spikes
   if (length(spikes) > 1) {
-    corr.indexes = make.corr.indexes(spikes, dt, min.rate)
+    ## SJE: 2010-03-17 -- try new version of corr index.
+    ##corr.indexes = make.corr.indexes(spikes, dt, min.rate)
+    corr.indexes = make.corr.indexes2(spikes, dt, min.rate)
     corr.id = cbind(my.upper(dists), my.upper(corr.indexes))
     corr.id.means = corr.get.means(corr.id)
   } else {
@@ -36,7 +38,32 @@ corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
   res
 }
 
+make.distances.check <- function() {
+  ## Simple function to check our new and old functions are the same.
+
+  ## For each test, generate synthetic data and check for same results.
+  for (i  in 1:10) {
+    n = 1000
+    pos = matrix(runif(n*2, max=500), n, 2)
+    print(system.time(d1 <- make.distances(pos)))
+    print(system.time(d2 <- make.distances2(pos)))
+    print(all.equal(d1,d2))
+  }
+}
+
 make.distances <- function(posns) {
+  ## POSNS should be a (N,2) array.  Returns a NxN upper triangular
+  ## array of the distances between all pairs of cells.
+
+  x <- posns[,1]; y <- posns[,2]
+  d = round(sqrt(outer(x, x, "-")^2 + outer(y, y, "-")^2))
+  d[lower.tri(d)] = 0
+  d
+}
+
+make.distances.old <- function(posns) {
+  ## TODO: this is slow for large numbers of electrodes!
+  ##
   ## POSNS should be a (N,2) array.  Returns a NxN upper triangular
   ## array of the distances between all pairs of cells.
 
@@ -128,7 +155,7 @@ plot.corr.index <- function(s, identify=FALSE,
       main = paste(basename(s$file), "dt:", s$corr$dt)
     }
   
-    xlabel = expression(paste("distance (", mu, "m)"))
+    xlabel = expression(paste("intercell distance (", mu, "m)"))
 
     plot.default(dists, corrs, xlab=xlabel, ##log=log,
                  ylab="correlation index", bty="n",
@@ -190,6 +217,9 @@ plot.corr.index.fit <- function(s, ...) {
 }
 
 
+## TODO: this loop is quite slow for large numbers of spike trains,
+## and probably could be rewritten in C for speed.
+
 make.corr.indexes <- function(spikes, dt, min.rate=0) {
   ## Return the correlation index values for each pair of spikes.
   ## The matrix returned is upper triangular.
@@ -243,6 +273,63 @@ make.corr.indexes <- function(spikes, dt, min.rate=0) {
 }
 
 
+make.corr.indexes2 <- function(spikes, dt, min.rate=0) {
+  ## New version using the C routine for corr indexing.
+  ## Return the correlation index values for each pair of spikes.
+  ## The matrix returned is upper triangular.
+  ## SPIKES should be a list of length N, N is the number of electrodes.
+  ## "dt" is the maximum time for seeing whether two spikes are coincident.
+  ## This is defined in the 1991 Meister paper.
+  ## If MIN.RATE is >0, use the electrode iff the firing rate is above
+  ## MIN.RATE.
+  
+  n <- length(spikes)
+  if (n == 1) {
+    ## If only one spike train, cannot compute the cross-corr indexes.
+    0;
+  } else {
+    Tmax <- max(unlist(spikes))           #time of last spike.
+    Tmin <- min(unlist(spikes))           #time of first spike.
+    
+    no.minimum <- isTRUE(all.equal(min.rate, 0))
+
+    if (!no.minimum) {
+      ## precompute rates, and find which electrodes are okay.
+      rates <- sapply(spikes, length) / (Tmax - Tmin)
+      rates.ok <- rates > min.rate
+      printf('Rejecting %d electrodes with firing rate below %.3f Hz\n',
+             n-sum(rates.ok), min.rate)
+    } else {
+      rates.ok <- rep(0, n)             #need to pass to C anyway...
+    }
+    
+    ## corrs <- array(0, dim=c(n,n))
+
+    ## create one long vector of spikes.
+    all.spikes <- unlist(spikes)
+    nspikes <- sapply(spikes, length)
+    duration <- Tmax - Tmin
+    
+    first.spike <- c(0, cumsum(nspikes)[-n])
+    z <- .C("count_overlap_arr",
+            as.double(all.spikes),
+            as.integer(n),
+            as.integer(nspikes),
+            as.integer(first.spike),
+            as.integer(rates.ok),
+            as.integer(no.minimum),
+            as.double(duration),
+            as.double(dt),
+            res = double(n*n), PACKAGE="sjemea")
+
+    ## return the result.
+    array(z$res, dim=c(n,n))
+  }
+}
+
+
+
+
 
 ## ?? This function not used ?? 2009-10-06
 ## corr.index.means <- function(x) {
@@ -279,6 +366,27 @@ corr.get.means <- function(id) {
   ## id is the array of [n,2] values.  Each row is [d,i].
   ## where d is the distance and i is the correlation.
   ## Returns a matrix.
+
+  dist = id[,1]
+  corr = id[,2]
+
+  ## split does the hard work here, of dividing up the correlation
+  ## values into those that share the same values of distance.
+  
+  l = split(corr, dist) 
+  m = sapply(l, mean)
+  s = sapply(l, sd)
+  n = sapply(l, length)
+  res = cbind(dist=as.real(names(l)), mean=m, sd=s, n=n)
+  rownames(res) <- NULL
+  res
+}
+
+corr.get.means.old <- function(id) {
+  ## Compute the mean,sd of the correlation index at each distance.
+  ## id is the array of [n,2] values.  Each row is [d,i].
+  ## where d is the distance and i is the correlation.
+  ## Returns a matrix.
   
   corr.get.means.helper <- function(x) {
     ## Helper function to create  mean and sd of one set of distances.
@@ -293,6 +401,21 @@ corr.get.means <- function(id) {
   means <- t(sapply(d.uniq, corr.get.means.helper))
   colnames(means) <- c("dist", "mean", "sd", "n")
   means
+}
+
+corr.get.means.check <- function() {
+  ## Simple function to check our new and old functions are the same.
+
+  ## For each test, generate synthetic data and check for same results.
+  for (i  in 1:3) {
+    n = 1000^2                           #for n cells, need n^2 entries.
+    d = sample(1000, n, replace=T)       #imagine 1000 different distances.
+    i = runif(n, max=200)
+    id = cbind(d, i)
+    print(system.time( m1 <- corr.get.means.old(id)))
+    print(system.time( m2 <- corr.get.means(id)))
+    stopifnot(all.equal(m1,m2))
+  }
 }
 
 corr.do.fit <- function(id, plot=TRUE, show.ci=FALSE, ...) {
