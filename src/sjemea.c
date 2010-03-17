@@ -27,8 +27,7 @@
  * For more information on binning, see David Young's help for the
  * POP-11 routine array_hist, included at the end of this file.
  */
- 
-
+  
 void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 		  int *res)
 {
@@ -64,6 +63,62 @@ void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
     }
   }
   *res = count;
+}
+
+void count_overlap_arr(Sfloat *spikes,
+		       int *pn,
+		       int *nspikes,
+		       int *first_spike,
+		       int *rates_ok,
+		       int    *pno_min,
+		       Sfloat *pt, /* duration of recording */
+		       Sfloat *pdt,
+		       Sfloat *corrs /* return array */) {
+
+  int a, b, n, no_min, count;
+  Sfloat *sa, *sb; 		/* pointers to current spike trains  */
+  int n1, n2;
+  Sfloat k1, res;
+  int debug;
+
+  debug = 0;
+  
+  n = *pn; no_min=*pno_min;
+  res = -999;
+  k1 = *pt / (2.0 * *pdt);		/* simple constant for correlation index. */
+  
+  if (debug) {
+    Rprintf("Time %.2f Deltat %.3f no_min %d k1 %.2f\n",
+	    *pt, *pdt, no_min, k1);
+  }
+
+	    
+  for (a=0; a<n-1; a++) {
+    n1 = nspikes[a];
+    sa = &(spikes[first_spike[a]]);
+    
+    for (b=a+1; b<n; b++) {
+      n2 = nspikes[b];
+      sb = &(spikes[first_spike[b]]);
+      
+      if (no_min || (rates_ok[a] && rates_ok[b])) {
+	if (debug)
+	  Rprintf("first spikes %.2f %.2f n %d %d\n",
+		  *sa, *sb, n1, n2);
+	
+	count_overlap(sa, &n1, sb, &n2, pdt, &count);
+	res = (count*k1) / ((double)(n1 * n2 ));
+	if (debug)
+	  Rprintf("%d %d: count %d corr %.2f\n", a, b, count, res);
+      } else {
+	/* One of the spikes below min firing rate. */
+	res = R_NaN;		/* defined in R_ext/Arith.h */
+      }
+
+      corrs[(b*n)+a] = res;
+      
+    }
+  }
 }
 
 void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
