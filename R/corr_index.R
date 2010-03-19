@@ -51,13 +51,15 @@ make.distances.check <- function() {
   }
 }
 
-make.distances <- function(posns) {
+make.distances <- function(posns, rm.lower=TRUE) {
   ## POSNS should be a (N,2) array.  Returns a NxN upper triangular
   ## array of the distances between all pairs of cells.
 
   x <- posns[,1]; y <- posns[,2]
   d = round(sqrt(outer(x, x, "-")^2 + outer(y, y, "-")^2))
-  d[lower.tri(d)] = 0
+  if (rm.lower)
+    d[lower.tri(d)] = 0
+  
   d
 }
 
@@ -431,8 +433,10 @@ corr.do.fit <- function(id, plot=TRUE, show.ci=FALSE, ...) {
   }
   x <- id[,1]
   y.log <- log(id[,2])
+  browser()
   fit <- lm(y.log ~ x)
   if (show.ci) {
+    ## TODO: why is 850 hard-coded in here?
     expt.new <- data.frame(x = seq(0, 850, 10))  #range of x for predictions.
     expt.clim <- predict(fit, expt.new, interval="confidence")
   }
