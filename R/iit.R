@@ -12,6 +12,13 @@ iit.read.spikes <- function(filename, ids=NULL,
       stop('The R.matlab package is needed for this routine.  Please install.')
     
     z <- readMat(filename)
+
+    ## 2010-05-14: some channels are included, but empty, so let's remove
+    ## them.
+    empty.channels <- which(sapply(z, length)==0)
+    if (any(empty.channels))
+      z <- z[-empty.channels]
+    
     frame.rates = 7800
     ## each element - E- is a sparse matrix with one column, so find out
     ## where the non-zero elements are.
