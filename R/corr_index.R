@@ -1,4 +1,4 @@
-## Compute the correlation index, as defined by Meister et al (1991).
+## Compute the correlation index, as defined by Wong et al (1993).
 ## Author: Stephen J Eglen
 ## Copyright: GPL
 ## Sun 04 Mar 2007
@@ -433,7 +433,6 @@ corr.do.fit <- function(id, plot=TRUE, show.ci=FALSE, ...) {
   }
   x <- id[,1]
   y.log <- log(id[,2])
-  browser()
   fit <- lm(y.log ~ x)
   if (show.ci) {
     ## TODO: why is 850 hard-coded in here?
