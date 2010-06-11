@@ -1651,18 +1651,10 @@ make.spikes.to.frate <- function(spikes,
     time.breaks <- c(time.breaks,
                      time.breaks[length(time.breaks)]+time.interval)
   }
-  rates1 <- lapply(spikes, spikes.to.rates, breaks=time.breaks,
-                   time.interval=time.interval)
 
-  ## rates1 is a list; we want to convert it into an array.
-  rates <- array(unlist(rates1),
-                  dim=c(length(time.breaks)-1, length(rates1)))
-
-  ## New method - should be slightly quicker.
-  rates2 <- sapply(spikes, spikes.to.rates, breaks=time.breaks,
+  rates <- sapply(spikes, spikes.to.rates, breaks=time.breaks,
                    time.interval=time.interval)
-  dimnames(rates2) <- NULL
-  stopifnot(all.equal(rates, rates2, check.attr=T ))
+  dimnames(rates) <- NULL
   
   ## Now optionally set the upper and lower frame rates if clip is TRUE.
   if (clip)
