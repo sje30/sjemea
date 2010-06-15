@@ -3,7 +3,7 @@
 litke.spiketimes <- function(file) {
   ## read in the data, and return spike times and array position.
   require(R.matlab)
-  z = readMat(file)
+  z = readMatRda(file)
   if(length(z)>1)
     stop('too many items in the matlab file')
   
@@ -79,8 +79,10 @@ show.litke.layout <- function() {
 }
 
 
+
 litke.read.spikes <- function(filename, ids=NULL,
-                              time.interval=1, beg=NULL, end=NULL) {
+                              time.interval=1, beg=NULL, end=NULL,
+                              corr.method="ci") {
   ## Read in data from Alan Litke (+ Ben Stafford).
   ## FILENAME: matlab data file
   ## channel per file.
@@ -161,10 +163,70 @@ litke.read.spikes <- function(filename, ids=NULL,
               )
   class(res) <- "mm.s"
 
-  litke.breaks = seq(from=0, to=2050, by=50)
-  res$corr = corr.index(res, litke.breaks)
+  if (corr.method == "ci") {
+    litke.breaks = seq(from=0, to=2050, by=50)
+    
+    res$corr = corr.index(res, litke.breaks)
+  }
 
   res
 
 }
 
+
+######################################################################
+## Convert matlab files to equivalent RDa files hidden under a "rda" subfolder.
+## This allows us to read in matlab files quickly once they have been converted.
+######################################################################
+
+
+mat.to.rda <- function(f, check=TRUE, verbose=TRUE) {
+    mat2rda = readMat(f)
+    f2 = mat.rda.name(f)
+    save(mat2rda, file=f2)
+    if (check) {
+        z = new.env()
+        load(f2, z)
+        stopifnot(all.equal(mat2rda, get("mat2rda", z)))
+    }
+    f2
+}
+
+mat.rda.name <- function(f) {
+  ## Given the matlab file f, return equivalent rda filename
+  parts = basenamepy(f)
+  sprintf("%s/rda/%s.rda", parts$dir, parts$base)
+}
+
+mat.to.rda.dir <- function(dir) {
+  ## Process whole directory of mat files.
+  ## Convert each one to a rda file.
+
+  ## Create the rda directory if it doesn't exist.
+  rda.dir = sprintf("%s/rda", dir)
+  if (!file.exists(rda.dir))
+    dir.create(rda.dir)
+
+  files = list.files(d1, pattern = "mat$", full.names=TRUE)
+  lapply(files, mat.to.rda)
+  
+}
+
+
+readMatRda <- function(file, verbose=TRUE) {
+  ## wrapper around readMat; check first if the .rda file has been made.
+
+  f2 = mat.rda.name(file)
+  if (file.exists(f2)) {
+    if (verbose)
+      cat(sprintf("Reading %s as rda file\n", f2))
+    
+    env = new.env()
+    load(f2, env)
+    z = get("mat2rda", env)
+  } else {
+    z = readMat(file)
+  }
+
+  z
+}
