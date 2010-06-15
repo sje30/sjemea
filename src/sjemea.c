@@ -300,6 +300,65 @@ void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
 
 }
 
+void frate(Sfloat *allspikes, int *nspikes, int *pncells,
+	   Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+	   int *pnbins,
+	   double *counts)
+{
+
+  /* Compute the firing rate.
+   * Adapted from ns_count_activity.
+   *
+   * ALLSPIKES = vector of spike times, flattened, so that we get all
+   * spikes for unit 1, then unit 2, and so on
+   *
+   * NSPIKES[j] indicates the number of spikes from cell j.
+   *
+   * NCELLS = number of cells.
+   * BEG, END = first and last spike time.
+   * WID = duration of each network spike bin.
+   * NBINS = number of bins (calculated in R, rather than C)
+   *
+   * COUNTS[i,c] = for cell c, estimate the firing rate of the ITH bin.
+   * COUNTS is a long vector of size (NBINS*NCELLS)
+   */
+  
+  double *p, beg, end, wid, *count;
+  int ncells, b, n, unit, nbins, skip;
+  
+  ncells = *pncells; beg = *pbeg; end = *pend; wid = *pwid;
+  nbins = *pnbins;
+
+  p = allspikes;
+  count = counts;
+  skip =0;
+  
+  for (unit=0; unit<ncells; unit++) {
+    /* Count the spikes on electrode UNIT. */
+    n = nspikes[unit];
+
+    while(n-- >0) {
+      b = (int) ( (*p++ - beg)/wid); /* calc bin number; increment spike ptr */
+
+      /* Check bin number is valid: shouldn't happen. */
+      if ( (b <0 ) || (b >= nbins))
+	/* Rprintf("bin number wrong %f %d\n", *(p-1), b); */
+	skip++;
+      else {
+	/* Update count in relevant bin. */
+	  count[b]++;
+      }
+    }
+    /* finished checking one electrode, so prepare for next electrode.*/
+    count += nbins;
+  }
+
+  /* After processing all electrodes, divide the counts by the bin
+   * width to estimate firing rate.
+   * TODO
+   */
+}
+
 
 void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
 			Sfloat *pwid,
