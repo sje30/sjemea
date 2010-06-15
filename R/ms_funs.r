@@ -448,7 +448,8 @@ fourplot <- function(s) {
   plot.meanfiringrate(s)
   plot(s)                                 #plot the spikes.
 
-  if(!is.na(s$corr$corr.indexes[1])) {
+  ##   if	(!is.na(s$corr$corr.indexes[1])) {
+  if( any(names(s)=="corr")) {
     plot.corr.index(s)
   }
 }
@@ -1620,14 +1621,18 @@ show.movie <- function(x, beg=1, end,
 }
 
 
-make.spikes.to.frate <- function(spikes,
+make.spikes.to.frate.old <- function(spikes,
                                  time.interval=1, #time bin of 1sec.
                                  frate.min=0,
                                  frate.max=20,
                                  clip=FALSE,
-                                 beg=floor(min(unlist(spikes))),
-                                 end=ceiling(max(unlist(spikes)))
+                                 beg=NULL,
+                                 end=NULL
                                  ) {
+
+  ## OLD version: gets slow on the Litke data due to large amount of rearranging of
+  ## vectors, unlist() etc.
+  ##
   ## Convert the spikes for each cell into a firing rate (in Hz)
   ## We count the number of spikes within time bins of duration
   ## time.interval (measured in seconds).
@@ -1644,6 +1649,12 @@ make.spikes.to.frate <- function(spikes,
     h <- hist(spikes, breaks=breaks,plot=FALSE)
     h$counts/time.interval                #convert to firing rate (in Hz)
   }
+
+
+  spikes.range <- range(unlist(spikes))
+  if (is.null(beg))  beg <-  spikes.range[1]
+  if (is.null(end))  end <-  spikes.range[2]
+  
   time.breaks <- seq(from=beg, to=end, by=time.interval)
   if (time.breaks[length(time.breaks)] < end) {
     ## extra time bin needs adding.
@@ -1656,6 +1667,71 @@ make.spikes.to.frate <- function(spikes,
                    time.interval=time.interval)
   dimnames(rates) <- NULL
   
+  ## Now optionally set the upper and lower frame rates if clip is TRUE.
+  if (clip)
+    rates <- pmin(pmax(rates, frate.min), frate.max)
+
+
+  ## Do the average computation here.
+  ## av.rate == average rate across the array.
+  av.rate <- apply(rates, 1, mean)
+  ## We can remove the last "time.break" since it does not correspond
+  ## to the start of a time frame.
+  res <- list(rates=rates,
+              times=time.breaks[-length(time.breaks)],
+              av.rate=av.rate,
+              time.interval=time.interval)
+  res
+}
+
+
+make.spikes.to.frate <- function(spikes,
+                                 time.interval=1, #time bin of 1sec.
+                                 frate.min=0,
+                                 frate.max=20,
+                                 clip=FALSE,
+                                 beg=NULL,
+                                 end=NULL
+                                 ) {
+  ## Convert the spikes for each cell into a firing rate (in Hz)
+  ## We count the number of spikes within time bins of duration
+  ## time.interval (measured in seconds).
+  ##
+  ## Currently cannot specify BEG or END as less than the
+  ## range of spike times else you get an error from hist().  The
+  ## default anyway is to do all the spikes within a data file.
+
+
+  nspikes <- lapply(spikes, length)
+  nelectrodes <- length(nspikes)
+  
+  ## if clips is set to TRUE, firing rate is clipped within the
+  ## values frate.min and frate.max.  This is problably not needed.
+  
+  spikes.range <- range(unlist(spikes))
+  if (is.null(beg))  beg <-  spikes.range[1]
+  if (is.null(end))  end <-  spikes.range[2]
+  
+  time.breaks <- seq(from=beg, to=end, by=time.interval)
+  if (time.breaks[length(time.breaks)] < end) {
+    ## extra time bin needs adding.
+    ## e.g seq(1,6, by = 3) == 1 4, so we need to add 7 ourselves.
+    time.breaks <- c(time.breaks,
+                     time.breaks[length(time.breaks)]+time.interval)
+   }
+  nbins <- length(time.breaks) - 1
+  
+  z <- .C("frate",
+          as.double(unlist(spikes)),
+          as.integer(nspikes),
+          as.integer(nelectrodes),
+          as.double(time.breaks[1]), as.double(time.breaks[nbins]),
+          as.double(time.interval),
+          as.integer(nbins),
+          counts = double(nbins*nelectrodes),
+          PACKAGE="sjemea")
+
+  rates <- matrix(z$counts, nrow=nbins, ncol=nelectrodes)
   ## Now optionally set the upper and lower frame rates if clip is TRUE.
   if (clip)
     rates <- pmin(pmax(rates, frate.min), frate.max)
