@@ -1,3 +1,92 @@
+2010-06-15  Stephen Eglen  <stephen@gnu.org>
+
+	* src/sjemea.c (frate): New function to compute firing rate.
+
+	* R/ms_funs.r (make.spikes.to.frate): New version that uses C to
+	do all of the binning of spikes for estimating firing rate.
+	(make.spikes.to.frate.old): Old version is still here.
+	Differences between the two versions are very minor.
+	(fourplot): Don't attempt to plot correlation index if it is not
+	there.
+	
+
+	* R/litke.R (mat.to.rda): New functions to convert MAT files to
+	Rda files.  (matlab files are currently slow to read in, whereas
+	the equivlane Rda files are fast.)
+	(readMatRda): New function: wrapper around readMat() to check
+	first if the Rda file has been created.
+
+2010-06-11  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (spikes.to.rates): Use new method for computing
+	rates.
+	
+
+2010-05-14  Stephen Eglen  <stephen@gnu.org>
+
+	* R/iit.R (iit.read.spikes): Remove empty channels that are
+	included in the matlab file.
+
+2010-03-19  Stephen Eglen  <stephen@gnu.org>
+
+	* R/corr_index.R (make.distances): Add rm.lower flag to control
+	removing lower-triangular matrix entries.
+
+2010-03-17  Stephen Eglen  <stephen@gnu.org>
+
+	* DESCRIPTION (Version): 0.27 include optimizations to correlation
+	index calculations.
+
+	* src/sjemea.c (count_overlap_arr): New function.  Take all of the
+	spike trains (as one long vector), and do all pairwise counts of
+	overlaps.  When you have many spike trains (e.g. 500+), this is
+	much faster than looping in C.
+
+	* R/corr_index.R (make.distances): Rewrite to vectorize, as it is
+	slow with large numbers of N (e.g. N > 500).  Typical 10-20 time
+	speed up; see test function make.distances.check().
+	(corr.get.means.old): Old version was too slow also for N>500.
+	e.g with N=979, corr.get.means was taking 40s; this new version
+	takes only 0.8s.  split() is our friend here!!!
+	(corr.get.means.check): Tester function.
+	(corr.get.means): New version.
+
+2010-03-13  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (read.spikes): New function.
+
+2010-03-12  Stephen Eglen  <stephen@gnu.org>
+
+	* src/sjemea.c (bci_calc): New function.
+
+	* R/corr_index.R (my.lower): New function.
+
+	* R/maxinterval.R (mi.find.bursts): Include last spike when
+	checking for bursts in phase 1.
+
+	* R/ms_funs.r (jay.read.spikes): Add names() to spikes.
+
+2010-03-11  Stephen Eglen  <stephen@gnu.org>
+
+	* R/litke.R (show.litke.layout): New function.
+
+	* R/iit.R (plot.mealayout.hi):  Change use.rownames to use.names.
+
+	* R/ms_funs.r (plot.mealayout): Change use.rownames to use.names.
+
+	* R/feller.R (filter.channel.names): Use names.to.indexes.
+	(names.to.indexes): New function.
+
+	* R/ms_funs.r (plot.mm.s): Add use.names argument for printing
+	cell name rather than index.
+
+2009-11-30  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (plot.meanfiringrate): Add lwd option.
+
+	* R/sun.R (sun.read.spikes): New function.  Reads in the Sun data
+	sets.
+
 2009-11-06  Stephen Eglen  <stephen@gnu.org>
 
 	* R/corr_index.R (plot.corr.index): Fix case when there are no
