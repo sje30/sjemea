@@ -56,9 +56,11 @@ make.litke1.layout <- function(positions, names) {
   columns <- match(positions, litke1layout$electrode)
   ## TODO what does match return if no matching electrode found?
   ##
-  pos <- cbind(litke1layout$x[columns], litke1layout$y[columns])
+  pos <- cbind(litke1layout$x[columns], litke1layout$y[columns],
+               positions)
   
   rownames(pos) <- names
+  colnames(pos) <- c("x", "y", "electrode.num")
   
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
                  pos=pos)
