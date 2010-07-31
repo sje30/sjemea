@@ -21,7 +21,8 @@ litke.keep.spikes <- function(row, sample.rate = 20000) {
   ## sample rate of 20Khz is used to convert spikes to time in seconds.
   spikes = row[-(1:2)]
   end = which(spikes == 0)
-  spikes = spikes[-end]
+  if (any(end)) ## For longest spike train, there will be no spikes to remove
+    spikes = spikes[-end]
   spikes / sample.rate
 }
 
