@@ -15,8 +15,12 @@ corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
     ## SJE: 2010-03-17 -- try new version of corr index.
     ##corr.indexes = make.corr.indexes(spikes, dt, min.rate)
     corr.indexes = make.corr.indexes2(spikes, dt, min.rate)
-    corr.id = cbind(my.upper(dists), my.upper(corr.indexes))
-    corr.id.means = corr.get.means(corr.id)
+    corr.id = cbind(dist=my.upper(dists), corr=my.upper(corr.indexes),
+      dist.bin=my.upper(dists.bins))
+    ##corr.id.means = corr.get.means(corr.id)
+    dist.mids = diff(distance.breaks)/2 +
+      distance.breaks[-(length(distance.breaks))]
+    corr.id.means = corr.get.means(corr.id, dist.mids)
   } else {
     corr.indexes = NA
     corr.id = NA
@@ -27,12 +31,14 @@ corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
   distance.breaks.strings =
     levels(cut(0, distance.breaks, right=FALSE, include.lowest=TRUE))
 
-  res = list(dists=dists, dists.bins = dists.bins,
-    corr.indexes = corr.indexes,
+  res = list(
+    ##dists=dists, dists.bins = dists.bins,
+    ##corr.indexes = corr.indexes,
     dt = dt,
     corr.id = corr.id,
     corr.id.means = corr.id.means,
     distance.breaks=distance.breaks,
+    distance.mids=dist.mids,
     distance.breaks.strings=distance.breaks.strings)
 
   res
@@ -126,6 +132,7 @@ plot.corr.index <- function(s, identify=FALSE,
                             main=NULL,
                             dot.col='red',
                             show.fit=TRUE, show.ci=FALSE,
+                            show.pts=NULL,
                             ...) {
   ## Plot the correlation indices as a function of distance.
   ## If identify is TRUE, we can locate cell pairs on the plot using
@@ -137,13 +144,12 @@ plot.corr.index <- function(s, identify=FALSE,
   ## If SHOW.FIT is true, draw the expoential fit.
   ## If SHOW.CI is true, draw the confidence intervals estimated every
   ## 100 um or so.
+  ## SHOW.PTS: if TRUE, show individual CI values.  If NULL, the value
+  ## is assumed TRUE iff number of cells recorded is less than 100.
   
+  dists = s$corr$corr.id[,"dist"]
+  corrs = s$corr$corr.id[,"corr"]
   
-  ##dists = s$corr$dists[which(upper.tri(s$corr$dists))]
-  ##corrs = s$corr$corr.indexes[which(upper.tri(s$corr$corr.indexes))]
-
-  dists = my.upper(s$corr$dists)
-  corrs = my.upper(s$corr$corr.indexes)
   if (all(is.na(corrs))) {
     ## no correlation data to show, so just up empty plot.
     plot(NA, xlim=range(dists), ylim=c(1,10),
@@ -159,10 +165,23 @@ plot.corr.index <- function(s, identify=FALSE,
   
     xlabel = expression(paste("intercell distance (", mu, "m)"))
 
-    plot.default(dists, corrs, xlab=xlabel, ##log=log,
-                 ylab="correlation index", bty="n",
-                 main=main, col=dot.col,
-                 ...)
+    if (is.null(show.pts))
+      show.pts <- s$NCells < 100
+
+    if (show.pts) {
+      
+      plot.default(dists, corrs, xlab=xlabel, ##log=log,
+                   ylab="correlation index", bty="n",
+                   main=main, col=dot.col,
+                   ...)
+    } else {
+      plot.default(dists, corrs, xlab=xlabel, type='n',
+                   ylab="correlation index", bty="n",
+                   main=main,
+                   ...)
+      show.ci <- TRUE                   #better show something.
+    }
+
 
     if (identify) {
       labels1 <- outer(seq(1, s$NCells), seq(1,s$NCells), FUN="paste")
@@ -171,8 +190,8 @@ plot.corr.index <- function(s, identify=FALSE,
     }
 
     if (show.ci) 
-      plotCI(s$corr$corr.id.means[,1], s$corr$corr.id.means[,2],
-             s$corr$corr.id.means[,3],
+      plotCI(s$corr$corr.id.means[,"mid"], s$corr$corr.id.means[,"mean"],
+             s$corr$corr.id.means[,"sd"],
              xlab="distance", ylab="correlation index", 
              pch=19, add=TRUE)
     if (show.fit) 
@@ -363,7 +382,18 @@ make.corr.indexes2 <- function(spikes, dt, min.rate=0) {
 ##   res
 ## }
 
-corr.get.means <- function(id) {
+corr.get.means <- function(id, mid) {
+  ## mid contains the mid-point of each bin.
+  data.by.bin = split(id[,"corr"], id[,"dist.bin"])
+  bins.found = as.integer(names(data.by.bin)) #assume sorted?
+  mids = mid[bins.found]
+  means = sapply(data.by.bin, mean)
+  sds = sapply(data.by.bin, sd)
+  n = sapply(data.by.bin, length)
+  cbind(mid=mids, mean=means, sd=sds, n=n)
+}
+
+corr.get.means.old2 <- function(id) {
   ## Compute the mean,sd of the correlation index at each distance.
   ## id is the array of [n,2] values.  Each row is [d,i].
   ## where d is the distance and i is the correlation.
