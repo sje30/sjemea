@@ -1237,6 +1237,7 @@ make.movieframes <- function (x, beg=1,
                               show.frames = interactive(),
                               seconds=TRUE,
                               delete.first=TRUE,
+                              clean.after=FALSE,
                               anim.delay=0) {
 
   ## Loop over each frame, making a PNG (mono) file.
@@ -1304,6 +1305,14 @@ make.movieframes <- function (x, beg=1,
     ##browser()
     system(cmd)
     cat(sprintf("Output file mea.gif created in %s\n", outputdir))
+
+    if (clean.after) {
+      ## remove all the temp files up afterwards
+      files <- list.files(path=outputdir, full.names=TRUE,
+                          pattern=paste(prefix,".*\\.png",sep=''))
+      if (length(files)>0)
+        file.remove(files)
+    }
   } else {
     cat("Convert these to a movie using Quicktime or on Linux:\n")
     cat("convert -delay 20 *png mea.gif\n")
