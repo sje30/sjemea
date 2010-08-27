@@ -1,3 +1,14 @@
+2010-08-27  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (make.movieframes): delete.first argument is now
+	TRUE by default.
+
+2010-06-24  Stephen Eglen  <stephen@gnu.org>
+
+	* R/litke.R (make.litke1.layout): Include electrode number in
+	layout information, so that we can count the number of distinct
+	electrodes that recorded activity.
+
 2010-06-15  Stephen Eglen  <stephen@gnu.org>
 
 	* src/sjemea.c (frate): New function to compute firing rate.
