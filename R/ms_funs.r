@@ -1236,7 +1236,7 @@ make.movieframes <- function (x, beg=1,
                               prefix="mea",
                               show.frames = interactive(),
                               seconds=TRUE,
-                              delete.first=FALSE,
+                              delete.first=TRUE,
                               anim.delay=0) {
 
   ## Loop over each frame, making a PNG (mono) file.
@@ -1294,6 +1294,8 @@ make.movieframes <- function (x, beg=1,
     plot.rate.mslayout(x, i)
     dev.off()
   }
+
+  cat(paste("Movie frames stored in", outputdir, "\n"))
   
   if (anim.delay > 0) {
     ## We want to make an animation...
@@ -1302,11 +1304,10 @@ make.movieframes <- function (x, beg=1,
     ##browser()
     system(cmd)
     cat(sprintf("Output file mea.gif created in %s\n", outputdir))
+  } else {
+    cat("Convert these to a movie using Quicktime or on Linux:\n")
+    cat("convert -delay 20 *png mea.gif\n")
   }
-  
-  cat(paste("Movie frames stored in", outputdir, "\n"))
-  cat("Convert these to a movie using Quicktime or on Linux:\n")
-  cat("convert -delay 20 *png mea.gif\n")
 }
 
 time.to.frame <- function(times, time) {
