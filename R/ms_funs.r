@@ -1301,6 +1301,7 @@ make.movieframes <- function (x, beg=1,
       outputdir, anim.delay, prefix)
     ##browser()
     system(cmd)
+    cat(sprintf("Output file mea.gif created in %s\n", outputdir))
   }
   
   cat(paste("Movie frames stored in", outputdir, "\n"))
