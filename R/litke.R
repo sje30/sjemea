@@ -167,7 +167,7 @@ litke.read.spikes <- function(filename, ids=NULL,
   class(res) <- "mm.s"
 
   if (corr.method == "ci") {
-    litke.breaks = seq(from=0, to=2050, by=50)
+    litke.breaks = c(0, 0.001, seq(from=50, to=2050, by=50))
     
     res$corr = corr.index(res, litke.breaks)
   }
