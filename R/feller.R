@@ -149,7 +149,7 @@ remove.empty.channels <- function(spikes) {
 }
 
 
-names.to.indexes <- function(names, elems) {
+names.to.indexes <- function(names, elems, allow.na=FALSE) {
   ## Return the indexes of where each element of ELEMS is within NAMES.
   ## If the first element of ELEMS is '-', then return all indexes except
   ## those matching ELEMS.
@@ -158,7 +158,10 @@ names.to.indexes <- function(names, elems) {
   ## names.to.indexes(names, c('d', 'b', 'a'))  ## 4 2 1
   ## names.to.indexes(names, c( '-', 'c', 'a')) ## 2 4 5
 
-  if (elems[1] == '-') {
+  ## to check if first element is "-", we have to use this more
+  ## complex expression, as elems[1] == "-" is an error if the first element
+  ## by chance is NA.
+  if ( isTRUE(all.equal("-", elems[1])) ) {
     invert = TRUE
     elems = elems[-1]
   } else {
@@ -167,9 +170,11 @@ names.to.indexes <- function(names, elems) {
   }
 
   indexes = match(elems, names)
-  if (any(is.na(indexes)))
-    stop('some indexes not found.')
-
+  if (!allow.na) {
+    if (any(is.na(indexes)))
+      stop('some indexes not found.')
+  }
+  
   if (invert)
     indexes = setdiff(1:(length(names)), indexes)
 
