@@ -20,8 +20,11 @@ plot.mm.s <- function(s, whichcells=NULL,
                       for.figure=FALSE,
                       ...) {
   ## Plot the spikes.
-  ## WHICHCELLS is a list of cell numbers to plot; the default is to plot
-  ## all of the cells.
+  ##
+  ## WHICHCELLS is a list of cell numbers to plot; the default is to
+  ## plot all of the cells.  If NA is given instead of a channel
+  ## reference, just add some whitespace rather than a spike train.
+  ##
   ## BEG and END are the time range for which we want to
   ## plot spikes.  When evaluating maxtime, some cells may have no
   ## spikes; their lists get converted to NA in unlist() so those NA
@@ -39,7 +42,7 @@ plot.mm.s <- function(s, whichcells=NULL,
   }
 
   if (is.character(whichcells[1])) {
-    whichcells = names.to.indexes(names(s$spikes), whichcells)
+    whichcells = names.to.indexes(names(s$spikes), whichcells, allow.na=TRUE)
   }
 
   if (is.null(main)) {
@@ -78,33 +81,38 @@ plot.mm.s <- function(s, whichcells=NULL,
   for (cell in whichcells) {
     ts <- spikes[[cell]]                #get spike times.
     n <- length(ts)                     #number of spikes.
-    ys <- numeric(n) + ymin
-    
-    segments(ts, ys, ts, ys+deltay, lwd=0.2) #draw spikes.
 
-    ## simple test to see if bursts have been defined.
-    if (have.bursts) {
-      burst.times <- s$allb[[cell]]
-      if (!is.na(burst.times[1])) {
-        ## we have some vald burst info.
-        nbursts <- nrow(burst.times)
-        ##ys <- rep(ymin+deltay/2, nbursts)
+    if(n > 0) {
+      ## check we have spikes; e.g. cell could be NA, so we wouldn't
+      ## need to do anything except clear a bit of space.
+      ys <- numeric(n) + ymin
+      
+      segments(ts, ys, ts, ys+deltay, lwd=0.2) #draw spikes.
 
-        ## alternate height of bursts so that we can sep adjacent bursts.
-        ys <- rep(ymin+deltay/2, nbursts)
-        shimmy <- deltay*0.25
-        odd <- (1:nbursts) %% 2 == 1
-        ys[odd] <- ys[odd] + shimmy
+      ## simple test to see if bursts have been defined.
+      if (have.bursts) {
+        burst.times <- s$allb[[cell]]
+        if (!is.na(burst.times[1])) {
+          ## we have some vald burst info.
+          nbursts <- nrow(burst.times)
+          ##ys <- rep(ymin+deltay/2, nbursts)
 
-        start.burst <- ts[burst.times[,"beg"]]
-        ## for the end of the burst, -1 is needed since if start spike
-        ## is 20, and i=3, last spike in burst is 22 (spikes 20, 21, 22)
-        end.burst <- ts[ burst.times[,"beg"] + burst.times[,"len"] -1]
-        segments(start.burst, ys,
-                 end.burst, ys,
-                 col="red", lwd=2)
-        text(start.burst, rep(ymin+deltay*1.1, nbursts),
-             labels=burst.times[,"len"], col="blue")
+          ## alternate height of bursts so that we can sep adjacent bursts.
+          ys <- rep(ymin+deltay/2, nbursts)
+          shimmy <- deltay*0.25
+          odd <- (1:nbursts) %% 2 == 1
+          ys[odd] <- ys[odd] + shimmy
+
+          start.burst <- ts[burst.times[,"beg"]]
+          ## for the end of the burst, -1 is needed since if start spike
+          ## is 20, and i=3, last spike in burst is 22 (spikes 20, 21, 22)
+          end.burst <- ts[ burst.times[,"beg"] + burst.times[,"len"] -1]
+          segments(start.burst, ys,
+                   end.burst, ys,
+                   col="red", lwd=2)
+          text(start.burst, rep(ymin+deltay*1.1, nbursts),
+               labels=burst.times[,"len"], col="blue")
+        }
       }
     }
     ymin <- ymin + yminadd
