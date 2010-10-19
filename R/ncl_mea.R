@@ -84,6 +84,7 @@ ncl.read.spikes <- function(filename, ids=NULL,
   dat <- mcd.data.to.array(filename, beg, end)
   spikes <- dat$spikes
   channels <- dat$channels
+  names(spikes) <- channels
 
   spikes.range <- range(unlist(spikes))
   if (is.null(beg))  beg <-  spikes.range[1]
