@@ -6,7 +6,6 @@ make.sql.file <- function(s, outputdb) {
 
   require(RSQLite)
   ## Create a database file from an MEA object.
-
   electrode = data.frame(num=as.integer(s$layout$pos[,"electrode.num"]),
     x=as.integer(s$layout$pos[,"x"]),    y=as.integer(s$layout$pos[,"y"]))
   rownames(electrode) <- NULL
