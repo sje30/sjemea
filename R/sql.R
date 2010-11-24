@@ -9,12 +9,12 @@ make.sql.file <- function(s, outputdb) {
 
   electrode = data.frame(num=as.integer(s$layout$pos[,"electrode.num"]),
     x=as.integer(s$layout$pos[,"x"]),    y=as.integer(s$layout$pos[,"y"]))
-  rownamesames(electrode) <- NULL
+  rownames(electrode) <- NULL
   head(electrode)
 
   neuron = data.frame(num=as.character(rownames(s$layout$pos)),
     electrode=as.integer(s$layout$pos[,"electrode.num"]))
-  rownamesames(neuron) <- NULL
+  rownames(neuron) <- NULL
   head(neuron)
 
   geometry <- with(s$layout, 
@@ -37,8 +37,9 @@ make.sql.file <- function(s, outputdb) {
 
   dbWriteTable(con, "electrode", electrode, overwrite=TRUE, row.names=F)
   dbWriteTable(con, "neuron", neuron, overwrite=TRUE, row.names=F)
-  dbWriteTable(con, "geometry", geometry, overwrite=TRUE, row.names=F)
   dbWriteTable(con, "spikes", spikes, overwrite=TRUE, row.names=F)
+  ## extra tables needed by SJE.
+  dbWriteTable(con, "geometry", geometry, overwrite=TRUE, row.names=F)
   dbWriteTable(con, "distbreaks", distbreaks, overwrite=TRUE,row.names=F)
 
   dbDisconnect(con)
@@ -51,6 +52,8 @@ sql.read.spikes <- function(file,
                             beg=NULL, end=NULL,
                             min.rate=0,
                             corr.method="ci") {
+
+  ## This could be a general reader... not just for sql.
   s1 = sql.spike.reader(file)
 
   spikes = s1$spikes
