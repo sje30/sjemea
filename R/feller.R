@@ -9,7 +9,10 @@ make.ejc.layout <- function(positions) {
 
   cols.an <- toupper(substring(positions,1,2))
   columns <- match(cols.an, ejcmealayout$name)
-  pos <- cbind(ejcmealayout$x[columns], ejcmealayout$y[columns])
+  ## round columns to nearest integer - i.e. um.
+  pos <- cbind(x=as.integer(ejcmealayout$x[columns]),
+               y=as.integer(ejcmealayout$y[columns]),
+               electrode.num=ejcmealayout$number[columns])
   
   rownames(pos) <- positions
   
