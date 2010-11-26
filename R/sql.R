@@ -9,12 +9,12 @@ make.sql.file <- function(s, outputdb) {
   electrode = data.frame(num=as.integer(s$layout$pos[,"electrode.num"]),
     x=as.integer(s$layout$pos[,"x"]),    y=as.integer(s$layout$pos[,"y"]))
   rownames(electrode) <- NULL
-  head(electrode)
 
-  neuron = data.frame(num=as.character(rownames(s$layout$pos)),
+
+  neuron = data.frame(name=as.character(rownames(s$layout$pos)),
     electrode=as.integer(s$layout$pos[,"electrode.num"]))
   rownames(neuron) <- NULL
-  head(neuron)
+
 
   geometry <- with(s$layout, 
                    data.frame(xlo=xlim[1], xhi=xlim[2],
@@ -139,7 +139,7 @@ sql.spike.reader <- function(file) {
   res = electrode[r,]
   ##pos = data.frame(x=res[,"x"], y=res[,"y"], electrode.num=res[,"num"])
   pos = cbind(x=res[,"x"], y=res[,"y"], electrode.num=res[,"num"])
-  rownames(pos) = neuron[,"num"]
+  rownames(pos) = neuron[,"name"]
 
 
   rs <- dbSendQuery(con, "select * from geometry")
