@@ -6,8 +6,18 @@ make.sql.file <- function(s, outputdb) {
 
   require(RSQLite)
   ## Create a database file from an MEA object.
-  electrode = data.frame(num=as.integer(s$layout$pos[,"electrode.num"]),
-    x=as.integer(s$layout$pos[,"x"]),    y=as.integer(s$layout$pos[,"y"]))
+
+  ## Remove duplicate rows from the data frame; this is where multiple
+  ## cells are detected on the same electrode.
+  p1 = s$layout$pos
+  dups = duplicated(p1)
+  p2 = p1[!dups,]
+
+  electrode = data.frame(
+    num=as.integer(p2[,"electrode.num"]),
+    x=as.integer(p2[,"x"]),
+    y=as.integer(p2[,"y"]))
+  
   rownames(electrode) <- NULL
 
 
