@@ -21,7 +21,9 @@ make.sql.file <- function(s, outputdb) {
   rownames(electrode) <- NULL
 
 
-  neuron = data.frame(name=as.character(rownames(s$layout$pos)),
+  neuron = data.frame(
+    id=1:nrow(s$layout$pos),
+    name=as.character(rownames(s$layout$pos)),
     electrode=as.integer(s$layout$pos[,"electrode.num"]))
   rownames(neuron) <- NULL
 
@@ -32,7 +34,7 @@ make.sql.file <- function(s, outputdb) {
                               spacing=spacing))
 
   all.spiketimes <- unlist(s$spikes)
-  all.spikeids <- rep(s$channels, times=s$nspikes)
+  all.spikeids <- rep(1:s$NCells, times=s$nspikes)
   spikes=data.frame(t=all.spiketimes,neuron=all.spikeids)
 
   distbreaks = data.frame(breaks=s$corr$distance.breaks)
@@ -167,8 +169,16 @@ sql.spike.reader <- function(file) {
   dbDisconnect(con)
 
   ## keep the order as they appear in the data frame.
-  spikes = split(sp$t, factor(sp$neuron, levels=unique(sp$neuron)))
+  ##spikes = split(sp$t, factor(sp$neuron, levels=unique(sp$neuron)))
 
+  ## extract spikes, and put names back onto the spikes.
+  spikes = split(sp$t, sp[,"neuron"])
+  names(spikes) <- neuron[,"name"]
+  ## TODO, write as
+  ## names(spikes) <- neuron[match(names(spikes),...],"name"]
+  ## so that it looks up right name, rather than assuming it is in the
+  ## right order.
+  
 
 
   layout <- list(xlim=c(geometry[,"xlo"], geometry[,"xhi"]),
