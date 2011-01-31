@@ -205,7 +205,7 @@ read.spikes <- function(reader, ...) {
   ## so that e.g.
   ## jay.read.spikes(...) can be called as:
   ## read.spikes(..., reader="jay")
-  readers <- c("feller", "iit", "litke", "ncl", "sanger", "sun", "jay")
+  readers <- c("feller", "iit", "litke", "ncl", "sanger", "sun", "jay", "sql")
   if (reader %in% readers) {
     fn <- paste(reader, ".read.spikes", sep="")
     do.call(fn, list(...))
