@@ -19,7 +19,7 @@ iit.read.spikes <- function(filename, ids=NULL,
     if (any(empty.channels))
       z <- z[-empty.channels]
     
-    frame.rates = 7800
+    frame.rates = 7702  ## was 7800.
     ## each element - E- is a sparse matrix with one column, so find out
     ## where the non-zero elements are.
     ##spikes <- lapply(z, function(e) { which(e[,1]>0)/frame.rates})
