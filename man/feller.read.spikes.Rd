@@ -29,6 +29,7 @@ feller.read.spikes(filename, ids=NULL, time.interval=1,
 \details{
   The data from each electrode is not in seconds; divide by 20000 to get
   the time in seconds.
+
 }
 
 \seealso{
@@ -40,6 +41,9 @@ data.file <- system.file('examples', '2002-11-26-1', package='sjemea')
 s <- feller.read.spikes(data.file)
 ejcmealayout.check()
 fourplot(s)
+
+## This file contains the picture of the array for comparison
+system.file("examples/ejc_ElectrodeNumbering.jpg",package="sjemea")
 
 ## next two examples show electrodes being rejected/accepted.
 s <- feller.read.spikes(data.file, ids=c('-', 'a7a', 'b1a', 'h2a'))
