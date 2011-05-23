@@ -1,6 +1,10 @@
 ## Code for reading in Data from Marla Feller's group.
 ## 2009-07-21
 
+## The layout for EJ's array can be found in  ejc_ElectrodeNumbering.jpg
+## This file is installed as part of the R package.
+## system.file("examples/ejc_ElectrodeNumbering.jpg",package="sjemea")
+
 make.ejc.layout <- function(positions) {
   ## make the layout for SANGER MEA (cf. make.sanger1.layout)
   ## This is a hexagonal grid.
@@ -87,6 +91,12 @@ feller.spiketimes <- function(dir) {
   ## valid is this?  This will be something like "c3a" or "c3b" with
   ## the first two chars representing the location.
   electrodes <- substring(filenames, first=nchar(filenames)-2)
+
+  ## Check if there any duplicate electrodes; this would indicate that
+  ## there maybe several experiments patched together into same file.
+  if (any(duplicated(electrodes)))
+    stop("You have duplicate electrodes in ", dir)
+  
 
   ## perhaps best to order electrodes by their number, rather than 2
   ## char id, as the number varies fairly smoothly with position on the
