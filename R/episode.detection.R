@@ -110,9 +110,15 @@ episode.detection <- function(s, max.burst.length=40) {
         ## return results
 
         ## SJE: make sure results are vectors wherever possible.
-        res <- list(beg=unlist(savedstart),
-                    end=unlist(savedend),
-                    savedpath=savedpath)
+        beg <- unlist(savedstart)
+        if (is.null(beg)) {
+          ## no episodes found.
+          res <- NULL
+        } else {
+          res <- list(beg=beg,
+                      end=unlist(savedend),
+                      savedpath=savedpath)
+        }
 
         res
 	
