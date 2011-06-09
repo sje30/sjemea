@@ -52,11 +52,12 @@ findEpisodes <- function(s, max.burst.length=40) {
   }
 
   
-  ## Now that we have the BURSTS information in the right format, we can now find
-  ## the epsidoes of overlapping bursts.
+  ## Now that we have the BURSTS information in the right format, we
+  ## can now find the episodes of overlapping bursts.
 
-  if (is.null(flat) {
-    ## We have no bursts to make episodes from (e.g. if max.burst.length is too small).
+  if (nrow(flat)==0 || is.null(flat)) {
+    ## We have no bursts to make episodes from
+    ## (e.g. if max.burst.length is too small).
     episodes <- NULL
   } else {
     episodes <- burstmatrix.to.episode(flat)

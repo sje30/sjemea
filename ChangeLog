@@ -1,3 +1,73 @@
+2011-06-09  Stephen Eglen  <stephen@gnu.org>
+
+	* R/episode.detection.R (episode.detection): When there are no
+	episodes, return the NULL object.
+
+2011-05-23  Stephen Eglen  <stephen@gnu.org>
+
+	* R/feller.R (feller.spiketimes): Add check to prevent multiple
+	files with same electrode/cell name being added.  This was
+	happening with some recordings where e.g. both control and drug
+	conditions were kept in the same folder; the fix was to put
+	these conditions into their own folders.
+
+2011-04-02  Stephen Eglen  <stephen@gnu.org>
+
+	* R/iit.R (iit.read.spikes): Update sampling rate from 7800 Hz to
+	7702 (from Matthias).
+
+2011-02-17  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (plot.mm.s): Pass xlab as an argument.
+
+2011-01-31  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (read.spikes): Add 'sql' as a new reader.
+
+2010-12-02  Stephen Eglen  <stephen@gnu.org>
+
+	* R/sql.R (make.sql.file): Add a new column, id, to the neuron
+	table.  This is used in the spikes table, rather than neuron.name,
+	as neuron.name is a character, rather than a short array.  This
+	is more efficient for Keith's programme cyclone.
+
+2010-12-01  Stephen Eglen  <stephen@gnu.org>
+
+	* R/sql.R (make.sql.file): Remove duplicate rows from electrode
+	table.
+	
+
+2010-11-26  Stephen Eglen  <stephen@gnu.org>
+
+	* R/sql.R (make.sql.file): Rename 'num' to 'name' in table
+	'neuron', as the name can be alphabetical, not just numeric.
+
+2010-11-24  Stephen Eglen  <stephen@gnu.org>
+
+	* R/feller.R (make.ejc.layout): Add electrode.num column to the
+	layout.  Ensure that x,y dimensions are integers for electrode
+	position (to the nearest um).
+
+	* R/sun.R (make.sun.layout): Add the electrode.num column to the
+	layout.
+
+2010-10-19  Stephen Eglen  <stephen@gnu.org>
+
+	* R/feller.R (names.to.indexes): Add allow.na=FALSE as new
+	argument so that NA can be used when plotting spike trains.
+
+
+	* R/litke.R (litke.read.spikes): Add a specific distance break
+	just for neurons with distance 0 between them.
+
+
+	* R/ms_funs.r (plot.mm.s): Cope with NA being used for a channel
+	name, in which case just add some whitespace rather than a spike train.
+
+	* R/ncl_mea.R (ncl.read.spikes): Use channel names as the names
+	for the elements of 'spikes', so that they can be used when
+	plotting spike trains.
+
 2010-08-27  Stephen Eglen  <stephen@gnu.org>
 
 	* R/ms_funs.r (make.movieframes): delete.first argument is now
