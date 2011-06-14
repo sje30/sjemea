@@ -33,7 +33,8 @@ read.spikes(filename, beg, end, reader='jay')
 
   read.spikes() is a wrapper around each xyz.read.spikes() function, so
   that they can all be called just by specifying reader='xyz'.  Current
-  readers are: "feller", "iit", "litke", "ncl", "sanger", "sun", "jay".
+  readers are: "feller", "iit", "litke", "ncl", "sanger", "sun", "jay",
+  "sql".
 
   By default, all spikes are read in.  If beg is given, only spikes
   occuring after this time (in seconds) are kept.  Likewise, if end is
