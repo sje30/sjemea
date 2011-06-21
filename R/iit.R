@@ -121,25 +121,19 @@ make.iit.layout <- function(positions) {
 
   rows = (r-1)*spacing
   cols = (c-1)*spacing
-  pos <- cbind(rows, cols)
+  electrode.num <- ((r-1)*64) + c ## start electrodes from number 1
+  
+  pos <- cbind(x=rows, y=cols, electrode.num=electrode.num)
   
   rownames(pos) <- positions
   
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
                  pos=pos)
 
-  class(layout) <- "mealayout.hi"
+  class(layout) <- "mealayout"
 
   layout
 
 }
 
 
-plot.mealayout.hi <- function(x, use.names=FALSE, ...) {
-  ## Plot the MEA layout, high density version
-  pos <- x$pos
-  plot(pos, asp=1,
-       xlim=x$xlim, ylim=x$ylim,
-       bty="n",
-       xlab="", ylab="", pch=20)
-}
