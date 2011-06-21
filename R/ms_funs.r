@@ -16,9 +16,11 @@ plot.mm.s <- function(s, whichcells=NULL,
                       label.cells = FALSE,
                       use.names=TRUE,
                       show.bursts = FALSE,
-                      main=NULL, ylab='spikes of cell',
-                      xlab="time (s)",
+                      main=NULL, ylab='Channel',
+                      xlab="Time (s)",
                       for.figure=FALSE,
+                      show.episodes,
+                      episode.y=-0.01,
                       ...) {
   ## Plot the spikes.
   ##
@@ -127,6 +129,16 @@ plot.mm.s <- function(s, whichcells=NULL,
       labels <- whichcells
     }
     mtext(labels, side=2, at=allys, las=1)
+  }
+
+  if (missing(show.episodes)) {
+    ## default.
+    show.episodes <- ("episodes" %in% names(s))
+  }
+  
+  if (show.episodes) {
+    segments(s$episodes$beg, episode.y, s$episodes$end, episode.y,
+             col='purple',xpd=NA)
   }
 
 }
@@ -2233,7 +2245,18 @@ op.picture <- function(pos, rates, iteration) {
 }
 
 
-plot.mealayout <- function(x, use.names=FALSE, ...) {
+plot.mealayout <- function(x, ...) {
+  ## Decide which function to plot the array layout based on number of cells.
+  if (nrow(x$pos) < 200) {
+    plot.mealayout.1(x, ...)
+  } else {
+    plot.mealayout.hi(x, ...)
+  }
+}
+    
+  
+plot.mealayout.1 <- function(x, use.names=FALSE, ...) {
+
   ## Plot the MEA layout.
 
   pos <- x$pos
@@ -2245,6 +2268,15 @@ plot.mealayout <- function(x, use.names=FALSE, ...) {
     text(pos[,1], pos[,2], rownames(pos), ...)
   else
     text(pos[,1], pos[,2], ...)
+}
+
+plot.mealayout.hi <- function(x, use.names=FALSE, ...) {
+  ## Plot the MEA layout, high density version
+  pos <- x$pos
+  plot(pos, asp=1,
+       xlim=x$xlim, ylim=x$ylim,
+       bty="n",
+       xlab="", ylab="", pch=20)
 }
 
 spikes.to.ragged.csv <- function(spikes, filename='test.csv') {
