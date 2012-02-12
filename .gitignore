@@ -1,3 +1,4 @@
 ## Tell git which files to ignore
 TAGS
+no-RCS
 *~
