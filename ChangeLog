@@ -1,3 +1,18 @@
+2012-02-12  Stephen Eglen  <stephen@gnu.org>
+
+	* DESCRIPTION (Version): Move up to 0.33 with move to git.
+
+2011-06-21  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (plot.mealayout): Switch between high and low
+	density versions based on the number of electrodes.
+
+	* R/iit.R (make.iit.layout): Switch back to using "mealayout" for
+	the class.
+	(make.iit.layout): electrode.num column added to the pos array -
+	required for the sql writer.  Change column numbers also to "x"
+	and "y" in the pos array.
+
 2011-06-09  Stephen Eglen  <stephen@gnu.org>
 
 	* R/episode.detection.R (episode.detection): When there are no
