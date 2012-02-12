@@ -115,8 +115,8 @@ sun.read.spikes <- function(filename, ids=NULL,
               meanfiringrate=meanfiringrate,
               file=filename,
               layout=layout,
-              unit.offsets=unit.offsets,
               rates=rates,
+              unit.offsets=unit.offsets,
               rec.time=rec.time
               )
   class(res) <- "mm.s"
