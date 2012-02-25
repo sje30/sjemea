@@ -52,6 +52,7 @@ make.litke1.layout <- function(positions, names) {
   xlim <- c(-1000, 1000)
   ylim <- c(-500, 500)
   spacing <- 60
+  ##litke1layout <- NULL                  # silence the checker.
   data(litke1layout)
   
   columns <- match(positions, litke1layout$electrode)
@@ -74,6 +75,7 @@ make.litke1.layout <- function(positions, names) {
 
 show.litke.layout <- function() {
   ## Show the layout of the Litke array.
+  litke1layout <- NULL; rm(litke1layout) #silence R CMD CHECK
   data(litke1layout)
   plot(litke1layout$x, litke1layout$y, asp=1,
        type='n', xlab='', ylab='')
@@ -210,7 +212,7 @@ mat.to.rda.dir <- function(dir) {
   if (!file.exists(rda.dir))
     dir.create(rda.dir)
 
-  files = list.files(d1, pattern = "mat$", full.names=TRUE)
+  files = list.files(dir, pattern = "mat$", full.names=TRUE)
   lapply(files, mat.to.rda)
   
 }
