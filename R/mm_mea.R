@@ -323,11 +323,11 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   }
   if (spikecount != NSpikes)
     stop(paste ("spikecount differs from expected value",
-                spikecount, Nspikes))
+                spikecount, NSpikes))
 
   if (eventcount != NEvents)
     stop(paste ("eventcount differs from expected value",
-                eventcount, Nevents))
+                eventcount, NEvents))
 
   ## Check the C values
   if (seek(fp) != StatIndex)
