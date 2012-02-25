@@ -5,3 +5,8 @@ becasue they are missing the "electrode.num" column in layout$pos
 matrix.  See the code in iit.R where this is solved:
 
 [[file:R/iit.R::electrode.num%20<-%20((r-1)*64)%20%2B%20c%20##%20start%20electrodes%20from%20number%201][file:R/iit.R::electrode.num <- ((r-1)*64) + c ## start electrodes from number 1]]
+
+* rename hist.ab 
+
+this currently looks like an S3 method, calling "hist" on objects of
+class "ab".
