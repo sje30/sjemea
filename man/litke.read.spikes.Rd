@@ -8,13 +8,20 @@ Read in the .mat file containing MEA data from Alan Litke
 Read in the matlab file and process as a regular MEA.
 }
 \usage{
-litke.read.spikes(filename, beg, end)
-iit.read.spikes(filename, beg, end)
+litke.read.spikes(filename, ids, time.interval, beg, end, corr.method)
+iit.read.spikes(filename, ids, time.interval, beg, end)
 }
 \arguments{
   \item{filename}{Name of the text file to be read in.}
+  \item{ids}{Optional vector of cell numbers that can be analysed,
+    rather than analysing all electrodes in the recording.  Warning: Not
+    implemented in all readers.}
+  \item{time.interval}{Bin width (in seconds) for estimating firing
+    rate.  Defaults to 1 second.}
   \item{beg}{Optional start time.}
   \item{end}{Optional end time.}
+  \item{corr.method}{Which correlation method to use?  Only
+    'ci' supported for the Likte reader.}
 }
 
 \value{

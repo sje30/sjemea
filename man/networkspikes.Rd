@@ -7,8 +7,7 @@
   the electrodes in the array.
 }
 \usage{
-s$ns <- compute.ns(s, ns.T=0.003, ns.N=10,sur=100)
-show.ns(ns, ...)
+compute.ns(s, ns.T, ns.N,sur,plot)
 }
 \arguments{
 
@@ -21,6 +20,8 @@ show.ns(ns, ...)
 
   \item{sur}{How many bins either side of peak to retain when computing
     the mean network spike}
+
+  \item{plot}{Set to TRUE to plot network spikes.}
   \item{ns}{A network spike data structure, returned by
     \code{\link{compute.ns}}}
 

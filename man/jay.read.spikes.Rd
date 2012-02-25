@@ -8,14 +8,21 @@ Read in the .txt file from Neuroexplorer and create a "spikes" data structure.
 Read in .txt file and work out array positions...
 }
 \usage{
-jay.read.spikes(filename, beg, end)
-read.spikes(filename, beg, end, reader='jay')
+jay.read.spikes(filename, ids, time.interval, beg, end, min.rate)
+read.spikes(reader, ...)
 }
 \arguments{
   \item{filename}{Name of the text file to be read in.}
+  \item{ids}{Optional vector of cell numbers that can be analysed,
+    rather than analysing all electrodes in the recording.  Warning: Not
+    implemented in all readers.}
+  \item{time.interval}{Bin width (in seconds) for estimating firing
+    rate.  Defaults to 1 second.}
   \item{beg}{Optional start time.}
   \item{end}{Optional end time.}
+  \item{min.rate}{Optional minimal firing rate for an electrode to be accepted.}
   \item{reader}{Name of the reader function to use.}
+  \item{...}{Remaining arguments that are passed to the appropriate reader.}
 }
 
 \value{
