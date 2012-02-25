@@ -52,7 +52,7 @@ make.distances.check <- function() {
     n = 1000
     pos = matrix(runif(n*2, max=500), n, 2)
     print(system.time(d1 <- make.distances(pos)))
-    print(system.time(d2 <- make.distances2(pos)))
+    print(system.time(d2 <- make.distances.old(pos)))
     print(all.equal(d1,d2))
   }
 }
@@ -489,7 +489,7 @@ corr.check.fit <- function() {
   x <- seq(from=1, to=500, by=20)
   y <- a*exp(-b*x) + (2*rnorm(length(x)))
   plot(x,y, log="y")
-  fit <- corr.do.fit( cbind(x,y), col=p9.col)
+  fit <- corr.do.fit( cbind(x,y), col='red')
   
   ## should be similar to (a,b)
   print(exp(fit$coefficients))
