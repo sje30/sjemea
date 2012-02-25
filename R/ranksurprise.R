@@ -25,7 +25,7 @@ val2rk <- function(values) {
 }
 
 
-rs.find.burst <- function(s, limit = NULL, RSalpha = -log(0.01)) {
+rs.find.bursts <- function(s, limit = NULL, RSalpha = -log(0.01)) {
   nspikes = length(s)
   if (nspikes <= 10) {
     archive_burst = NA
