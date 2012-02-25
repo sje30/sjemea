@@ -1,6 +1,5 @@
 #include <R.h>
 #include <S.h>			/* for seed_in, seed_out */
-#include <assert.h>
 
 /* We use this SMALLVAL to test whether two floating point values can
  * be regarded as "equal": we see if the absolute difference between
@@ -404,7 +403,7 @@ void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
       looking = TRUE;
       while (looking) {
 	b = (int) ( ( allspikes[j] - s_i)/wid);
-	assert(b>=0);
+	/*assert(b>=0);*/
 	if (b > nbins) {
 	  looking = FALSE;
 	} else {
