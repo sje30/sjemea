@@ -17,7 +17,7 @@ med64.spike.reader <- function(file, sep=300) {
                  ylim=c(0,8)*sep,
                  spacing=sep,
                  pos=pos)
-  
+  distbreaks <- NULL
   res <- list(layout=layout, spikes=spikes, distbreaks=distbreaks)
 
 }
