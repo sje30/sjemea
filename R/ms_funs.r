@@ -2001,7 +2001,8 @@ plot.rate.mslayout <- function(...) {
 
 plot.rate.mslayout.rad <- function(s, frame.num, show.com=FALSE,
                                    show.time=TRUE,
-                                   skip.empty=FALSE) {
+                                   skip.empty=FALSE,
+                                   draw.empty=FALSE) {
   ## New version, fixed for Jay's dimensions.
   ## Plot the given frame number in the multisite layout.
   ## The biggest character size is set by jay.ms.max.firingrate.
