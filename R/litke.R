@@ -31,7 +31,7 @@ oneoff.make.litke1.layout <- function(file=NULL) {
   ## make.litke1.layout('Electrode_Map.mat')
   ## How to hide from external world?  Put dot at start?  or do not export?
   if (is.null(file)) {
-    file = system.file("data", "Electrode_Map.mat", package='sjemea')
+    file = system.file("extdata", "Electrode_Map.mat", package='sjemea')
   }
 
   require(R.matlab)
