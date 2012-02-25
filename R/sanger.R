@@ -217,7 +217,7 @@ sanger.read.spikes <- function(filename, ids=NULL,
       stop(paste("some units not in recording...",
                  paste(units[units>=length(spikes)],collapse=",")))
     }
-    unit.offsets <- pos*0               #initialise all elements to zero.
+    ##unit.offsets <- pos*0               #initialise all elements to zero.
     unit.offsets[units,] <- updates[,2:3]
   }
 
