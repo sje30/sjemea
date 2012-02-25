@@ -519,6 +519,7 @@ plot.burst.info <- function(allb, index, ylab=NULL, max=-1,title='') {
 
 bursts.to.active <- function(bursts, tmin, tmax, dt) {
   ## ??? Not sure if this is used right now.
+  spikes <- NULL  ## TODO: fix spikes before it can be used.
   nbins = floor((tmax-tmin)/dt)+1
 
   active = vector(length=nbins)         #default all FALSE.
@@ -621,7 +622,7 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
 }
 
 plot.spikes <- function(xlim=NULL, show.bursts=TRUE) {
-  spikes <- B <- NULL  ## TODO: This requires SPIKES and B to be defined somwehwere...
+  spikes <- b <- NULL  ## TODO: This requires SPIKES and B to be defined somwehwere...
 
   nspikes = length(spikes)
   min.t <- spikes[1]
