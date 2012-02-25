@@ -621,7 +621,8 @@ find.burst <- function(n, spikes, nspikes, mean.isi, threshold,debug) {
 }
 
 plot.spikes <- function(xlim=NULL, show.bursts=TRUE) {
-  ## This requires SPIKES to be defined somwehwere...
+  spikes <- B <- NULL  ## TODO: This requires SPIKES and B to be defined somwehwere...
+
   nspikes = length(spikes)
   min.t <- spikes[1]
   max.t <- spikes[nspikes]
