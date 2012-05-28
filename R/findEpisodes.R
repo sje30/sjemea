@@ -144,7 +144,9 @@ burstmatrix.to.episode <- function(bursts) {
   episode.begend <- cbind(starts, ends)
 
   episodes <- apply(episode.begend, 1, get.stats)
-  res <- list(beg=episodes[1,],
+
+  ## Was previously a list, but better as a matrix for thresholding I think.
+  res <- cbind(beg=episodes[1,],
               end=episodes[2,],
               num.channels=episodes[3,])
   res
@@ -168,3 +170,5 @@ extract.burst.times.with.id <- function(spikes, burstinfo, id) {
   }
   cbind(begt, endt, id2)
 }
+
+
