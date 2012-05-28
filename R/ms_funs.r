@@ -137,8 +137,8 @@ plot.mm.s <- function(s, whichcells=NULL,
   }
   
   if (show.episodes) {
-    segments(s$episodes$beg, episode.y, s$episodes$end, episode.y,
-             col='purple',xpd=NA)
+    segments(s$episodes[,"beg"], episode.y, s$episodes[,"end"],
+             episode.y, col='purple',xpd=NA)
   }
 
 }
@@ -945,7 +945,8 @@ xcorr.plot <-  function(spikes.a, spikes.b,
                         nbins=100,
                         show.poisson=TRUE,
                         autocorr=FALSE, page.label= date(),
-                        pause=TRUE) {
+                        pause=TRUE,
+                        plot=TRUE) {
 
   ## Produce the cross-correlation of two spike trains, SPIKES.A and SPIKES.B.
   ## PLOT.LABEL is the text to be drawn under the plot.
@@ -957,6 +958,8 @@ xcorr.plot <-  function(spikes.a, spikes.b,
   ## when a spike is compare to itself.)
   ## If PAUSE is true, during interactive usage, we pause between screenfulls.
   ## (X only, may not work on windows...)
+  ## If PLOT is TRUE (default), show the resulting plot.  If FALSE, just return the
+  ## cross-correlation values.
   if (bi) {
     x <- histbi.ab(spikes.a, spikes.b, xcorr.maxt, nbins)
   } else {
@@ -991,51 +994,57 @@ xcorr.plot <-  function(spikes.a, spikes.b,
   nspikes.b <- length(spikes.b)
   poisson.rate <- nspikes.b/ (spikes.b[nspikes.b] - spikes.b[1])
   
-  ## Plot the histogram.  type "l" is line, "h" for impulses.
-  ## No axes are added here.
-  plot(x, ylim=c(0,max.val), type="l",
-       bty="n",
-       xlab="", ylab="", xaxt="n",yaxt="n")
 
-  ## if we want a y-axis, rather than "max" line...
-  want.yaxis <- TRUE
-  if (want.yaxis) 
-    axis(2, at = c(0, max.val), las=1)
-  
-  if (show.poisson) {
-    lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="cyan")
-  }
-  ## Now annotate the plot with some info.  Plot the info as a central
-  ## "tic mark" along the x-axis (which goes from 1 to nbins)
-#   axis(1, (nbins/2),
-#        labels=c(paste(plot.label,
-#          ifelse(want.yaxis, "", paste(" max", max.val)),
-#          ##"", signif(poisson.rate,2),
-#          sep="")))
+  if (plot) {
+    ## Plot the histogram.  type "l" is line, "h" for impulses.
+    ## No axes are added here.
+    plot(x, ylim=c(0,max.val), type="l",
+         bty="n",
+         xlab="", ylab="", xaxt="n",yaxt="n")
 
-  ## put axis at bottom;
-  if (xcorr.plot.xaxistimes) {
-    axis(1, c(1, nbins/2, nbins), labels=c(-xcorr.maxt, 0, xcorr.maxt))
+    ## if we want a y-axis, rather than "max" line...
+    want.yaxis <- TRUE
+    if (want.yaxis) 
+      axis(2, at = c(0, max.val), las=1)
+    
+    if (show.poisson) {
+      lines(c(1, length(x)), c(poisson.rate, poisson.rate), lty=1, col="cyan")
+    }
+    ## Now annotate the plot with some info.  Plot the info as a central
+    ## "tic mark" along the x-axis (which goes from 1 to nbins)
+                                        #   axis(1, (nbins/2),
+                                        #        labels=c(paste(plot.label,
+                                        #          ifelse(want.yaxis, "", paste(" max", max.val)),
+                                        #          ##"", signif(poisson.rate,2),
+                                        #          sep="")))
+
+    ## put axis at bottom;
+    if (xcorr.plot.xaxistimes) {
+      axis(1, c(1, nbins/2, nbins), labels=c(-xcorr.maxt, 0, xcorr.maxt))
+    } else {
+      axis(1, c(1, nbins/2, nbins), labels=FALSE)
+    }
+
+    ## put label at top:
+    mtext(plot.label, side=3, cex=par()$cex)
+
+    
+    screen.layout <- par()$mfg
+    if ( identical(all.equal.numeric(screen.layout[1:2], c(1,1)), TRUE))
+      ## Output the page label for only the first plot of the page.
+      mtext(page.label, side=1,outer=TRUE)
+
+    if ( identical(all.equal.numeric(screen.layout[1:2],
+                                     screen.layout[3:4]), TRUE)
+        && ( (names(dev.cur()) == "X11") || (names(dev.cur()) == "windows"))
+        && pause)
+      ## If we are using a display and the last plot has just been shown,
+      ## wait for the user to press RETURN before displaying next page.
+      readline("Press return to see next page of plots.")
   } else {
-    axis(1, c(1, nbins/2, nbins), labels=FALSE)
+    ## no plotting, just return cross-correlations.
+    x
   }
-
-  ## put label at top:
-  mtext(plot.label, side=3, cex=par()$cex)
-
- 
-  screen.layout <- par()$mfg
-  if ( identical(all.equal.numeric(screen.layout[1:2], c(1,1)), TRUE))
-    ## Output the page label for only the first plot of the page.
-    mtext(page.label, side=1,outer=TRUE)
-
-  if ( identical(all.equal.numeric(screen.layout[1:2],
-                                   screen.layout[3:4]), TRUE)
-      && ( (names(dev.cur()) == "X11") || (names(dev.cur()) == "windows"))
-      && pause)
-    ## If we are using a display and the last plot has just been shown,
-    ## wait for the user to press RETURN before displaying next page.
-    readline("Press return to see next page of plots.")
 
 }
 
