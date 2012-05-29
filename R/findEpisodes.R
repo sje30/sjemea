@@ -60,14 +60,14 @@ findEpisodes <- function(s, max.burst.length=40) {
     ## (e.g. if max.burst.length is too small).
     episodes <- NULL
   } else {
-    episodes <- burstmatrix.to.episode(flat)
+    episodes <- burstmatrix.to.episode(flat, channels=s$channels)
   }
       
   episodes
 }
                        
 
-burstmatrix.to.episode <- function(bursts) {
+burstmatrix.to.episode <- function(bursts, channels) {
   ## Given a BURST matrix, sort it according to the burst start time
   ## and divide it up into smaller episodes, such that each block
   ## represents the bursts within one episode.
@@ -87,12 +87,19 @@ burstmatrix.to.episode <- function(bursts) {
   ## recruited.
 
 
-  get.stats <- function(be) {
+  get.stats <- function(be, channels) {
     burstinfo <- bursts[be[1]:be[2],,drop=FALSE]
     beg <- burstinfo[1,"beg"]
     end <- max(burstinfo[,"end"])
-    num.channels <- length(unique( burstinfo[,"id"]))
-    c(beg=beg, end=end, num.channels=num.channels)
+    ## Finding which electrodes were active requires checking against
+    ## list of all channels, as the channel names are used, which are characters.
+    ##f <- factor(c("b", "b", "d"), levels=c("d", "c", "b", "a"))
+    ## table(f)
+    active.channels <- table(factor(burstinfo[,"id"], levels=channels))
+    n.active <- length(unique( burstinfo[,"id"]))
+    if (n.active != sum(active.channels > 0))
+      browser()
+    c(active.channels, n.active=n.active, beg, end=end)
   }
 
   ## Sort the burst information according to the burst onset time.
@@ -143,13 +150,14 @@ burstmatrix.to.episode <- function(bursts) {
   starts <- c(1, 1+ends[-length(ends)])
   episode.begend <- cbind(starts, ends)
 
-  episodes <- apply(episode.begend, 1, get.stats)
+  episodes <- apply(episode.begend, 1, get.stats, channels)
 
   ## Was previously a list, but better as a matrix for thresholding I think.
-  res <- cbind(beg=episodes[1,],
-              end=episodes[2,],
-              num.channels=episodes[3,])
-  res
+  ## res <- cbind(beg=episodes[1,],
+  ##             end=episodes[2,],
+  ##             num.channels=episodes[3,])
+  ##res
+  t(episodes)
 }
 
 
