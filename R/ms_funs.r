@@ -1053,7 +1053,7 @@ xcorr.restricted <- function(s, a, b,
                              tmin, tmax,
                              plot.label=paste(a,b,sep=":"),
                              show.poisson=TRUE,
-                             xcorr.maxt=5) {
+                             xcorr.maxt=5, plot=TRUE) {
   ## Compute the cross-correlation just between TMIN and TMAX for two
   ## cells, A and B.  Times are given in seconds.  If TMIN, TMAX
   ## omitted, they default to min,max time respectively.
@@ -1082,7 +1082,7 @@ xcorr.restricted <- function(s, a, b,
              nbins=100,
              autocorr=FALSE, pause=FALSE,
              show.poisson=show.poisson,
-             page.label="page label")
+             page.label="page label", plot=plot)
 
 }
 
