@@ -1,3 +1,12 @@
+2012-05-29  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (xcorr.restricted): Add plot argument.
+
+2012-05-28  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (xcorr.plot): Add plot=TRUE argument.
+	(plot.mm.s): "episodes" is now a matrix.
+
 2012-02-25  Stephen Eglen  <stephen@gnu.org>
 
 	* R/sanger.R (sanger.read.spikes): Remove redundant variable 'pos'.

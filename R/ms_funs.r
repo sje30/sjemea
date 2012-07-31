@@ -2321,11 +2321,13 @@ spikes.to.ragged.csv <- function(spikes, filename='test.csv') {
 ## Visualisation efforts.
 
 
-beg.time.t <- tclVar(1)                   #set initial value as 1.
-durn.t <- tclVar(100)
-cells.t <- tclVar("")
-burst.t <- tclVar(1)
-label.t <- tclVar(1)
+## tclVar <- function(x) x                 #temporary hack.!!!!
+
+## beg.time.t <- tclVar(1)                   #set initial value as 1.
+## durn.t <- tclVar(100)
+## cells.t <- tclVar("")
+## burst.t <- tclVar(1)
+## label.t <- tclVar(1)
 
 spikeview <- function(s, duration=100) {
   ## Create a Spikeview window and show it.
@@ -2447,8 +2449,8 @@ spikeview <- function(s, duration=100) {
 
 pause.time <- 100                       #delay in msec
 
-movie.time <- tclVar(1)                 # current start time of frame.
-movie.show <- tclVar(1)                 # "1" for on, "0" for off.
+## movie.time <- tclVar(1)                 # current start time of frame.
+## movie.show <- tclVar(1)                 # "1" for on, "0" for off.
 
 movie.window <- function(s, beg=NULL, end=NULL) {
   ## Play the movie of the spike trains on the MEA.

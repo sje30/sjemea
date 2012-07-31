@@ -3,9 +3,9 @@
 exportPattern(".")
 
 # Import all packages listed as Imports or Depends
-import(
-  tcltk
-)
+## import(
+##   tcltk
+## )
 
 ## Load in the shared object; this used to be done in zzz.R
 useDynLib(sjemea)
