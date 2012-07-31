@@ -175,9 +175,13 @@ plot.corr.index <- function(s, identify=FALSE,
                    main=main, col=dot.col,
                    ...)
     } else {
+      ## set the ylim to a sensible default.
+      upper.pts <- s$corr$corr.id.means[,"mean"] + s$corr$corr.id.means[,"sd"]
+      ylim <- c(0.001, max(upper.pts, na.rm=TRUE)) #sd could be NA
+      
       plot.default(dists, corrs, xlab=xlabel, type='n',
                    ylab="correlation index", bty="n",
-                   main=main,
+                   main=main, ylim=ylim,
                    ...)
       show.ci <- TRUE                   #better show something.
     }
