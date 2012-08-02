@@ -1,3 +1,9 @@
+2012-08-02  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (plot.mealayout): Switch to 'high density' arrays if
+	more than 100 electrodes.  Add "spacing (um)" to xlab.
+	(fourplot): Tidy, so that filename shown once in margin at page top.
+
 2012-05-29  Stephen Eglen  <stephen@gnu.org>
 
 	* R/ms_funs.r (xcorr.restricted): Add plot argument.

@@ -464,15 +464,17 @@ fourplot <- function(s) {
   old.par <- par(no.readonly = TRUE)
   on.exit(par(old.par))
   
-  par(mfrow=c(2,2))
-  plot(s$layout)                             #show layout of electrodes.
-  plot.meanfiringrate(s)
-  plot(s)                                 #plot the spikes.
+  par(mfrow=c(2,2), oma=c(0,0,2,0), las=1)
+  
+  plot(s$layout)                        #show layout of electrodes.
+  plot.meanfiringrate(s, main='')
+  plot(s, main='')                      #plot the spikes.
 
   ##   if	(!is.na(s$corr$corr.indexes[1])) {
   if( any(names(s)=="corr")) {
-    plot.corr.index(s)
+    plot.corr.index(s, main='')
   }
+  mtext(basenamepy(s$file)$base, side=3, outer=T)
 }
 
 
@@ -2257,7 +2259,7 @@ op.picture <- function(pos, rates, iteration) {
 
 plot.mealayout <- function(x, ...) {
   ## Decide which function to plot the array layout based on number of cells.
-  if (nrow(x$pos) < 200) {
+  if (nrow(x$pos) < 100) {
     plot.mealayout.1(x, ...)
   } else {
     plot.mealayout.hi(x, ...)
@@ -2273,7 +2275,7 @@ plot.mealayout.1 <- function(x, use.names=FALSE, ...) {
   plot(NA, asp=1,
        xlim=x$xlim, ylim=x$ylim,
        bty="n",
-       xlab="", ylab="", type="n")
+       xlab="spacing (µm)", ylab="", type="n")
   if (use.names)
     text(pos[,1], pos[,2], rownames(pos), ...)
   else
@@ -2286,7 +2288,7 @@ plot.mealayout.hi <- function(x, use.names=FALSE, ...) {
   plot(pos, asp=1,
        xlim=x$xlim, ylim=x$ylim,
        bty="n",
-       xlab="", ylab="", pch=20)
+       xlab="spacing (µm)", ylab="", pch=20)
 }
 
 spikes.to.ragged.csv <- function(spikes, filename='test.csv') {
