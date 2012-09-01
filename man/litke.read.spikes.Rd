@@ -1,6 +1,7 @@
 \name{litke.read.spikes}
 \alias{litke.read.spikes}
 \alias{iit.read.spikes}
+\alias{aps.read.spikes}
 \title{
 Read in the .mat file containing MEA data from Alan Litke
 }
@@ -10,6 +11,7 @@ Read in the matlab file and process as a regular MEA.
 \usage{
 litke.read.spikes(filename, ids, time.interval, beg, end, corr.method)
 iit.read.spikes(filename, ids, time.interval, beg, end)
+aps.read.spikes(filename, ids, time.interval, beg, end)
 }
 \arguments{
   \item{filename}{Name of the text file to be read in.}
@@ -48,6 +50,11 @@ iit.read.spikes(filename, ids, time.interval, beg, end)
 
   (The IIT data also use a matlab format, and so the above installations
   are also needed for IIT.)
+
+  For the APS function, the data are stored in either HDF5 format or in
+  an RData file, converted from the .matlab equivalent (the matlab files
+  take far too long to read in, as they have long cell array
+  structures).
 
   The location of each electrode is given in the data file
   `litke1layout', see examples below.
