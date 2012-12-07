@@ -67,7 +67,8 @@ mm.readpos.compare <- function(NCells, boxes, posfile) {
     ## Markus' program.
     diffs <- pos - guess.pos
     dists <- apply(diffs, 1, function(x) { sqrt(sum(x**2))})
-    if (any(dists)) {
+    threshold <- 0.01                   #some small value
+    if (any(dists > threshold)) {
       warning(paste("some cell positions wrong\n",
                     paste(which(dists >0),
                           signif(dists[which(dists>0)],4), "\n",
@@ -128,22 +129,8 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
 
   ##mm.distance.breaks <- c(0, 35, 105, 175, 245, 315, 385, 455, 525, 595)
   mm.distance.breaks <- c(0, seq(35, by=70, length=9))
-  mm.distance.breaks.strings <-
-    levels(cut(0, mm.distance.breaks, right=FALSE, include.lowest=TRUE))
-
-  dists.bins   <- bin.distances(dists, mm.distance.breaks)
-  corr.indexes.dt <- 0.05
-  corr.indexes <- make.corr.indexes(res$spikes, corr.indexes.dt)
-  res$dists <- dists
-  res$dists.bins <- dists.bins
-  res$corr.indexes <- corr.indexes
-  res$corr.indexes.dt <- corr.indexes.dt
-  corr.id <- cbind(my.upper(dists), my.upper(corr.indexes))  
-  corr.id.means <- corr.get.means(corr.id)
-  res$corr.id <- corr.id
-  res$corr.id.means <- corr.id.means
-  res$distance.breaks <- mm.distance.breaks
-  res$distance.breaks.strings <- mm.distance.breaks.strings
+  res$corr <- corr.index(res, mm.distance.breaks)
+  
   res$rates <- make.spikes.to.frate(res$spikes)
   class(res) <- "mm.s"
   res
@@ -360,14 +347,16 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
   ## End of processing this file.
   close(fp)
 
+  
   pos <- mm.readpos.compare(NCells, boxes, posfile)
-
+  layout <- make.mm.layout(pos)
+  
   ## Convert spike times into seconds.
   allspikes <- lapply(allspikes, function(x) { x / mm.sample.rate})
 
   ## check that the spikes are monotonic.
   check.spikes.monotonic(allspikes)
-  bursts <- lapply(allspikes, function(x) spikes.to.bursts(x, mm.burst.sep))
+  bursts <- lapply(allspikes, function(x) mm.spikes.to.bursts(x, mm.burst.sep))
 
   ## Check that the number of spikes matches the number we return in "spikes"
   if (NSpikes != sum(sapply(allspikes,length)))
@@ -386,6 +375,7 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
                bursts=bursts,
                CrossF=CrossF, CrossR=CrossR, Pe=Pe,
                file=cellname,
+               layout=layout,
                pos=pos)
   class(res) <- "mm.s"
   res
@@ -579,6 +569,7 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   close(fp)
 
   pos <- mm.readpos.compare(NCells, boxes, posfile)
+  layout <- make.mm.layout(pos)
   
   allspikes <- lapply(allspikes, function(x) { x / mm.sample.rate})
   
@@ -589,7 +580,7 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
   if (NSpikes != sum(sapply(spikes,length)))
     warning("NSpikes and actual number of spikes differ")
   
-  bursts <- lapply(allspikes, function(x) spikes.to.bursts(x, mm.burst.sep))
+  bursts <- lapply(allspikes, function(x) mm.spikes.to.bursts(x, mm.burst.sep))
   
   res <- list (NFiles=NFiles, NBoxes=NBoxes, NRecords = NRecords,
                NSpikes=NSpikes, NEvents=NEvents,
@@ -608,8 +599,22 @@ read.ms.mm.data.format1 <- function(cellname, posfile=NULL) {
                N=N,
                SpikesInRecords=SpikesInRecords,
                SpikesInCell=SpikesInCell,
+               layout=layout,
                pos=pos)
   class(res) <- "mm.s"
   res
 }
 
+
+make.mm.layout <- function(pos) {
+  ## Make the layout for the MM array.
+  xlim <- ylim <- c(-300, 300)
+  spacing <- 60
+  layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
+                 pos=pos)
+  class(layout) <- "mealayout"
+
+  layout
+  
+}
+  
