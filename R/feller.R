@@ -278,8 +278,6 @@ feller.read.spikes <- function(filename, ids=NULL,
   check.spikes.monotonic(spikes)
 
 
-  rates <- make.spikes.to.frate(spikes, time.interval=time.interval,
-                                beg=beg, end=end)
 
   
   res <- list( channels=channels,
