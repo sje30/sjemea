@@ -291,7 +291,8 @@ feller.read.spikes <- function(filename, ids=NULL,
               )
   class(res) <- "mm.s"
 
-  feller.breaks = seq(from=0, to=500, by=50)
+  ## feller.breaks = seq(from=0, to=500, by=50)
+  feller.breaks <-  c(0, seq(35, by=70, length=9))
   res$corr = corr.index(res, feller.breaks)
 
   res
