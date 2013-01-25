@@ -162,7 +162,7 @@ remove.empty.channels <- function(spikes) {
 }
 
 
-names.to.indexes <- function(names, elems, allow.na=FALSE) {
+names.to.indexes <- function(names, elems, allow.na=FALSE, allow.regex=TRUE) {
   ## Return the indexes of where each element of ELEMS is within NAMES.
   ## If the first element of ELEMS is '-', then return all indexes except
   ## those matching ELEMS.
@@ -183,6 +183,22 @@ names.to.indexes <- function(names, elems, allow.na=FALSE) {
   }
 
   indexes = match(elems, names)
+
+
+  if (allow.regex) {
+    ## see if any elements returned NA, in which case try them individually
+    ## as regular expressions.
+    which.na <- which(is.na(indexes))
+    if (any(which.na)) {
+      regex.elems <- elems[which.na]
+      new.indexes <- lapply(regex.elems, function(r) {grep(r, names)})
+      new.indexes <- unique(unlist(new.indexes))
+      indexes <- indexes[-which.na]
+      indexes <- c(indexes, new.indexes) #TODO, preserve order?
+    }
+    allow.na <- TRUE                    #allow NAs through now.
+  }
+
   if (!allow.na) {
     if (any(is.na(indexes)))
       stop('some indexes not found.')
