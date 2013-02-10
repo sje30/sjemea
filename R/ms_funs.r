@@ -211,6 +211,7 @@ draw.spikes <- function (t, tmin, tmax,
 summary.mm.s <- function(object, ...) {
   cat(paste("Spike data:", object$file, "\n"))
   cat(paste("NCells", object$NCells, "\n"))
+  cat(sprintf("Time (s) [%.3f %.3f]\n", object$rec.time[1], object$rec.time[2]))
 }
 
 read.spikes <- function(reader, ...) {
@@ -459,16 +460,16 @@ shuffle.spike.times <- function (s, noise.sd) {
 }
 
 
-fourplot <- function(s) {
+fourplot <- function(s, names=FALSE) {
   ## Simple 2x2 summary plot of an "s" structure.
   old.par <- par(no.readonly = TRUE)
   on.exit(par(old.par))
   
   par(mfrow=c(2,2), oma=c(0,0,2,0), las=1)
   
-  plot(s$layout)                        #show layout of electrodes.
+  plot(s$layout, use.names=names)                        #show layout of electrodes.
   plot.meanfiringrate(s, main='')
-  plot(s, main='')                      #plot the spikes.
+  plot(s, main='', label.cells=names, use.names=names)                      #plot the spikes.
 
   ##   if	(!is.na(s$corr$corr.indexes[1])) {
   if( any(names(s)=="corr")) {
@@ -1171,7 +1172,7 @@ check.spikes.monotonic <- function(spikes) {
 }
   
 
-spikes.to.bursts <- function(spikes, burst.sep=2) {
+mm.spikes.to.bursts <- function(spikes, burst.sep=2) {
   ## Convert spikes to bursts.
   ## burst.sep is the threshold time between spikes for finding bursts.
   ## spikes.to.bursts(c(1,2,3, 7,8, 11,12,13,14, 19,20, 23,24))
@@ -1744,7 +1745,10 @@ make.spikes.to.frate <- function(spikes,
   ## range of spike times else you get an error from hist().  The
   ## default anyway is to do all the spikes within a data file.
 
-
+  ## Note, we need to check for when there are no spikes; this can
+  ## happen when examining a subset of spikes, e.g. a well in a multi-well
+  ## plate that was not working.
+  ## r <- make.spikes.to.frate(list(), beg=100, end=200, clip=TRUE)
   nspikes <- lapply(spikes, length)
   nelectrodes <- length(nspikes)
   
@@ -1775,14 +1779,19 @@ make.spikes.to.frate <- function(spikes,
           PACKAGE="sjemea")
 
   rates <- matrix(z$counts, nrow=nbins, ncol=nelectrodes)
-  ## Now optionally set the upper and lower frame rates if clip is TRUE.
-  if (clip)
-    rates <- pmin(pmax(rates, frate.min), frate.max)
 
+  ## Check if there are any electrodes to process.
+  if (nelectrodes > 0) {
+    ## Now optionally set the upper and lower frame rates if clip is TRUE.
+    if (clip)
+      rates <- pmin(pmax(rates, frate.min), frate.max)
 
-  ## Do the average computation here.
-  ## av.rate == average rate across the array.
-  av.rate <- apply(rates, 1, mean)
+    ## Do the average computation here.
+    ## av.rate == average rate across the array.
+    av.rate <- apply(rates, 1, mean)
+  } else {
+    av.rate <- rep(NA, nbins)
+  }
   ## We can remove the last "time.break" since it does not correspond
   ## to the start of a time frame.
   res <- list(rates=rates,
@@ -2257,12 +2266,12 @@ op.picture <- function(pos, rates, iteration) {
 }
 
 
-plot.mealayout <- function(x, ...) {
+plot.mealayout <- function(x, use.names=FALSE, ...) {
   ## Decide which function to plot the array layout based on number of cells.
   if (nrow(x$pos) < 100) {
-    plot.mealayout.1(x, ...)
+    plot.mealayout.1(x, use.names, ...)
   } else {
-    plot.mealayout.hi(x, ...)
+    plot.mealayout.hi(x, use.names, ...)
   }
 }
     
