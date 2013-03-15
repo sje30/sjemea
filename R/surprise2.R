@@ -10,10 +10,6 @@ burst.isi.threshold = FALSE             #do we want to use threshold on ISI?
 
 burst.isi.max = NULL                    #set non-null to be the threshold between spikes.
 
-## Threshold for burstiness; how many burst/minute are there to count as a
-## bursty unit.
-bursty.threshold = 1
-
 ######################################################################
 
 burst.info <- c("beg", "len", "SI", "durn", "mean.isis")
@@ -272,10 +268,34 @@ surprise <- function(n, i, spikes, nspikes, mean.isi) {
 ######################################################################
 ## General methods, not just for Surprise Index Method.
 
-calc.burst.summary <- function(s) {
+calc.burst.summary <- function(s, bursty.threshold=1) {
+  ## bursty.threshold: min number of  bursts/minute to count as
+  ## a bursty unit.
+
   ## Compute the summary burst information.  Use a separate 
   ## call (write.csv() for example) to write the burst information to file.
-  
+
+  ## The columns of the data.frame returned.
+  ## channels - electrode name
+  ## spikes - #spikes
+  ## mean.freq - firing rate (Hz)
+  ## nbursts - #bursts detected
+  ## bursts.per.sec - #bursts/second.matrix(nrow=0,ncol=1)
+  ## bursts.per.min - #bursts/min
+  ## bursty - is bursts.per.min >bursty.threshold (defaults to 1 burst/min)
+  ## mean.dur - mean burst duration
+  ## sd.dur - sd
+  ## mean.spikes - mean #spikes in a burst
+  ## sd.spikes  - sd
+  ## per.spikes.in.burst - % of spikes in a burst
+  ## per.spikes.out.burst- % of spikes not in a burst
+  ## mean.si - mean Surprise Index (only for poisson surprise measure)
+  ## mean.isis - mean ISI within a burst (old name: mean2.isis)
+  ## sd.mean.isis - sd  
+  ## mean.IBIs - mean IBI
+  ## sd.IBIs - sd
+  ## cv.IBIs - Coefficient of variation of IBI (= mean.IBI/sd.IBI)
+
   allb <- s$allb
   
   ## Create a table of output results.
@@ -338,7 +358,7 @@ calc.burst.summary <- function(s) {
                    per.spikes.in.burst=per.spikes.in.burst,
                    per.spikes.out.burst=round(100.0-per.spikes.in.burst,3),
                    mean.si=mean.si,
-                   mean2.isis=mean.ISIs,
+                   mean.isis=mean.ISIs,
                    sd.mean.isis=sd.ISIs,
                    mean.IBIs=mean.IBIs,
                    sd.IBIs=sd.IBIs,
