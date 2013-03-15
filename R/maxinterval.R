@@ -13,7 +13,8 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
   ## params currently in MI.PAR
   ##
 
-  no.bursts = NA;                       #value to return if no bursts found.
+  ##no.bursts = NA;                       #value to return if no bursts found.
+  no.bursts = matrix(nrow=0,ncol=1)     #emtpy value nrow()=length() = 0.
 
   par = mi.par
   beg.isi =    par$beg.isi
