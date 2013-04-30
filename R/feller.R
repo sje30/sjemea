@@ -165,15 +165,20 @@ remove.empty.channels <- function(spikes) {
 names.to.indexes <- function(names, elems, allow.na=FALSE, allow.regex=TRUE) {
   ## Return the indexes of where each element of ELEMS is within NAMES.
   ## If the first element of ELEMS is '-', then return all indexes except
-  ## those matching ELEMS.
+  ## those matching ELEMS.  If ELEMS is NULL, then 1:n is returned, where n is
+  ## the length of NAMES.
   ## Example:
   ## names = c('a', 'b', 'c', 'd', 'e')
   ## names.to.indexes(names, c('d', 'b', 'a'))  ## 4 2 1
   ## names.to.indexes(names, c( '-', 'c', 'a')) ## 2 4 5
+  ## names.to.indexes(names, NULL)
 
   ## to check if first element is "-", we have to use this more
   ## complex expression, as elems[1] == "-" is an error if the first element
   ## by chance is NA.
+  if (is.null(elems)) {
+    return (1:length(names))
+  }
   if ( isTRUE(all.equal("-", elems[1])) ) {
     invert = TRUE
     elems = elems[-1]
