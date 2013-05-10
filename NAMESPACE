@@ -1,6 +1,6 @@
 # This is default NAMESPACE file created.
 # Export all names
-exportPattern(".")
+exportPattern("^[^\\.]")
 
 # Import all packages listed as Imports or Depends
 ## import(
