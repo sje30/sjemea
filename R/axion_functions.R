@@ -1,29 +1,55 @@
 ## General functions useful for processing the Axion data.
 ## 2013-01-29
 
-
-## Packages required.
-## require(rhdf5)
-##require(parallel)
-
 ## This matrix stores information about the layout of the electrodes into
 ## wells.
-axion.layouts <- matrix(c(12, 3, 4, 8, 8,
-                          48, 6, 8, 4, 4),
-                        nrow=2, byrow=TRUE)
-colnames(axion.layouts) <- c("well", "max.well.r", "max.well.c", "max.elec.r",
-                             "max.elec.c")
+## TODO: this should be redundant.
+## axion.layouts <- matrix(c(12, 3, 4, 8, 8,
+##                           48, 6, 8, 4, 4),
+##                         nrow=2, byrow=TRUE)
+## colnames(axion.layouts) <- c("well", "max.well.r", "max.well.c", "max.elec.r",
+##                              "max.elec.c")
 
+## This variable stores all the information related to the wells; typically this
+## is accessed through the plateinfo(arrayname) function.
+.plateinfo <- list("Axion 48 well"=list(
+                     n.well=48,
+                     names=paste( rep(LETTERS[6:1], each=8), rep(1:8,6), sep=''),
+                     n.well.r=6,
+                     n.well.c=8,
+                     layout=c(8,6),
+                     n.elec.r=4,
+                     n.elec.c=4),
+                 "Axion 12 well"=list(
+                     n.well=12,
+                     names=paste( rep(LETTERS[3:1], each=4), rep(1:4,3), sep=''),
+                     n.well.r=3,
+                     n.well.c=4,
+                     layout=c(4,3),
+                     n.elec.r=8,
+                     n.elec.c=8))
+
+                     
+plateinfo <- function(arrayname) {
+    ## Return useful information related to arrayname
+    ## 
+    ## plateinfo("Axion 12 well")
+    res <- .plateinfo[[arrayname]]
+    if (is.null(res)) {
+        stop("arrayname not recognised:", arrayname)
+    } else {
+        res
+    }
+}
+    
 ## * Scripts to convert data into HDF5.
-axion.elec.name.to.xy <- function(name, max.wells) {
+axion.elec.name.to.xy <- function(name, plateinfo) {
   ## Convert electrode name to  (x,y) position.
-  ## MAX.WELLS is typically 12 or 48, and denotes the max number of wells
+  ## plateinfo stores all the information about the plates.
   ## and hence the well layout of the plate.
 
-  layout.row <- which(axion.layouts[,"well"] == max.wells)
-  max.well.row <-  axion.layouts[layout.row,"max.well.r"]
-  max.elec.row <-  axion.layouts[layout.row,"max.elec.r"]
-  max.elec.col <-  axion.layouts[layout.row,"max.elec.c"]
+  max.well.row <-  plateinfo$n.elec.r
+  max.well.col <-  plateinfo$n.elec.c
   
   well.r <- max.well.row - match(substring(name, 1,1), LETTERS)
   well.c <- as.integer(substring(name, 2,2)) - 1
@@ -205,7 +231,8 @@ map.to.h5 <- function(spikes, h5file) {
   channels <- names(spikes)
   wells <- axion.guess.well.number(channels)
   array <- sprintf("Axion %d well", wells)
-  epos <- axion.elec.name.to.xy(channels, wells)
+  plateinfo <- plateinfo(array)
+  epos <- axion.elec.name.to.xy(channels, plateinfo)
   h5createFile(h5file)
 
   ## Let's compress the spike train by first creating chunks and
@@ -225,6 +252,14 @@ map.to.h5 <- function(spikes, h5file) {
 
 axion.guess.well.number <- function(channels) {
   ## Given the channel names, guess the number of wells on the plate.
+  ## This works on the logic that certain electrode names will only be
+  ## found on certain plates. e.g. the electrode name "D6_33" can only appear
+  ## on a well with 48 arrays.
+  ##
+  ## axion.guess.well.number("D3_33")  ## should be 48.
+  ## axion.guess.well.number("B3_53")  ## should be 12
+  ## axion.guess.well.number("A2_11") ## this is ambiguous.
+  
   well.r <- match(substring(channels, 1,1), LETTERS)
   well.c <- as.integer(substring(channels, 2,2))
   elec.r <- as.integer(substring(channels, 5,5))
@@ -236,14 +271,15 @@ axion.guess.well.number <- function(channels) {
   max.elec.r <- max(elec.r)
   max.elec.c <- max(elec.c)
 
-  nlayouts <- nrow(axion.layouts)
+  nplates <- length(.plateinfo)
   well <- 0
-  for (i in 1:nlayouts) {
-    if (max.well.r <= axion.layouts[i,"max.well.r"] &&
-        max.well.c <= axion.layouts[i,"max.well.c"] &&
-        max.elec.r <= axion.layouts[i,"max.elec.r"] &&
-        max.elec.c <= axion.layouts[i,"max.elec.c"]) {
-      well <- axion.layouts[i,"well"]
+  for (i in 1:nplates) {
+    plateinfo <- .plateinfo[[i]]
+    if (max.well.r <= plateinfo$n.well.r &&
+        max.well.c <= plateinfo$n.well.c &&
+        max.elec.r <= plateinfo$n.elec.r &&
+        max.elec.c <= plateinfo$n.elec.c) {
+      well <- plateinfo$n.well
       break;
     }
   }
