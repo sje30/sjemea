@@ -1,3 +1,35 @@
+2013-06-11  Stephen Eglen  <stephen@gnu.org>
+
+	* DESCRIPTION (Version): Update to 0.38, this version has 
+	preliminary testing by the testthat() package.
+
+2013-06-05  Stephen Eglen  <stephen@gnu.org>
+
+	* R/axion_functions.R: Add new .plateinfo and plateinfo()
+	functions, so that we store all of the information relating to the
+	spatial information on the plate in one place.  
+	e.g.
+	plateinfo = plateinfo("Axion 12 well")
+
+
+2013-05-09  Stephen Eglen  <stephen@gnu.org>
+
+	* R/zzz.R: Remove .First.lib() and use NAMESPACE instead to load 
+	shared object.  Update .Last.lib() to .onUnload().
+
+2013-03-15  Stephen Eglen  <stephen@gnu.org>
+
+	* R/maxinterval.R (mi.find.bursts): Use 'matrix(nrow=0,ncol=1)' to
+	signify an empty burst structure, rather than just NA.  This
+	should be used across all packages.
+
+	* R/surprise2.R (calc.burst.summary): Update documentation to
+	explain what is output.
+
+2013-01-25  Stephen Eglen  <stephen@gnu.org>
+
+	* R/feller.R (names.to.indexes): Allow regular expressions.
+
 2012-08-02  Stephen Eglen  <stephen@gnu.org>
 
 	* R/ms_funs.r (plot.mealayout): Switch to 'high density' arrays if
