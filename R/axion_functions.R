@@ -14,7 +14,7 @@
 ## is accessed through the plateinfo(arrayname) function.
 .plateinfo <- list("Axion 48 well"=list(
                      n.well=48,
-                     names=paste( rep(LETTERS[6:1], each=8), rep(1:8,6), sep=''),
+                     wells=paste( rep(LETTERS[6:1], each=8), rep(1:8,6), sep=''),
                      n.well.r=6,
                      n.well.c=8,
                      layout=c(8,6),
@@ -22,7 +22,7 @@
                      n.elec.c=4),
                  "Axion 12 well"=list(
                      n.well=12,
-                     names=paste( rep(LETTERS[3:1], each=4), rep(1:4,3), sep=''),
+                     wells=paste( rep(LETTERS[3:1], each=4), rep(1:4,3), sep=''),
                      n.well.r=3,
                      n.well.c=4,
                      layout=c(4,3),
@@ -48,8 +48,11 @@ axion.elec.name.to.xy <- function(name, plateinfo) {
   ## plateinfo stores all the information about the plates.
   ## and hence the well layout of the plate.
 
-  max.well.row <-  plateinfo$n.elec.r
-  max.well.col <-  plateinfo$n.elec.c
+  max.well.row <-  plateinfo$n.well.r
+  max.well.col <-  plateinfo$n.well.c
+  max.elec.row <-  plateinfo$n.elec.r
+  max.elec.col <-  plateinfo$n.elec.c
+  
   
   well.r <- max.well.row - match(substring(name, 1,1), LETTERS)
   well.c <- as.integer(substring(name, 2,2)) - 1
@@ -284,8 +287,7 @@ axion.guess.well.number <- function(channels) {
     }
   }
   if (well == 0) {
-    browser()
-    error("Cannot guess number of wells on plate.")
+    stop("Cannot guess number of wells on plate.")
   }
 
   well
