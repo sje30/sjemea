@@ -49,9 +49,15 @@ make.litke1.layout <- function(positions, names) {
   ## POSITIONS are the names of the electrodes that were recorded.
   ## make the layout for SANGER MEA (cf. make.sanger1.layout)
   ## This is a hexagonal grid.
-  xlim <- c(-1000, 1000)
-  ylim <- c(-500, 500)
-  spacing <- 60
+  name <- "litke_hex_60um"
+  array.info <- get.array.info(list(array=name))
+  ##xlim <- c(-1000, 1000)                #duplicated in ./arrays.R
+  ##ylim <- c(-500, 500)
+  ##spacing <- 60
+  xlim <- array.info$layout$xlim
+  ylim <- array.info$layout$ylim
+  spacing <- array.info$layout$spacing
+
   ##litke1layout <- NULL                  # silence the checker.
   data(litke1layout)
   
@@ -65,7 +71,7 @@ make.litke1.layout <- function(positions, names) {
   colnames(pos) <- c("x", "y", "electrode.num")
   
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
-                 pos=pos)
+                 pos=pos, array=name)
 
   class(layout) <- "mealayout"
 
@@ -154,9 +160,6 @@ litke.read.spikes <- function(filename, ids=NULL,
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
 
-  rates <- make.spikes.to.frate(spikes, time.interval=time.interval,
-                                beg=beg, end=end)
-
   res <- list( channels=channels,
               spikes=spikes, nspikes=nspikes, NCells=length(spikes),
               meanfiringrate=meanfiringrate,
@@ -169,7 +172,7 @@ litke.read.spikes <- function(filename, ids=NULL,
   class(res) <- "mm.s"
 
   if (corr.method == "ci") {
-    litke.breaks = c(0, 0.001, seq(from=50, to=2050, by=50))
+    litke.breaks = c(0, 0.001, seq(from=50, to=2050, by=50)) #duplicate ./arrays.R
     
     res$corr = corr.index(res, litke.breaks)
   }
