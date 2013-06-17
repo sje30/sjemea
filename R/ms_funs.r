@@ -40,13 +40,8 @@ plot.mm.s <- function(s, whichcells=NULL,
   ## If FOR.FIGURE is true, we make a slightly different outline, which
   ## is useful for making the figures.
 
-  if (is.null(whichcells)) {
-    whichcells <- 1:s$NCells
-  }
+  whichcells = names.to.indexes(names(s$spikes), whichcells, allow.na=TRUE)
 
-  if (is.character(whichcells[1])) {
-    whichcells = names.to.indexes(names(s$spikes), whichcells, allow.na=TRUE)
-  }
 
   if (is.null(main)) {
     main <- basename(s$file)
@@ -234,21 +229,23 @@ read.spikes <- function(reader, ...) {
 
 
 
-make.jay.layout <- function(positions) {
+make.jay.layout <- function(names) {
   ## make the layout for Jay's MEA
 
 
-  xlim <- ylim <- c(50, 850)
+  positions <- substring(names, 4,5)
+  xlim <- ylim <- c(50, 850)            #now in arrays.R
   spacing <- 100
 
   cols <- as.integer(substring(positions, 1,1)) * spacing
   rows <- as.integer(substring(positions, 2,2)) * spacing
   pos <- cbind(cols, rows)
   
-  rownames(pos) <- positions
+  rownames(pos) <- names
+  array <- 'MCS_8x8_100um'
   
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
-                 pos=pos)
+                 pos=pos, array=array)
 
   class(layout) <- "mealayout"
 
@@ -346,11 +343,11 @@ jay.read.spikes <- function(filename, ids=NULL,
 
   ## meanfiring rate is the number of spikes divided by the (time of
   ## last spike - time of first spike).  
-  meanfiringrate <- nspikes/ ( sapply(spikes, max) - sapply(spikes, min))
+  meanfiringrate <- nspikes/ (end - beg)
 
   ## Parse the channel names to get the cell positions.
 
-  layout <- make.jay.layout( substring(channels, 4, 5))
+  layout <- make.jay.layout(channels)
   
   ## temporary test: shuffle electrode positions.
   ## pos <- pos[sample(1:num.channels),]
@@ -396,9 +393,9 @@ jay.read.spikes <- function(filename, ids=NULL,
               file=filename,
               layout=layout,
               rates=rates,
-              rec.time=rec.time,
-              unit.offsets=unit.offsets
-              ## TODO: how to return arguments, expanding all vars?
+              unit.offsets=unit.offsets,
+              rec.time=rec.time
+               ## TODO: how to return arguments, expanding all vars?
               ##call=match.call()
               )
   class(res) <- "mm.s"
