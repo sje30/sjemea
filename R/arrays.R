@@ -5,6 +5,14 @@ get.array.info <- function(data) {
   pos <- data$epos;  rownames(pos) <- data$names
   array <- data$array
 
+  if (array == 'MCS_8x8_100um') {
+    ## e.g. Demas2003
+    xlim <- ylim <- c(50, 850)
+    spacing <- 100
+    corr.breaks <- c(0, 150, 250, 350, 450, 550, 650, 1000)
+  }
+
+  
   if (array == 'stanford_hex_60um') {
     ## e.g. Wong1993
     xlim <- ylim <- c(-300, 300)
@@ -12,6 +20,7 @@ get.array.info <- function(data) {
     corr.breaks <-  c(0, seq(35, by=70, length=9))
   }
 
+  
   if (array == 'litke_hex_60um') {
     xlim <- c(-1000, 1000)
     ylim <- c(-500, 500)
