@@ -12,29 +12,38 @@
 ## 2007-07-27: Code merged in from second version, temp in
 ## ~/proj/sangermea/test_ns.R 
 
-compute.ns <- function(s, ns.T, ns.N, sur, plot=FALSE) {
+compute.ns <- function(s, ns.T, ns.N, sur=100, whichcells=NULL,
+                       plot=FALSE) {
   ## Main entrance function to compute network spikes.
   ## Typical values:
-  ## ns.T: 3
+  ## ns.T: 0.003 (time in seconds)
   ## ns.N: 10
   ## sur: 100
 
-  counts <- spikes.to.count2(s$spikes, time.interval=ns.T)
-  p <- find.peaks(counts, ns.N)
-  ns <- list(counts=counts, ns.N=ns.N, ns.T=ns.T)
-  class(ns) <- "ns"
-  m <- mean.ns(ns, p, plot=plot, nrow=4, ncol=4, ask=FALSE, sur=sur)
-  if (is.null(m)) {
-    ## No network spikes found.
-    ns$brief <- c(n=0, peak.m=NA, peak.sd=NA, durn.m=NA, durn.sd=NA)
+  indexes = names.to.indexes(names(s$spikes), whichcells, allow.na=TRUE)
+  if (length(indexes)==0) {
+    ## No electrodes were found matching "whichcells"
+    ## so just return brief information summarising no network activity.
+    ns <- list()
+    ns$brief <- c(n=NA, peak.m=NA, peak.sd=NA, durn.m=NA, durn.sd=NA)
   } else {
-    ns$mean <- m$ns.mean; ns$measures <- m$measures
-    peak.val <- ns$measures[,"peak.val"]
-    durn <- ns$measures[,"durn"]
-    ns$brief <- c(n=nrow(ns$measures),
-                  peak.m=mean(peak.val), peak.sd=sd(peak.val),
-                  durn.m=mean(durn, na.rm=TRUE), durn.sd=sd(durn, na.rm=TRUE))
+    counts <- spikes.to.count2(s$spikes[indexes], time.interval=ns.T)
+    p <- find.peaks(counts, ns.N)
+    ns <- list(counts=counts, ns.N=ns.N, ns.T=ns.T)
+    class(ns) <- "ns"
+    m <- mean.ns(ns, p, plot=plot, nrow=4, ncol=4, ask=FALSE, sur=sur)
+    if (is.null(m)) {
+      ## No network spikes found.
+      ns$brief <- c(n=0, peak.m=NA, peak.sd=NA, durn.m=NA, durn.sd=NA)
+    } else {
+      ns$mean <- m$ns.mean; ns$measures <- m$measures
+      peak.val <- ns$measures[,"peak.val"]
+      durn <- ns$measures[,"durn"]
+      ns$brief <- c(n=nrow(ns$measures),
+                    peak.m=mean(peak.val), peak.sd=sd(peak.val),
+                    durn.m=mean(durn, na.rm=TRUE), durn.sd=sd(durn, na.rm=TRUE))
 
+    }
   }
   
   ns
