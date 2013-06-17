@@ -1,3 +1,17 @@
+2013-06-17  Stephen Eglen  <stephen@gnu.org>
+
+	* R/ms_funs.r (make.jay.layout): Pass the whole electrode name,
+	not just the row and column number.  This makes the layout
+	information more informative.
+	(jay.read.spikes): Compute meanfiringrate in simpler fashion, like
+	other readers.
+	(jay.read.spikes): Switch order of rec.time and unit.offsets so
+	that lists can be compared easily with other readers, e.g. the h5 reader.
+
+	* R/arrays.R (get.array.info): Add MCS_8x8_100um array for Jay's
+	datasets.
+	
+
 2013-06-11  Stephen Eglen  <stephen@gnu.org>
 
 	* DESCRIPTION (Version): Update to 0.38, this version has 
