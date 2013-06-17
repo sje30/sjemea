@@ -2,9 +2,11 @@
 ## Author: Stephen J Eglen
 ## Copyright: GPL
 
-.Last.lib <- function (libpath) {
+
+.onUnload <- function (libpath) {
   ## Run when the package is being unloaded.  This allows us to easily test
-  ## packages within same session when dynlib is updates.
+  ## packages within same session when dynlib is updated.
+  ## Detach package using: unloadNamespace("sjemea")
   library.dynam.unload("sjemea", libpath)
 }
   
