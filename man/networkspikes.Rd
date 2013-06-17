@@ -13,13 +13,13 @@ compute.ns(s, ns.T, ns.N,sur,plot)
 
   \item{s}{MEA data structure}
 
-  \item{ns.T}{Bin width (in msec) for counting spikes.}
+  \item{ns.T}{Bin width (in seconds) for counting spikes.}
 
   \item{ns.N}{Threshold number of active electrodes required to make
-    network spike}
+    network spike.}
 
   \item{sur}{How many bins either side of peak to retain when computing
-    the mean network spike}
+    the mean network spike (default 100 bins either side).}
 
   \item{plot}{Set to TRUE to plot network spikes.}
   \item{ns}{A network spike data structure, returned by
@@ -36,7 +36,9 @@ compute.ns(s, ns.T, ns.N,sur,plot)
     series object)}
   \item{measures}{If N network spikes were found, this is a matrix with N
     rows, one per network spike.}
-  \item{brief}{A short vector summarizing the network spikes.}
+  \item{brief}{A short vector summarizing the network spikes.  n: number
+    of spikes; peak.m, peak.sd: mean and sd of the peak height; durn.m,
+    durn.sd: mean and sd of the duration of the network spike.}
 }
 \details{
   To see the mean network spikes after they have computed, just look at
@@ -60,7 +62,7 @@ plot(s$ns, xlim=c(450, 500))
 plot(s$ns$mean)                         #show mean NS.
 summary(s$ns)
 s$ns$brief
-
+## show.ns(s$ns)  # This shows each network spike!  Can take a long time.
 }
 \author{Stephen Eglen}
 \keyword{Network spikes, MEA analysis}
