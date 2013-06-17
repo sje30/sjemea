@@ -13,6 +13,8 @@ mi.find.bursts <- function(spikes,debug=FALSE) {
   ## params currently in MI.PAR
   ##
 
+  ## TODO: all our burst analysis routines should use the same
+  ## value to indiciate "no bursts" found.
   ##no.bursts = NA;                       #value to return if no bursts found.
   no.bursts = matrix(nrow=0,ncol=1)     #emtpy value nrow()=length() = 0.
 
