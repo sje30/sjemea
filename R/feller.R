@@ -8,7 +8,7 @@
 make.ejc.layout <- function(positions) {
   ## make the layout for SANGER MEA (cf. make.sanger1.layout)
   ## This is a hexagonal grid.
-  xlim <- ylim <- c(-300, 300)
+  xlim <- ylim <- c(-300, 300)          #TODO SPOT.
   spacing <- 60
 
   cols.an <- toupper(substring(positions,1,2))
@@ -19,9 +19,9 @@ make.ejc.layout <- function(positions) {
                electrode.num=ejcmealayout$number[columns])
   
   rownames(pos) <- positions
-  
+  array <- 'EJC1_hex_60um'
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
-                 pos=pos)
+                 pos=pos, array=array)
 
   class(layout) <- "mealayout"
 
