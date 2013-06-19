@@ -12,6 +12,21 @@ get.array.info <- function(data) {
     corr.breaks <- c(0, 150, 250, 350, 450, 550, 650, 1000)
   }
 
+  if (array == 'MCS_8x8_200um') {
+    ## e.g. Sun2008
+    xlim <- ylim <- c(50, 1700) ## TODO SPOT: make.sun.layout()
+    spacing <- 200
+    corr.breaks <- c(0, 150, 250, 350, 450, 550, 650, 1000, 2000)  
+  }
+
+  if (array == 'EJC1_hex_60um') {
+    ## e.g. Torborg2004,Feller2003.
+    xlim <- ylim <- c(-300, 300)
+    spacing <- 60
+    corr.breaks <-  c(0, seq(35, by=70, length=9))
+  }
+
+
   
   if (array == 'stanford_hex_60um') {
     ## e.g. Wong1993
