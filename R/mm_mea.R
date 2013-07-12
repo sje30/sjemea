@@ -127,6 +127,9 @@ read.ms.mm.data <- function(cellname, posfile=NULL) {
   ## Do some things common to both formats.
   dists <- make.distances(res$pos)
 
+  ## Add some simple cell names to the spike trains.
+  names(res$spikes) <- 1:length(res$spikes)
+  
   ##mm.distance.breaks <- c(0, 35, 105, 175, 245, 315, 385, 455, 525, 595)
   mm.distance.breaks <- c(0, seq(35, by=70, length=9))
   res$corr <- corr.index(res, mm.distance.breaks)
