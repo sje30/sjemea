@@ -40,7 +40,12 @@ plot.mm.s <- function(s, whichcells=NULL,
   ## If FOR.FIGURE is true, we make a slightly different outline, which
   ## is useful for making the figures.
 
-  whichcells = names.to.indexes(names(s$spikes), whichcells, allow.na=TRUE)
+  if (length(whichcells)>0 && is.numeric(whichcells[1])) {
+    ## leave whichcells alone.
+    ;
+  } else {
+    whichcells = names.to.indexes(names(s$spikes), whichcells, allow.na=TRUE)
+  }
 
 
   if (is.null(main)) {
@@ -123,7 +128,9 @@ plot.mm.s <- function(s, whichcells=NULL,
     } else {
       labels <- whichcells
     }
-    mtext(labels, side=2, at=allys, las=1)
+    ##mtext(labels, side=2, at=allys, las=1)
+    ## Try to draw as axis, but still they overlap...
+    axis(2, at=allys, labels=labels, las=1, tick=F)
   }
 
   if (missing(show.episodes)) {
@@ -457,8 +464,9 @@ shuffle.spike.times <- function (s, noise.sd) {
 }
 
 
-fourplot <- function(s, names=FALSE) {
+fourplot <- function(s, names=FALSE, raster.time=NULL) {
   ## Simple 2x2 summary plot of an "s" structure.
+  ## raster.time should be a 2-vector of (beg, end) time.
   old.par <- par(no.readonly = TRUE)
   on.exit(par(old.par))
   
@@ -466,7 +474,13 @@ fourplot <- function(s, names=FALSE) {
   
   plot(s$layout, use.names=names)                        #show layout of electrodes.
   plot.meanfiringrate(s, main='')
-  plot(s, main='', label.cells=names, use.names=names)                      #plot the spikes.
+  if (is.null(raster.time)) {
+    plot(s, main='', label.cells=names, use.names=names)                      #plot the spikes.
+  }
+  else {
+    plot(s, main='', label.cells=names, use.names=names,
+         beg=raster.time[1], end=raster.time[2])
+  }
 
   ##   if	(!is.na(s$corr$corr.indexes[1])) {
   if( any(names(s)=="corr")) {
