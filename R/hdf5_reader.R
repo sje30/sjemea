@@ -2,11 +2,13 @@
 ## 2013-01-04
 
 h5.read.spikes <- function(h5file, ids=NULL,
-                               time.interval=1, beg=NULL, end=NULL, corr.breaks) {
+                               time.interval=1, beg=NULL, end=NULL, corr.breaks,
+                           keep.meta=FALSE) {
   # Read in a HDF5 file.
 
-  chop <- function(v, counts) {
+  chop1 <- function(v, counts) {
     ## chop(9:1, c(3,2,4))
+    ## chop(9:1, c(4,0,5)) ## this won't work!
     stopifnot(sum(counts)==length(v))
     end <- cumsum(counts)
     beg <- c(1, 1+end[-length(end)])
@@ -14,16 +16,33 @@ h5.read.spikes <- function(h5file, ids=NULL,
     apply(begend, 1, function(x) v[x[1]:x[2]])
   }
 
+  chop <- function(v, counts) {
+    ## This version handles zero counts.
+    ## This is essentially what unstack does.
+    ## chop(1:9, c(5,1,3))
+    ## chop(1:9, c(5,0,4))
+    stopifnot(sum(counts)==length(v))
+    ids <- rep(seq_along(counts), times=counts)
+    tapply(v, ids, identity)
+  }
+    
 
   ## data$spikes is a 1d array, rather than a vector, so convert it to 1d vector below.
   data <- h5read(path.expand(h5file),
                  name='/')       #read in all of data at once.
 
+  ## Add the names if they are not provided.
+  if (length(data$names) == 0) {
+    data$names <- paste0("e", seq_along(data$sCount))
+  }
+
 
   ## unroll the spikes data structure.
-  spikes <- chop(as.vector(data$spikes), data$sCount)  
-  names(spikes) <- data$names
-  
+  spikes <- chop(as.vector(data$spikes), data$sCount)
+
+  ## Some electrodes may have zero spikes, so we ignore those here.
+  names(spikes) <- data$names[which(data$sCount>0)]
+
 
   arrayinfo <- get.array.info(data)
   layout <- arrayinfo$layout
@@ -32,6 +51,11 @@ h5.read.spikes <- function(h5file, ids=NULL,
   }
   
   s <- construct.s(spikes, ids, time.interval, beg, end, corr.breaks, layout, filename=h5file)
+  if (keep.meta) {
+    s$meta <- data$meta
+  }
+
+  s
 }
 
 
