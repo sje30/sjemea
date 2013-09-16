@@ -1,15 +1,19 @@
-To cite the sjemea package in publications, for now please cite the following paper:
+citHeader("To cite the sjemea package in publications, for now please cite the following paper:")
 
-@ARTICLE{Demas2003,
+citEntry(
+  entry       = "Article",
   title       = "Developmental loss of synchronous spontaneous activity in the
                  mouse retina is independent of visual experience",
-  author      = "Demas, Jay and Eglen, Stephen J and Wong, Rachel O L",
+  author      = "Jay Demas and Stephen J Eglen and Rachel O L Wong",
   journal     = "J. Neurosci.",
   volume      =  23,
   issue       =  7,
   pages       = "2851--2860",
-}
+  year        = 2003,
+  textVersion = "Demas et al. (2003)"
+)
 
-As of September 2013 I am working on a "data paper" describing some
-MEA data and this package.  Once that paper is published, it will
-become the paper to cite.
+citFooter("As of September 2013 I am working on a data paper describing some")
+citFooter("MEA data and this package.  Once that paper is published, it will")
+citFooter("become the paper to cite.")
+
