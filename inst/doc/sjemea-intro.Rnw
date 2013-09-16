@@ -1,0 +1,61 @@
+%\VignetteIndexEntry{sjemea}
+%\VignetteKeywords{MEA}
+%\VignettePackage{sjemea}
+\documentclass{article}
+\usepackage{mathpazo}
+\renewcommand{\sfdefault}{lmss}
+\renewcommand{\ttdefault}{lmtt}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,left=2cm,right=4cm,top=2cm,bottom=2cm]{geometry}
+\usepackage{setspace}
+\usepackage{listings}
+\usepackage{verbatim}
+
+\usepackage{xspace,amsmath}
+\newcommand{\um}{\ensuremath{\mu \text{m}}\xspace}
+\usepackage{url}
+\usepackage[authoryear]{natbib}
+\newcommand{\dynamic}{(Dynamic)}
+\newcommand{\static}{(Static)}
+\newcommand{\hdfgroup}[1]{\texttt{#1}}
+%% Place all figures at end of paper?
+%%\usepackage[noheads,nomarkers]{endfloat}
+
+\begin{document}
+
+\onehalfspacing
+\title{An introduction to the sjemea package}
+
+\author{S. J. Eglen}
+\date{\today}
+
+\maketitle
+
+\section*{Introduction}
+
+This is a short introduction to the abilities of the sjemea package.
+First, we list what help files have been written:
+
+<<>>=
+require(sjemea)
+help(package=sjemea)
+@
+
+\section*{Fourplot}
+
+
+\section*{Burst analysis}
+
+\section*{Network spikes}
+
+
+\section*{Data readers}
+
+\begin{description}
+\item[ncl.read.spikes]  -- MCS output of spike times and cut outs.
+\item[jay.read.spikes] -- Used for Demas et al. (2003)
+\item[h5.read.spikes] -- HDF5.
+\item[sql.read.spikes] -- Prototype using SQL to store data.
+\end{description}
+
+\end{document}
