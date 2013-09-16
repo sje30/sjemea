@@ -43,11 +43,22 @@ help(package=sjemea)
 
 \section*{Fourplot}
 
+<<>>=
+data.file <- system.file("examples", "P9_CTRL_MY1_1A.txt",
+                         package = "sjemea")
+s <- jay.read.spikes( data.file)
+fourplot(s)
+@
+
 
 \section*{Burst analysis}
 
+Show how bursts can be added to the fourplot.
 \section*{Network spikes}
 
+<<>>=
+example(compute.ns)
+@
 
 \section*{Data readers}
 
@@ -57,5 +68,15 @@ help(package=sjemea)
 \item[h5.read.spikes] -- HDF5.
 \item[sql.read.spikes] -- Prototype using SQL to store data.
 \end{description}
+
+Interactive facilities for viewing spike times were in earlier
+versions of the code, but Tk() widgets conflicted with the use of
+parallel() code.  I think has now been fixed.
+
+\section*{Compiling this document}
+<<eval=FALSE,include=TRUE>>=
+require(knitr); knit2pdf('sjemea-intro.Rnw')
+@
+
 
 \end{document}
