@@ -2,7 +2,7 @@ Package: sjemea
 Description: Functions for multi-electrode analysis
 Title: Multi electrode analysis
 Version: 0.39
-Date: 2013-02-10
+Date: 2013-09-25
 Depends: R (>= 1.4.0)
 Suggests: R.matlab, RSQLite, rhdf5, testthat, knitr
 Author: Stephen Eglen <sje30@cam.ac.uk>
