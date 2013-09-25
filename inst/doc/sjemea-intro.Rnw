@@ -1,6 +1,7 @@
 %\VignetteIndexEntry{sjemea}
 %\VignetteKeywords{MEA}
 %\VignettePackage{sjemea}
+%\VignetteEngine{knitr::knitr}
 \documentclass{article}
 \usepackage{mathpazo}
 \renewcommand{\sfdefault}{lmss}
@@ -32,11 +33,19 @@
 \maketitle
 
 
+\section*{Installation}
+To install this package, and then view this introductory vignette, do:
+
+<<install-sjemea,eval=FALSE,echo=TRUE>>=
+install.packages(c("sjemea"), contriburl="http://damtp.cam.ac.uk/user/eglen/r/")
+vignette('sjemea-intro', package='sjemea')
+@
+
 \section*{Setup}
 This file is a vignette, written in R, as a reproducible research
 document.
 
-<<setup>>=
+<<setup,message=FALSE>>=
 require(sjemea)
 require(knitr)
 opts_chunk$set(cache=TRUE)
@@ -45,16 +54,11 @@ opts_chunk$set(dev='pdf')
 
 \section*{Introduction}
 
-This is a short introduction to the abilities of the sjemea package.
-It is not a comprehensive guide, but simply gives examples of what can
-be done with the package.  
-
+This is a short introduction to the abilities of the sjemea package
+for analysis of multielectrode array data.  It is not a comprehensive
+guide, but simply gives examples of what can be done with the package.
 The package contains some example data sets which are used here to
-demonstrate various routines.  Section~\ref{sec:input} lists the ways
-in which data can be read into the package, and custom-support for
-various hardware.
-
-
+demonstrate various routines.
 
 \subsection*{Help pages}
 A list of help pages associated with the package can be seen by typing:
@@ -135,8 +139,6 @@ aside as I expect an HMM to be slow) there should be no issue.  There
 is also a generic ``bursts'' package:
 \url{http://cran.r-project.org/web/packages/bursts/bursts.pdf}.
 
-
-Zhengzheng Zhang provided the \texttt{logisi} function.
 
 \subsection*{Log interspike intervals}
 
@@ -234,7 +236,7 @@ the routines provided on their web site:
 matlab are given.  Future work could include converting this code to R
 if there is demand.
 
-\subsection{Multi-well arrays}
+\subsection*{Multi-well arrays}
 
 Through a collaboration with Dr Tim Shafer's group at EPA, we are
 developing code for handling multi-well data.  (For example, so that
@@ -248,7 +250,7 @@ electrode is part of a well, and there are many wells on one array (or
 
 Interactive facilities for viewing spike times were in earlier
 versions of the code, but Tk() widgets conflicted with the use of
-parallel() code.  I think has now been fixed, so we might be able to
+parallel() code.  I think this has now been fixed, so we might be able to
 return to adding interactive features.
 
 \subsection*{History}
@@ -256,6 +258,14 @@ return to adding interactive features.
 This package was originally written for research that was published in
 \citep{Demas2003}.  Since then it has been used by several other
 research groups.
+
+\subsection*{Acknowledgements}
+This work has been financially supported by grants from the Wellcome
+Trust, BBSRC and EPSRC.  Zhengzheng Zhang provided the \texttt{logisi}
+function.  I thank Paul Charlesworth for many discussions about
+electrophysiological analysis.
+
+
 
 \bibliographystyle{jneurosci}
 \bibliography{sjemea}
