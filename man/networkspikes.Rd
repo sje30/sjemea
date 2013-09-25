@@ -56,10 +56,11 @@ data.file <- system.file("examples", "TC89_DIV15_A.nexTimestamps",
                          package = "sjemea")
 s <- sanger.read.spikes( data.file, beg=400, end=700)
 s$ns <- compute.ns(s, ns.T=0.003, ns.N=10,sur=100)
-plot(s$ns)
-plot(s$ns, xlim=c(450, 500))
+plot(s$ns, ylab='Count', xlab='Time (s)')
+plot(s$ns, xlim=c(450, 500),
+     xlab='Time (s)', ylab='Count')
 
-plot(s$ns$mean)                         #show mean NS.
+plot(s$ns$mean, xlab='Time (s)', ylab='Count', main='Mean NS')
 summary(s$ns)
 s$ns$brief
 ## show.ns(s$ns)  # This shows each network spike!  Can take a long time.
