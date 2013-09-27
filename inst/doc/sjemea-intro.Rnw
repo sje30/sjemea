@@ -61,9 +61,10 @@ The package contains some example data sets which are used here to
 demonstrate various routines.
 
 \subsection*{Help pages}
-A list of help pages associated with the package can be seen by typing:
-<<help>>=
-help(package=sjemea)
+A list of help pages associated with the package is given by
+\verb+help(package='sjemea')+ command:
+<<help,echo=FALSE>>=
+cat(format(help(package='sjemea')), sep = '\n') #need to grab output.
 @
 
 
