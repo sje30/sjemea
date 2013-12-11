@@ -37,7 +37,8 @@
 To install this package, and then view this introductory vignette, do:
 
 <<install-sjemea,eval=FALSE,echo=TRUE>>=
-install.packages(c("sjemea"), contriburl="http://damtp.cam.ac.uk/user/eglen/r/")
+install.packages(c("sjemea"), type="source",
+                 contriburl="http://damtp.cam.ac.uk/user/eglen/r/")
 vignette('sjemea-intro', package='sjemea')
 @
 
