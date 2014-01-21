@@ -115,6 +115,8 @@ aps.read.spikes <- function(filename, ids=NULL,
               )
   class(res) <- "mm.s"
 
+  ## TODO: this information is now duplicated, and could be retrieved from
+  ## get.array.info()
   max.dist <- sqrt(2*(64*42)^2)
   breaks = seq(from=0, to=max.dist, by=50)
   res$corr = corr.index(res, breaks)
@@ -127,6 +129,9 @@ aps.read.spikes <- function(filename, ids=NULL,
 make.aps.layout <- function(positions) {
   ## make the layout for APS MEA
   ## This is a regular square grid.
+
+  ## TODO: this information is now duplicated, and could be retrieved from
+  ## get.array.info()
   spacing <- 42;  #20um diam electrodes
   xlim <- ylim <- c(0, 64*spacing)
 
