@@ -51,6 +51,13 @@ get.array.info <- function(data) {
     corr.breaks <-  0                   #TODO; by default, do no breaks!
   }
 
+  if (array == "APS_64x64_42um") {
+    spacing      <- 42
+    xlim <- ylim <- c(0, 64*spacing)
+    max.dist     <- sqrt(2*(64*spacing)^2)
+    corr.breaks  <- seq(from=0, to=max.dist, by=50)
+  }
+
 
 
   ## HACK for HDF5: the arrayname (stored in array) is a string, which
