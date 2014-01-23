@@ -1,31 +1,20 @@
 ## HDFreader functions, and helpers.
 ## 2013-01-04
 
+chop <- function(v, counts) {
+  ## This version handles zero counts.
+  ## This is essentially what unstack does.
+  ## chop(1:9, c(5,1,3))
+  ## chop(1:9, c(5,0,4))
+  stopifnot(sum(counts)==length(v))
+  ids <- rep(seq_along(counts), times=counts)
+  tapply(v, ids, identity)
+}
+
 h5.read.spikes <- function(h5file, ids=NULL,
                                time.interval=1, beg=NULL, end=NULL, corr.breaks,
                            keep.meta=FALSE) {
   # Read in a HDF5 file.
-
-  chop1 <- function(v, counts) {
-    ## chop(9:1, c(3,2,4))
-    ## chop(9:1, c(4,0,5)) ## this won't work!
-    stopifnot(sum(counts)==length(v))
-    end <- cumsum(counts)
-    beg <- c(1, 1+end[-length(end)])
-    begend <- cbind(beg, end)
-    apply(begend, 1, function(x) v[x[1]:x[2]])
-  }
-
-  chop <- function(v, counts) {
-    ## This version handles zero counts.
-    ## This is essentially what unstack does.
-    ## chop(1:9, c(5,1,3))
-    ## chop(1:9, c(5,0,4))
-    stopifnot(sum(counts)==length(v))
-    ids <- rep(seq_along(counts), times=counts)
-    tapply(v, ids, identity)
-  }
-    
 
   ## data$spikes is a 1d array, rather than a vector, so convert it to 1d vector below.
   data <- h5read(path.expand(h5file),
