@@ -83,7 +83,7 @@ ncl.read.spikes <- function(filename, ids=NULL,
 
   dat <- mcd.data.to.array(filename, beg, end)
   spikes <- dat$spikes
-  channels <- dat$channels
+  channels <- as.character(dat$channels)
   names(spikes) <- channels
 
   spikes.range <- range(unlist(spikes))
@@ -107,6 +107,7 @@ ncl.read.spikes <- function(filename, ids=NULL,
 
   ## Parse the channel names to get the cell positions.
   layout <- make.sanger1.layout(substring(channels, 1,2))
+  layout$array <- "MCS_8x8_200um"
   
   ## check that the spikes are monotonic.
   check.spikes.monotonic(spikes)
