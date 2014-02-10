@@ -8,4 +8,7 @@ clean:
 
 
 cleanall:
-	rm -fr cache sjemea-intro.pdf
+	rm -fr cache sjemea-intro.pdf *~ sjemea-intro.tex *.aux *.bbl *.blg *.log
+
+
+
