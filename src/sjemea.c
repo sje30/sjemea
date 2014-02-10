@@ -106,7 +106,8 @@ void count_overlap_arr(Sfloat *spikes,
 		  *sa, *sb, n1, n2);
 	
 	count_overlap(sa, &n1, sb, &n2, pdt, &count);
-	res = (count*k1) / ((double)(n1 * n2 ));
+	/* res = (count*k1) / ((double)(n1 * n2 ));*/
+	res = (count*k1) / ((double)(n1) * (double)(n2));
 	if (debug)
 	  Rprintf("%d %d: count %d corr %.2f\n", a, b, count, res);
       } else {
