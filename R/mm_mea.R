@@ -252,9 +252,11 @@ read.ms.mm.data.format2 <- function(cellname, posfile=NULL) {
       ShiftTime <- ShiftTime + mm.WrapTime
 
     starttimes[r] <- (startclock[r] * 128) + ShiftTime
+
+    ## Don't show clock data for now.
+    ##cat(paste(r, "clock", startclock[r], endclock[r], "#events", nevents[r],
+    ##          "#spikes", nspikes.rec[r], "\n"))
     
-    cat(paste(r, "clock", startclock[r], endclock[r], "#events", nevents[r],
-              "#spikes", nspikes.rec[r], "\n"))
     spikecount <- spikecount + nspikes.rec[r]
     eventcount <- eventcount + nevents[r]
     ## Read in the number of spikes from each cell in record r.
