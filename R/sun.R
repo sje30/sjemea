@@ -145,8 +145,9 @@ make.sun.layout <- function(positions) {
   pos <- cbind(x=cols, y=rows, electrode.num=electrode)
   
   rownames(pos) <- positions
+  array <- 'MCS_8x8_200um'
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
-                 pos=pos)
+                 pos=pos, array=array)
 
   class(layout) <- "mealayout"
 
