@@ -133,6 +133,8 @@ plot.corr.index <- function(s, identify=FALSE,
                             dot.col='red',
                             show.fit=TRUE, show.ci=FALSE,
                             show.pts=NULL,
+                            xlabel=expression(paste("intercell distance (",
+                                mu, "m)")),
                             ...) {
   ## Plot the correlation indices as a function of distance.
   ## If identify is TRUE, we can locate cell pairs on the plot using
@@ -153,7 +155,7 @@ plot.corr.index <- function(s, identify=FALSE,
   if (all(is.na(corrs))) {
     ## no correlation data to show, so just up empty plot.
     plot(NA, xlim=range(dists), ylim=c(1,10),
-         xlab='distance', ylab='correlation index',
+         xlab=xlabel, ylab='correlation index',
          main=paste(basenamepy(s$file)$base, ': no valid corrs'))
   } else {
     ## Some of these corrs may be NA if the firing rate is low, but they
@@ -163,8 +165,6 @@ plot.corr.index <- function(s, identify=FALSE,
       main = paste(basename(s$file), "dt:", s$corr$dt)
     }
   
-    xlabel = expression(paste("intercell distance (", mu, "m)"))
-
     if (is.null(show.pts))
       show.pts <- s$NCells < 100
 
@@ -196,7 +196,7 @@ plot.corr.index <- function(s, identify=FALSE,
     if (show.ci) 
       plotCI(s$corr$corr.id.means[,"mid"], s$corr$corr.id.means[,"mean"],
              s$corr$corr.id.means[,"sd"],
-             xlab="distance", ylab="correlation index", 
+             xlab=xlabel, ylab="correlation index", 
              pch=19, add=TRUE)
     if (show.fit) 
       corr.do.fit(s$corr$corr.id,plot=TRUE)
