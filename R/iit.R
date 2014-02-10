@@ -115,10 +115,7 @@ aps.read.spikes <- function(filename, ids=NULL,
               )
   class(res) <- "mm.s"
 
-  ## TODO: this information is now duplicated, and could be retrieved from
-  ## get.array.info()
-  max.dist <- sqrt(2*(64*42)^2)
-  breaks = seq(from=0, to=max.dist, by=50)
+  breaks = get.array.info(data=list(array=layout$array))$corr.breaks
   res$corr = corr.index(res, breaks)
 
   res
@@ -126,35 +123,6 @@ aps.read.spikes <- function(filename, ids=NULL,
 }
 
 
-make.aps.layout <- function(positions) {
-  ## make the layout for APS MEA
-  ## This is a regular square grid.
-
-  ## TODO: this information is now duplicated, and could be retrieved from
-  ## get.array.info()
-  spacing <- 42;  #20um diam electrodes
-  xlim <- ylim <- c(0, 64*spacing)
-
-
-  r <- positions[,1]
-  c <- positions[,2]
-
-  rows = (r-1)*spacing
-  cols = (c-1)*spacing
-  electrode.num <- ((r-1)*64) + c ## start electrodes from number 1
-  
-  pos <- cbind(x=rows, y=cols, electrode.num=electrode.num)
-
-  rownames(pos) <- paste(positions[,1], positions[,2], sep='_')
-  
-  layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
-                 pos=pos)
-  
-  class(layout) <- "mealayout"
-
-  layout
-
-}
 
 
 
@@ -251,8 +219,7 @@ iit.read.spikes <- function(filename, ids=NULL,
               )
   class(res) <- "mm.s"
 
-  max.dist <- sqrt(2*(64*42)^2)
-  breaks = seq(from=0, to=max.dist, by=50)
+  breaks = get.array.info(data=list(array=layout$array))$corr.breaks
   res$corr = corr.index(res, breaks)
 
   res
@@ -261,11 +228,14 @@ iit.read.spikes <- function(filename, ids=NULL,
 
 
 make.iit.layout <- function(positions) {
-  ## make the layout for SANGER MEA (cf. make.sanger1.layout)
-  ## This is a hexagonal grid.
-  spacing <- 42;  #20um diam electrodes
-  xlim <- ylim <- c(0, 64*spacing)
+  ## make the layout for the APS array.
 
+  array.name <- 'APS_64x64_42um'
+  arrayinfo <- get.array.info( data=list(array=array.name) )
+
+  spacing <- arrayinfo$layout$spacing
+  xlim <-arrayinfo$layout$xlim
+  ylim <-arrayinfo$layout$ylim
 
 
   ## parse the channel names into rows and columns.
@@ -282,7 +252,7 @@ make.iit.layout <- function(positions) {
   rownames(pos) <- positions
   
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
-                 pos=pos)
+                 pos=pos, array=array.name)
 
   class(layout) <- "mealayout"
 
