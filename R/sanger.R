@@ -17,30 +17,30 @@ sanger.init <- function() {
     ## Set up on Windows machine.
     ## Scripts are stored in meadev/scripts.
     setwd("c:/meadev/scripts")
-    assign("mea.data.dir", "c:/meadev/data/", env = .GlobalEnv)
-    assign("mea.table.dir", "c:/meadev/tables/", env = .GlobalEnv)
-    assign("mea.op.dir", "c:/meadev/op/", env = .GlobalEnv)
+    assign("mea.data.dir", "c:/meadev/data/", envir = .GlobalEnv)
+    assign("mea.table.dir", "c:/meadev/tables/", envir = .GlobalEnv)
+    assign("mea.op.dir", "c:/meadev/op/", envir = .GlobalEnv)
   } else {
     if (file.exists("/nfs/g2c_electrophys/meadev/") ) {
 
       ## Set up for Sanger deskpro15402 machine.
       assign("mea.data.dir",   "/nfs/g2c_electrophys/meadev/data/",
-             env = .GlobalEnv)
+             envir = .GlobalEnv)
       assign("mea.table.dir",  "/nfs/g2c_electrophys/meadev/tables/",
-             env = .GlobalEnv)
+             envir = .GlobalEnv)
       assign("mea.op.dir",     "/nfs/g2c_electrophys/meadev/op/",
-             env = .GlobalEnv)
+             envir = .GlobalEnv)
     } else {
       ## Set up for linux.
-      assign("mea.data.dir",   "~/proj/sangermea/data/", env = .GlobalEnv)
-      assign("mea.table.dir",  "~/proj/sangermea/tables/", env = .GlobalEnv)
-      assign("mea.op.dir",     "~/proj/sangermea/op/", env = .GlobalEnv)
+      assign("mea.data.dir",   "~/proj/sangermea/data/", envir = .GlobalEnv)
+      assign("mea.table.dir",  "~/proj/sangermea/tables/", envir = .GlobalEnv)
+      assign("mea.op.dir",     "~/proj/sangermea/op/", envir = .GlobalEnv)
     }
   }
 
   ## Create the cache of datafiles.
   assign("mea.data.files",  make.meafile.cache(mea.data.dir),
-         env  = .GlobalEnv)
+         envir  = .GlobalEnv)
 }
 
 mea.op <- function(f) {
