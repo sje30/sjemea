@@ -3,7 +3,7 @@
 \alias{iit.read.spikes}
 \alias{aps.read.spikes}
 \title{
-Read in the .mat file containing MEA data from Alan Litke
+Read in the .mat file containing MEA data from Alan Litke.
 }
 \description{
 Read in the matlab file and process as a regular MEA.
@@ -11,7 +11,7 @@ Read in the matlab file and process as a regular MEA.
 \usage{
 litke.read.spikes(filename, ids, time.interval, beg, end, corr.method)
 iit.read.spikes(filename, ids, time.interval, beg, end)
-aps.read.spikes(filename, ids, time.interval, beg, end)
+aps.read.spikes(filename, ids, min.rate, max.rate, time.interval, beg, end)
 }
 \arguments{
   \item{filename}{Name of the text file to be read in.}
