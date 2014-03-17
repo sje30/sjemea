@@ -39,9 +39,22 @@ expect_true(all.equal(wave$waveforms, m, tolerance=5e-4))
 
 context("Check reading a nex file against a timestamp file")
 
+f1 <- system.file("examples", "CS056P07R-MEME1.nex", package="sjemea")
+f2 <- system.file("examples", "CS056P07R-MEME1.mct", package="sjemea")
 
+s1 <- nex.read.spikes(f1, array.name='MCS_8x8_200um')
+s2 <- sun.read.spikes(f2)
 
+## channel names are stored in different order.
+expect_equal( sort(s1$channels), sort(s2$channels))
 
+## this sum should be zero!
+expect_equal(sum(sapply(names, function(n)
+                        sum(abs( s1$spikes[[n]] - s2$spikes[[n]])))), 0)
 
-
-
+##There are smalll differences in the mean firing rates because the two
+##files have slightly difference start, end times (the .nex file uses
+##the "proper" time of the recording).
+##
+## The two files also have slightly different beg,end times; the .nex file explicitly
+## records this information, whereas sun.read.spikes  guesses it from spike times.
