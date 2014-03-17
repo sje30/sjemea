@@ -1,3 +1,10 @@
+2014-03-17  Stephen Eglen  <stephen@gnu.org>
+
+	* DESCRIPTION (Version): Bump to 0.41.  This version contains the
+	code for reading in nex (Neuroexplorer) files.  See
+	inst/tests/test_nex.R for testing.
+
+
 2014-02-10  Stephen Eglen  <stephen@gnu.org>
 
 	* src/sjemea.c (count_overlap_arr): Convert n1 and n2 to doubles
