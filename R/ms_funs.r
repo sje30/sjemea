@@ -738,7 +738,7 @@ hist.make.labels <- function(tmin, tmax, nbins, right=TRUE) {
   breaks <- seq(from=tmin, to=tmax, length=nbins+1)
   dig.lab <- 3
   for (dig in dig.lab:12) {
-    ch.br <- formatC(breaks, dig = dig, wid = 1)
+    ch.br <- formatC(breaks, digits = dig, width = 1)
     if (ok <- all(ch.br[-1] != ch.br[-(nbins+1)])) 
       break
   }
