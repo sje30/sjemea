@@ -2295,7 +2295,7 @@ plot.mealayout.1 <- function(x, use.names=FALSE, ...) {
   plot(NA, asp=1,
        xlim=x$xlim, ylim=x$ylim,
        bty="n",
-       xlab="spacing (µm)", ylab="", type="n")
+       xlab="spacing (\u00b5m)", ylab="", type="n")
   if (use.names)
     text(pos[,1], pos[,2], rownames(pos), ...)
   else
@@ -2308,7 +2308,7 @@ plot.mealayout.hi <- function(x, use.names=FALSE, ...) {
   plot(pos, asp=1,
        xlim=x$xlim, ylim=x$ylim,
        bty="n",
-       xlab="spacing (µm)", ylab="", pch=20)
+       xlab="spacing (\u00b5m)", ylab="", pch=20)
 }
 
 spikes.to.ragged.csv <- function(spikes, filename='test.csv') {
