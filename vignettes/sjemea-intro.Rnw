@@ -216,6 +216,10 @@ that are available in the package.
 \item[sql.read.spikes] -- Prototype using SQL to store data.
 \item[sanger.read.spikes] -- Multi-channel system from the Sanger
   Genes to Cognition project.
+\item[nex.read.spikes] -- Neuroexplorer timestamp files can be read
+  in.  I have adapted the matlab code from
+  \url{http://www.neuroexplorer.com/code.html} to work in R.
+
 \end{description}
 
 \subsection*{Handling new data}
@@ -229,14 +233,6 @@ Some older routines exist for reading in binary format
 (e.g. \texttt{mm.read.spikes}) but these are quite old now and
 cumbersome to maintain.  Whenever possible, data collected from
 laboratories should either be text or HDF5.
-
-\subsection*{Converting neuroexplorer timestamp files}
-
-Neuroexplorer timestamp files can be converted into plain text using
-the routines provided on their web site:
-\url{http://www.neuroexplorer.com/code.html}  Example code for C and
-matlab are given.  Future work could include converting this code to R
-if there is demand.
 
 \subsection*{Multi-well arrays}
 
