@@ -1,3 +1,25 @@
+2014-02-10  Stephen Eglen  <stephen@gnu.org>
+
+	* src/sjemea.c (count_overlap_arr): Convert n1 and n2 to doubles
+	before multiplying together to avoid 32bit Integer overflow.
+
+	* R/sun.R (make.sun.layout): Return array name.
+
+	* R/ncl_mea.R (ncl.read.spikes): Set layout$array.
+
+	* R/iit.R (aps.read.spikes): Use get.array.info() for breaks.
+	make.aps.layout(): removed; just use make.iit.layout().
+	(make.iit.layout): Get spacing infor from get.array.info().
+
+	* R/corr_index.R (plot.corr.index): New argument xlabel.
+
+2013-07-31  Stephen Eglen  <stephen@gnu.org>
+
+	* R/hdf5_reader.R (chop): New version of chop.
+	Update so that if 'names' not provided, we give some default
+	names.
+	
+
 2013-06-17  Stephen Eglen  <stephen@gnu.org>
 
 	* R/maxinterval.R (mi.find.bursts): Add a TODO note:
