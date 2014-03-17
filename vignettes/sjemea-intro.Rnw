@@ -238,10 +238,10 @@ laboratories should either be text or HDF5.
 
 Through a collaboration with Dr Tim Shafer's group at EPA, we are
 developing code for handling multi-well data.  (For example, so that
-each well can be analysed independently in an efficient manner.)  This introduces an
-extra layer of abstraction into the geometry of the array, in that an
-electrode is part of a well, and there are many wells on one array (or
-``plate'').  
+each well can be analysed independently in an efficient manner.)  This
+introduces an extra layer of abstraction into the geometry of the
+array, in that an electrode is part of a well, and there are many
+wells on one array (or ``plate'').
 
 
 \subsection*{Other features}
