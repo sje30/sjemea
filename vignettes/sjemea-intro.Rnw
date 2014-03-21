@@ -149,7 +149,7 @@ histogram of the interspike interval, plotted on a log scale.
 
 TODO: add this code from
 \url{~/proj/sangermea/pdn/logisi_condtable.R}.
-\urlP~/proj/sangermea/logisi/logisi_only1.R}
+\url{~/proj/sangermea/logisi/logisi_only1.R}
 
 \section*{Network spikes}
 
