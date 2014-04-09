@@ -7,7 +7,7 @@
   the electrodes in the array.
 }
 \usage{
-compute.ns(s, ns.T, ns.N,sur,plot)
+compute.ns(s, ns.T, ns.N, sur=100, whichcells=NULL, plot=FALSE)
 }
 \arguments{
 
@@ -21,7 +21,10 @@ compute.ns(s, ns.T, ns.N,sur,plot)
   \item{sur}{How many bins either side of peak to retain when computing
     the mean network spike (default 100 bins either side).}
 
+  \item{whichcells}{An optional vector of electrode names.}
+  
   \item{plot}{Set to TRUE to plot network spikes.}
+  
   \item{ns}{A network spike data structure, returned by
     \code{\link{compute.ns}}}
 
