@@ -5,18 +5,21 @@ tiling.allpairwise <- function(s, dt=0.05) {
   N <- s$NCells
   indices=array(0,dim=c(N,N))
 
+  duration <- as.double( diff(s$rec.time))
   for(i in 1:N) {
+    ni <- s$nspikes[i]
     for(j in 1:N) {
-
-      z <- .C("run_TM",as.integer(length(s$spikes[[i]])),
-              as.integer(length(s$spikes[[j]])),
+      nj <- s$nspikes[j]
+      z <- .C("run_TM",
+              as.integer(ni),
+              as.integer(nj),
               as.double(dt),
-              as.double(s$rec.time[[2]]),
-              index=as.double(1),
-              as.double(as.vector(s$spikes[[i]])),
-              as.double(as.vector(s$spikes[[j]])),
+              duration,
+              index=double(1),
+              as.double(s$spikes[[i]]),
+              as.double(s$spikes[[j]]),
               PACKAGE="sjemea")
-      indices[i,j] <- z[[5]]
+      indices[i,j] <- z$index
     }
   }
   indices
