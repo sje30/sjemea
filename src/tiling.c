@@ -42,6 +42,8 @@ double run_T(int N1v,double dtv,double Tv,double *spike_times_1,double *spike_ti
 	double T= Tv;
 	double time_A;
 	
+
+	if(N1>1){
 	if((spike_times_1[1]-spike_times_1[0])> 2*dt){
 		if(spike_times_1[0]>dt){
 			time_A=2*dt;				
@@ -112,6 +114,18 @@ double run_T(int N1v,double dtv,double Tv,double *spike_times_1,double *spike_ti
 				i=i+1;
 			}
 		}
+	}
+	}
+	if(N1==1){
+	  if(spike_times_1[0]<dt){
+	    time_A=spike_times_1[0]+dt;
+	  }
+	  else if((spike_times_1[0]+dt)>T){
+	    time_A=dt+T-spike_times_1[0];
+	      }
+	  else{    
+	  time_A=2*dt;
+	  }
 	}
 	return time_A;
 }
