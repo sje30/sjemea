@@ -10,15 +10,14 @@ tiling.allpairwise <- function(s, dt=0.05) {
     ni <- s$nspikes[i]
     for(j in 1:N) {
       nj <- s$nspikes[j]
-      z <- .C("run_TM",
+      z <- .C(C_run_TM,
               as.integer(ni),
               as.integer(nj),
               as.double(dt),
               duration,
               index=double(1),
               as.double(s$spikes[[i]]),
-              as.double(s$spikes[[j]]),
-              PACKAGE="sjemea")
+              as.double(s$spikes[[j]]))
       indices[i,j] <- z$index
     }
   }

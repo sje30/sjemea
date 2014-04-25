@@ -74,15 +74,13 @@ spikes.to.count2 <- function(spikes,
 
   nspikes <- sapply(spikes, length)     #already computed elsewhere!
   
-  z <- .C("ns_count_activity",
+  z <- .C(C_ns_count_activity,
           as.double(unlist(spikes)),
           as.integer(nspikes),
           as.integer(length(nspikes)),
           as.double(beg), as.double(end), as.double(time.interval),
           as.integer(nbins),
-          counts = integer(nbins),
-          PACKAGE="sjemea")
-  
+          counts = integer(nbins))
   ## Return counts as a time series.
   res <- ts(data=z$counts, start=beg, deltat=time.interval)
 
@@ -509,11 +507,12 @@ ns.coincident <- function(a, bs, w) {
   ## way for ease of the C implementation.
   spike.lens <- sapply(bs, length)
   num.channels <- length(spike.lens)
-  z <- .C("coincident_arr", as.double(a), as.integer(length(a)),
+  z <- .C(C_coincident_arr,
+          as.double(a), as.integer(length(a)),
           as.double(unlist(bs)), as.integer(spike.lens),
           as.integer(num.channels),
           close = integer(length(a)*num.channels),
-          as.double(w), PACKAGE="sjemea")
+          as.double(w))
   
   mat <- matrix(z$close, nrow=num.channels, byrow=TRUE)
   dimnames(mat) <- list(channel=1:num.channels, ns.peak=a)

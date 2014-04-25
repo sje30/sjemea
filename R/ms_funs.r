@@ -677,13 +677,13 @@ show.prob.t.r <- function(s,comment="")  {
 
 count.nab <- function(ta, tb, tmax=0.05) {
   ## C routine to count the overlap N_ab (from Wong et al. 1993)
-  z <- .C("count_overlap",
+  z <- .C(C_count_overlap,
           as.double(ta),
           as.integer(length(ta)),
           as.double(tb),
           as.integer(length(tb)),
           as.double(tmax),
-          res = integer(1), PACKAGE="sjemea")
+          res = integer(1))
   z$res
 }
 
@@ -692,7 +692,7 @@ hist.ab <- function(ta, tb, tmax, nbins) {
   ## C routine to bin the overlap time between two spike trains (TA,
   ## TB) into a histogram with NBINS ranging from to TMAX [0,TMAX].
   ## The sign of time differences is ignored.
-  z <- .C("bin_overlap",
+  z <- .C(C_bin_overlap,
           as.double(ta),
           as.integer(length(ta)),
           as.double(tb),
@@ -713,14 +713,14 @@ histbi.ab <- function(ta, tb, tmax, nbins) {
   ## hist.ab, so the sign of time difference matters and the histogram
   ## ranges in [-TMAX,+TMAX]
   
-  z <- .C("bin2_overlap",
+  z <- .C(C_bin2_overlap,
           as.double(ta),
           as.integer(length(ta)),
           as.double(tb),
           as.integer(length(tb)),
           as.double(tmax),
           res = integer(nbins),
-          as.integer(nbins), PACKAGE="sjemea")
+          as.integer(nbins))
 
   counts <- z$res
   names(counts) <- hist.make.labels(-tmax, tmax, nbins, right=FALSE)
@@ -765,7 +765,6 @@ test.histograms.versus.r <- function() {
   ## This is more thorough than the other tests below.
   min.t <- -2.0; max.t <- 2.0; nbins <- 100
   for (i in 1:99) {
-
     ## Generate some random data.
     r <- rnorm(90000)
     r <- c(r, (numeric(102) + min.t), (numeric(102) + max.t))
@@ -787,9 +786,7 @@ test.histograms.versus.r <- function() {
                     right=FALSE,include.lowest=TRUE))
     t2 <- histbi.ab(c(0), r, tmax=max.t, nbins=2*nbins)
     t3 <- hist.ab(c(0), r,  tmax=max.t, nbins=nbins)
-
-
-    if(!all.equal.numeric(t1,t2)) {
+    if(!isTRUE(all.equal(as.numeric(t1),as.numeric(t2)))) {
       print("first test")
       print(t1); print(t2)
       ##error("these are not equal")
@@ -802,7 +799,7 @@ test.histograms.versus.r <- function() {
     }
     bi.cols <- cbind( nbins:1, (nbins+1):(2*nbins))
     bi.sums <- apply(matrix(t2[bi.cols], ncol=2), 1, sum)
-    if(!all.equal.numeric(t3, bi.sums)) {
+    if( !isTRUE(all.equal(as.numeric(t3), bi.sums))) {
       print("third test")
       print(t3); print(bi.sums)
       ##error("t3 and bi.sums are unequal")
@@ -1779,15 +1776,14 @@ make.spikes.to.frate <- function(spikes,
    }
   nbins <- length(time.breaks) - 1
   
-  z <- .C("frate",
+  z <- .C(C_frate,
           as.double(unlist(spikes)),
           as.integer(nspikes),
           as.integer(nelectrodes),
           as.double(time.breaks[1]), as.double(time.breaks[nbins]),
           as.double(time.interval),
           as.integer(nbins),
-          counts = double(nbins*nelectrodes),
-          PACKAGE="sjemea")
+          counts = double(nbins*nelectrodes))
 
   rates <- matrix(z$counts, nrow=nbins, ncol=nelectrodes)
 

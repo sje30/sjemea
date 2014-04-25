@@ -336,7 +336,7 @@ make.corr.indexes2 <- function(spikes, dt, min.rate=0) {
     duration <- Tmax - Tmin
     
     first.spike <- c(0, cumsum(nspikes)[-n])
-    z <- .C("count_overlap_arr",
+    z <- .C(C_count_overlap_arr,
             as.double(all.spikes),
             as.integer(n),
             as.integer(nspikes),
@@ -345,7 +345,7 @@ make.corr.indexes2 <- function(spikes, dt, min.rate=0) {
             as.integer(no.minimum),
             as.double(duration),
             as.double(dt),
-            res = double(n*n), PACKAGE="sjemea")
+            res = double(n*n))
 
     ## return the result.
     array(z$res, dim=c(n,n))

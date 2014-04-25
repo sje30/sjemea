@@ -8,4 +8,4 @@ exportPattern("^[^\\.]")
 ## )
 
 ## Load in the shared object; this used to be done in zzz.R
-useDynLib(sjemea)
+useDynLib(sjemea, .registration = TRUE, .fixes = "C_")

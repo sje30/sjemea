@@ -1,5 +1,101 @@
 #include <R.h>
 #include <S.h>			/* for seed_in, seed_out */
+#include <Rinternals.h>
+#include <R_ext/Rdynload.h>	/* for DLL types */
+
+
+void run_TM(int *N1v,int *N2v,double *dtv,double *Tv,double *index,double *spike_times_1,double *spike_times_2);
+
+void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
+		       Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+		       int *pnbins,
+		       int *count);
+
+void frate(Sfloat *allspikes, int *nspikes, int *pncells,
+	   Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+	   int *pnbins,
+	   double *counts);
+
+void count_overlap_arr(Sfloat *spikes,
+		       int *pn,
+		       int *nspikes,
+		       int *first_spike,
+		       int *rates_ok,
+		       int    *pno_min,
+		       Sfloat *pt, /* duration of recording */
+		       Sfloat *pdt,
+		       Sfloat *corrs /* return array */);
+
+void coincident_arr(Sfloat *a, int *pna,
+		    Sfloat *bs, int *nb, int *pnchannels,
+		    int *close, Sfloat *pw);
+
+void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+		 int *bins, int *pnbins);
+
+void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+		  int *bins, int *pnbins);
+
+void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+		   int *res);
+
+
+static R_NativePrimitiveArgType run_TM_t[7] =
+  {INTSXP, INTSXP, REALSXP, REALSXP, REALSXP,  REALSXP, REALSXP};
+
+static R_NativePrimitiveArgType ns_count_activity_t[8] =
+  {REALSXP, INTSXP, INTSXP,
+   REALSXP, REALSXP, REALSXP,
+   INTSXP, INTSXP};
+
+static R_NativePrimitiveArgType frate_t[8] =
+  {REALSXP, INTSXP, INTSXP,
+   REALSXP, REALSXP, REALSXP,
+   INTSXP, REALSXP};
+
+
+static R_NativePrimitiveArgType count_overlap_arr_t[9] =
+  {REALSXP, INTSXP, INTSXP, INTSXP, INTSXP, INTSXP,
+   REALSXP, REALSXP, REALSXP};
+
+static R_NativePrimitiveArgType bin_overlap_t[7] =
+  {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP,
+   INTSXP, INTSXP};
+
+static R_NativePrimitiveArgType bin2_overlap_t[7] =
+  {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP,
+   INTSXP, INTSXP};
+
+static R_NativePrimitiveArgType coincident_arr_t[7] =
+  {REALSXP, INTSXP,
+   REALSXP, INTSXP, INTSXP,
+   INTSXP, REALSXP};
+
+static R_NativePrimitiveArgType count_overlap_t[6] =
+  {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP};
+
+/* Let's register the functions here. */
+R_CMethodDef cMethods[] = {
+  {"run_TM",            (DL_FUNC) &run_TM, 7, run_TM_t},
+  {"ns_count_activity", (DL_FUNC) &ns_count_activity, 8, ns_count_activity_t},
+  {"frate",             (DL_FUNC) &frate, 8, frate_t},
+  {"count_overlap_arr", (DL_FUNC) &count_overlap_arr, 9, count_overlap_arr_t},
+  {"coincident_arr",    (DL_FUNC) &coincident_arr, 7, coincident_arr_t},
+  {"bin_overlap",       (DL_FUNC) &bin_overlap, 7, bin_overlap_t},
+  {"bin2_overlap",      (DL_FUNC) &bin2_overlap, 7, bin2_overlap_t},
+  {"count_overlap",     (DL_FUNC) &count_overlap, 6, count_overlap_t},
+  {NULL, NULL, 0}
+};
+
+
+void R_init_sjemea(DllInfo *info) {
+  /* Register the routines that you want to call from R. */
+  /* This should me name R_init_XXX whwere XXX is your package name. */
+  R_registerRoutines(info, cMethods, NULL, NULL, NULL);
+}
+
+
+   
 
 /* We use this SMALLVAL to test whether two floating point values can
  * be regarded as "equal": we see if the absolute difference between
