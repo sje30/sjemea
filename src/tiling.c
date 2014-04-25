@@ -1,5 +1,4 @@
 #include <R.h>
-#include <time.h>
 #include <stdio.h>
 #include <Rmath.h>
 
@@ -140,7 +139,11 @@ void run_TM(int *N1v,int *N2v,double *dtv,double *Tv,double *index,double *spike
 	int N2= *N2v;
 	double dt= *dtv;
 	double T=*Tv;
-
+	
+	if(N1==0 || N2==0){
+	*index=NAN;
+	}
+	else{
 	TA=run_T(N1,dt,T, spike_times_1, spike_times_2);
 	TA=TA/T;
 	TB=run_T(N2,dt,T, spike_times_2, spike_times_1);
@@ -151,6 +154,7 @@ void run_TM(int *N1v,int *N2v,double *dtv,double *Tv,double *index,double *spike
 	PB=PB/(double)N2;
 	
 	*index=0.5*(PA-TB)/(1-TB*PA)+0.5*(PB-TA)/(1-TA*PB);
+	}
 
 }
 
