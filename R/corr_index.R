@@ -3,10 +3,12 @@
 ## Copyright: GPL
 ## Sun 04 Mar 2007
 
-corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
+corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0,
+                       corr.method = getOption("corr.method", default="CI")) {
   ## Make a correlation index object.
   ## MIN.RATE: if greater than zero, we analyse only spike trains whose
   ## firing rate is greater than this minimal rate.
+  ## corr.method is which method to use.
   dists = make.distances(s$layout$pos)
   dists.bins = bin.distances(dists, distance.breaks)
 
@@ -14,7 +16,18 @@ corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
   if (length(spikes) > 1) {
     ## SJE: 2010-03-17 -- try new version of corr index.
     ##corr.indexes = make.corr.indexes(spikes, dt, min.rate)
-    corr.indexes = make.corr.indexes2(spikes, dt, min.rate)
+    corr.indexes = NULL
+    if (corr.method == "CI") {
+      corr.indexes = make.corr.indexes2(spikes, dt, min.rate)
+    }
+    if (corr.method == "Tiling") {
+      corr.indexes = tiling.allpairwise(s, dt)
+    }
+    if (is.null(corr.method)) {
+      stop("Corr index not calculated")
+    }
+    
+    
     corr.id = cbind(dist=my.upper(dists), corr=my.upper(corr.indexes),
       dist.bin=my.upper(dists.bins))
     ##corr.id.means = corr.get.means(corr.id)
@@ -39,7 +52,8 @@ corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0) {
     corr.id.means = corr.id.means,
     distance.breaks=distance.breaks,
     distance.mids=dist.mids,
-    distance.breaks.strings=distance.breaks.strings)
+    distance.breaks.strings=distance.breaks.strings,
+    method=corr.method)
 
   res
 }
@@ -200,6 +214,10 @@ plot.corr.index <- function(s, identify=FALSE,
              pch=19, add=TRUE)
     if (show.fit) 
       corr.do.fit(s$corr$corr.id,plot=TRUE)
+
+    if (!is.null(s$corr$method)) {
+      title(sub = s$corr$method)
+    }
   }
 }
 
