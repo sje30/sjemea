@@ -3,6 +3,7 @@
 ## if one train is empty, we get NaN.
 expect_equal( tiling.corr(1:5, double(0)), NaN)
 
+context("Tiling coefficent should return 1 for autocorrelated trains.")
 
 poisson.train <- function(n=1000, rate=1, beg=0) {
   ## Generate a Poisson spike train with N spikes and firing rate RATE.
@@ -107,3 +108,27 @@ for (i in seq_len(10)) {
   c2 <- tiling.corr(a+z, b+z, rec.time=z + c(beg, end))
   all.equal(c1, c2)
 }
+
+context("Pathological corner case with synthetic trains")
+## This is when Pa=Tb=1 so both numerator and denominator are zero.
+## What should we do about this case?  Unlikely to happen for
+## realistic trains.
+a <- 1; b <- 2                          # one spike in each time.
+expect_equal(tiling.corr(a, b, dt=1, rec.time=c(0, 3)), 1)
+expect_equal(tiling.corr(a, b, dt=1), NaN) #is this correct?!?
+
+
+context("Check the array wide computation")
+
+
+data.file <- system.file("examples", "P9_CTRL_MY1_1A.txt",
+                         package = "sjemea")
+s <- jay.read.spikes(data.file)
+system.time(t1 <- tiling.allpairwise.old(s))
+system.time(t2 <- tiling.allpairwise(s))
+require(lattice)
+levelplot(t1)
+levelplot(t2)
+u <- upper.tri(t1, diag=TRUE)
+expect_equal(t1[u], t2[u])
+
