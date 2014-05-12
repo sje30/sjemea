@@ -83,11 +83,24 @@ s <- jay.read.spikes( data.file)
 fourplot(s)
 @
 
+\subsection{What is the ``s'' object?}
+
 A convention of the program is that all data referring to a recording
 is stored within an object of class \texttt{mm.s}, which is actually a
 list.  So, when new data/results are collected for a recording, I tend
 to add the new information into that object (e.g. see how burst
 analysis results are stored).
+
+The most important items in the list are:
+\begin{description}
+\item[NCells] The number of units in the recording.
+\item[rec.time] The start and end time of the recording.
+\item[spikes] A list of vectors.  Element $i$ of the list is the
+  vector of spike trains for unit $i$.
+\item[nspikes] A vector.  $nspikes[i]$ is the number of spikes in
+  train i.
+\item[layout] Information regarding the spatial layout of the units.
+\end{description}
 
 \section*{Burst analysis}
 
