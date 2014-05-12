@@ -39,6 +39,16 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 		   int *res);
 
+void tiling_arr(Sfloat *spikes,
+		int *pn,
+		int *nspikes,
+		int *first_spike,
+		int *rates_ok,
+		int    *pno_min,
+		Sfloat *rec_time, /* recording time */
+		Sfloat *pdt,
+		Sfloat *corrs /* return array */);
+
 
 static R_NativePrimitiveArgType run_TM_t[7] =
   {INTSXP, INTSXP, REALSXP, REALSXP, REALSXP,  REALSXP, REALSXP};
@@ -74,6 +84,10 @@ static R_NativePrimitiveArgType coincident_arr_t[7] =
 static R_NativePrimitiveArgType count_overlap_t[6] =
   {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP};
 
+static R_NativePrimitiveArgType tiling_arr_t[7] =
+  {REALSXP, INTSXP, INTSXP, INTSXP, 
+   REALSXP, REALSXP, REALSXP};
+
 /* Let's register the functions here. */
 R_CMethodDef cMethods[] = {
   {"run_TM",            (DL_FUNC) &run_TM, 7, run_TM_t},
@@ -84,6 +98,7 @@ R_CMethodDef cMethods[] = {
   {"bin_overlap",       (DL_FUNC) &bin_overlap, 7, bin_overlap_t},
   {"bin2_overlap",      (DL_FUNC) &bin2_overlap, 7, bin2_overlap_t},
   {"count_overlap",     (DL_FUNC) &count_overlap, 6, count_overlap_t},
+  {"tiling_arr",        (DL_FUNC) &tiling_arr, 7, tiling_arr_t},
   {NULL, NULL, 0}
 };
 
