@@ -1,11 +1,36 @@
 
-tiling.allpairwise <- function(s, dt=0.05) {
+tiling.corr <- function(a, b, dt=0.05, rec.time=NULL) {
+  ## Return the tiling correlation between two spike trains A and B.
+  ## DT is the key parameter.
+  ##
+  ## rec.time should be a length-2 vector stating the beginning and end
+  ## time of the recording.  If NULL, beg (end) is set to the time of
+  ## the first (last) spike in either train.
+  if(is.null(rec.time)) {
+    rec.time <- range( c(a,b))
+  }
+
+  z <- .C(C_run_TM,
+          as.integer(length(a)),
+          as.integer(length(b)),
+          as.double(dt),
+          rec.time,
+          coeff=double(1),              #return value
+          as.double(a),
+          as.double(b))
+  z$coeff
+}
+
+  
+  
+tiling.allpairwise.old <- function(s, dt=0.05) {
   ## Return matrix of all pairwise tiling correlations from object s.
-  ## TODO: only need upper triangular elements completed.
+  ## TODO: only compute upper triangular elements completed.
+  ## This is slow as lots of looping happens in R.
   N <- s$NCells
   indices=array(0,dim=c(N,N))
 
-  duration <- as.double( diff(s$rec.time))
+  rec.time <- s$rec.time
   for(i in 1:N) {
     ni <- s$nspikes[i]
     for(j in 1:N) {
@@ -14,13 +39,36 @@ tiling.allpairwise <- function(s, dt=0.05) {
               as.integer(ni),
               as.integer(nj),
               as.double(dt),
-              duration,
-              index=double(1),
+              as.double(rec.time),
+              coeff=double(1),
               as.double(s$spikes[[i]]),
               as.double(s$spikes[[j]]))
-      indices[i,j] <- z$index
+      indices[i,j] <- z$coeff
     }
   }
   indices
 }
 
+tiling.allpairwise <- function(s, dt=0.05) {
+  ## The matrix returned is upper triangular.
+  ## "dt" is the maximum time for seeing whether two spikes are coincident.
+  
+  n <- length(s$spikes)
+
+  all.spikes <- unlist(s$spikes)
+  nspikes <- sapply(s$spikes, length)
+  first.spike <- c(0, cumsum(nspikes)[-n])
+  z <- .C(C_tiling_arr,
+          as.double(all.spikes),
+          as.integer(n),
+          as.integer(nspikes),
+          as.integer(first.spike),
+          as.double(s$rec.time),
+          as.double(dt),
+          res = double(n*n))
+
+  ## return the result.
+  m <- array(z$res, dim=c(n,n))
+  m[lower.tri(m)] <- NA                 #we didn't do lower triangle, so ignore those.
+  m
+}
