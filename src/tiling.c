@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <Rmath.h>
 
+/* Code for calculating Tiling coefficient.
+ * All spike trains must be ordered, smallest time first.
+ */
+
 double run_P(int N1, int N2, double dt,
 	     double *spike_times_1,
 	     double *spike_times_2){
