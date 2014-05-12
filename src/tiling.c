@@ -100,8 +100,8 @@ double run_T(int N1v, double dtv, double startv, double endv,
 
 
 void run_TM(int *N1v, int *N2v, double *dtv, double *Time,
-	    double *index, double *spike_times_1,
-	    double *spike_times_2) {
+	    double *index,
+	    double *spike_times_1, double *spike_times_2) {
 
   double TA,  TB,  PA, PB, T;
 
@@ -131,3 +131,35 @@ void run_TM(int *N1v, int *N2v, double *dtv, double *Time,
 
 
 
+void tiling_arr(Sfloat *spikes,
+		int *pn,
+		int *nspikes,
+		int *first_spike,
+		Sfloat *rec_time, /* recording time */
+		Sfloat *pdt,
+		Sfloat *corrs /* return array */) {
+
+  /* Compute all pairwise interactions, include self. */
+  /* Elements on lower diagonal are not touched, so those should remain NA. */
+  int a, b, n, count;
+  Sfloat *sa, *sb; 		/* pointers to current spike trains  */
+  int n1, n2;
+  Sfloat k1, res;
+  int debug;
+
+  n = *pn;
+	    
+  for (a=0; a<n; a++) {
+    n1 = nspikes[a];
+    sa = &(spikes[first_spike[a]]);
+    
+    for (b=a; b<n; b++) {
+      n2 = nspikes[b];
+      sb = &(spikes[first_spike[b]]);
+
+      run_TM(&n1, &n2, pdt, rec_time, &res, sa, sb);
+      corrs[(b*n)+a] = res;
+      
+    }
+  }
+}
