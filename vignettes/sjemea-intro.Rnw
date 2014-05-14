@@ -96,7 +96,7 @@ The most important items in the list are:
 \item[NCells] The number of units in the recording.
 \item[rec.time] The start and end time of the recording.
 \item[spikes] A list of vectors.  Element $i$ of the list is the
-  vector of spike trains for unit $i$.
+  vector of spike trains for unit $i$.  Each spike train is ordered, smallest first.
 \item[nspikes] A vector.  $nspikes[i]$ is the number of spikes in
   train i.
 \item[layout] Information regarding the spatial layout of the units.
