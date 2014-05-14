@@ -1,19 +1,15 @@
-citHeader("To cite the sjemea package in publications, for now please cite the following paper:")
-
+citHeader("To cite the sjemea package in publications, please use:")
 citEntry(
-  entry       = "Article",
-  title       = "Developmental loss of synchronous spontaneous activity in the
-                 mouse retina is independent of visual experience",
-  author      = "Jay Demas and Stephen J Eglen and Rachel O L Wong",
-  journal     = "J. Neurosci.",
-  volume      =  23,
-  issue       =  7,
-  pages       = "2851--2860",
-  year        = 2003,
-  textVersion = "Demas et al. (2003)"
+  entry    = "Article",
+  title    = "A data repository and analysis framework for spontaneous neural
+              activity recordings in developing retina",
+  author   = "Stephen J Eglen and Michael Weeks  and Mark Jessop and
+              Jennifer Simonotto and Tom Jackson and Evelyne Sernagor",
+  journal  = "Gigascience",
+  volume   =  3,
+  number   =  1,
+  pages    = "3",
+  year     =  2014,
+  textVersion = "Eglen et al. (2014) http://dx.doi.org/10.1186/2047-217X-3-3"
 )
-
-citFooter("As of September 2013 I am working on a data paper describing some")
-citFooter("MEA data and this package.  Once that paper is published, it will")
-citFooter("become the paper to cite.")
 
