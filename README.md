@@ -16,3 +16,12 @@ output from the R function
 ```
 citation("sjemea")
 ```
+
+## TODO
+
+### Portable C code
+
+Update the C code tiling.c so that it avoids where possible any
+R-specific headers/macros (e.g. R_NaN, Sfloat).  Then we can write a
+mex function for calling it in matlab.
+
