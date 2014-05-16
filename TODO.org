@@ -19,6 +19,12 @@ roxygen.  The "Rd2roxygen" package on cran was great for this, as it
 converts .Rd files and guesses where to put the documentation in the R
 folder.  If it can't find a home, it puts it in the -package.R file.
 
+Just remember to do: 
+
+options(roxygen.comment = "##' ") 
+
+to keep Emacs happy.
+
 However, as I have been bad about adding documentation for everything,
 I couldn't get it to update the NAMESPACE file (which provides the
 exports).  I think the solution will be to do the updating of the R
