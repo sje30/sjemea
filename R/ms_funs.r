@@ -260,6 +260,70 @@ make.jay.layout <- function(names) {
 
 }
 
+
+
+##' Read in the .txt file from Neuroexplorer and create a "spikes" data
+##' structure.
+##' 
+##' Read in .txt file and work out array positions...
+##' 
+##' 
+##' @aliases jay.read.spikes read.spikes
+##' @param filename Name of the text file to be read in.
+##' @param ids Optional vector of cell numbers that can be analysed, rather
+##' than analysing all electrodes in the recording.  Warning: Not implemented
+##' in all readers.
+##' @param time.interval Bin width (in seconds) for estimating firing rate.
+##' Defaults to 1 second.
+##' @param beg Optional start time.
+##' @param end Optional end time.
+##' @param min.rate Optional minimal firing rate for an electrode to be
+##' accepted.
+##' @param reader Name of the reader function to use.
+##' @param ... Remaining arguments that are passed to the appropriate reader.
+##' @return Return the data structure 's'.
+##' @section METHOD: No fancy tricks used here.  If the data file has
+##' information about N different spike trains, the file has N (tab-separated)
+##' columns.  Each column then gives the time (in seconds?) of each spike.
+##' Different columns are of different lengths since typically each cell will
+##' have a different number of spikes.
+##' 
+##' The txt file of spike times can be compressed (with gzip).
+##' 
+##' read.spikes() is a wrapper around each xyz.read.spikes() function, so that
+##' they can all be called just by specifying reader='xyz'.  Current readers
+##' are: "feller", "iit", "litke", "ncl", "sanger", "sun", "jay", "sql".
+##' 
+##' By default, all spikes are read in.  If beg is given, only spikes occuring
+##' after this time (in seconds) are kept.  Likewise, if end is given, only
+##' spikes occuring before this time (in seconds) are kept.
+##' @seealso \code{\link{sanger.read.spikes}}, \code{\link{feller.read.spikes}}
+##' @references No references here.
+##' @keywords math
+##' @examples
+##' 
+##' data.file <- system.file("examples", "P9_CTRL_MY1_1A.txt",
+##'                          package = "sjemea")
+##' s <- jay.read.spikes( data.file)
+##' fourplot(s)
+##' s <- jay.read.spikes(data.file, beg=400, end=700)
+##' fourplot(s)
+##' s2 <- read.spikes(data.file, beg=400, end=700, reader='jay')
+##' \dontrun{
+##' s <- jay.read.spikes("~/ms/jay/p9data.txt")
+##' fourplot(s)                             #summary plot.
+##' s$mi <- make.mi(s)
+##' show.prob.t.r(s)                        #conditional distributions.
+##' }
+##' 
+##' \dontrun{crosscorrplots(s, autocorr=T, tmax=3, nbins=100,
+##'                xcorr.nrows=3, xcorr.ncols=3) #plot autocorrs on screen
+##' 
+##' ## Plotting just one cross-correlogram is a slightly different matter:
+##' xcorr.plot( s$spikes[[1]], s$spikes[[2]], "1 v 2")}
+##' 
+##' 
+##' @export jay.read.spikes
 jay.read.spikes <- function(filename, ids=NULL,
                             time.interval=1,
                             beg=NULL, end=NULL,
@@ -687,6 +751,63 @@ count.nab <- function(ta, tb, tmax=0.05) {
   z$res
 }
 
+
+
+##' Histogram routines to help compute the cross-correlation between a pair of
+##' spike trains.
+##' 
+##' For a pair of spike trains, TA (train a) and TB, these related routines
+##' return the count of the number of spikes in B that occur within some time
+##' window [-tmax,tmax] of a spike in A.  For histbi.ab, we return a histogram
+##' of dt values from [-tmax,tmax].  For hist.ab, we ignore the sign of each dt
+##' and just return a histogram in the range [0,tmax].  Finally, for count.nab,
+##' we just return the number of dt values found in the range [-tmax,tmax],
+##' rather than binning dt into a histogram.
+##' 
+##' 
+##' @aliases hist.ab histbi.ab count.nab test.count.hist2.nab
+##' test.count.hist.nab test.hist.ab test.histograms.versus.r
+##' @param ta Vector of spike times, sorted such that lowest is first.
+##' @param tb Vector of spike times, sorted such that lowest is first.
+##' @param tmax maximum time (in seconds) to bin
+##' @param nbins Number of bins in the histogram.  For histbi.ab, each bin is
+##' of width (2*tmax)/nbins.  For hist.ab, each bin is (tmax)/nbins wide.
+##' @return \code{hist.ab} returns a histogram of counts ignoring sign.
+##' \code{histbi.ab} returns a histogram of counts respecting sign.
+##' \code{count.nab} returns the number of dt values.
+##' @section METHOD: For the histogram routines, each bin is of the form [low,
+##' high), with the exception of the last bin (for +tmax), which is of the form
+##' [tmax-binwid, tmax].  By assuming the spikes are ordered lowest first, the
+##' number of spike comparisons is greatly reduced, rather than comparing each
+##' spike with A with each spike in B.
+##' @seealso Nothing else yet...
+##' @references No references here.
+##' @keywords math
+##' @examples
+##' 
+##' 
+##' stopifnot(isTRUE(all.equal.numeric(
+##'   histbi.ab(c(0), c(-2, -2, 0, 0, 1, 1,1, 1.8,2), tmax=2, nbins=4),
+##'   c(2,0,2,5),
+##'   check.attributes=FALSE)))
+##' stopifnot(identical(TRUE, all.equal.numeric(
+##'   hist.ab(c(0), c(-2, -2, 0, 0, 1, 1,1, 1.8,  2), tmax=2, nbins=4),
+##'   c(2,0,3,4),
+##'   check.attributes=FALSE)))
+##'  
+##' test.hist.ab()
+##' 
+##' 
+##' %% Following examples are not run since they either take a long time
+##' %% or require an "s" structure.
+##' \dontrun{
+##' test.histograms.versus.r()
+##' test.count.hist.nab()
+##' test.count.hist.nab(s)
+##' test.count.hist2.nab(s)
+##' }
+##' 
+##' @export hist.ab
 hist.ab <- function(ta, tb, tmax, nbins) {
 
   ## C routine to bin the overlap time between two spike trains (TA,
