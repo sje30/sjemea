@@ -2,7 +2,7 @@
 ##'
 ##' The tiling coefficient is computed for two spike trains A and B.  Spike
 ##' trains must be sorted (smallest first.)
-##' @title 
+##
 ##' @param a first spike train (vector of spike times)
 ##' @param b second spike train
 ##' @param dt 
