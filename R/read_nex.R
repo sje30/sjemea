@@ -1,8 +1,17 @@
 ## R script to read in a nex file.
-## Adapted from matlab version of script
-## provided by http://www.neuroexplorer.com/code.html
 ## 2014-03-14
 
+
+##' Read in a Neuroxplorer data file.
+##'
+##' This code has been adapted from the matlab version of the script
+##' provided by http://www.neuroexplorer.com/code.html
+##' 
+##' @param f File name
+##' @param array.name by default this is the 8 by 8 array with 100um separation.
+##' @param channel.regexp Regular expression for finding the channel numbers.
+##' @return An s object.
+##' @author Stephen Eglen
 nex.read.spikes <- function(f, 
                             array.name='MCS_8x8_100um',
                             channel.regexp="_([0-9])([0-9])") {
