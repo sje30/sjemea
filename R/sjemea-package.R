@@ -8,7 +8,7 @@
 #' @title Read and process multielectrode array data.
 #' @author \email{sje30@@cam.ac.uk}
 #' @keywords package
-#' @seealso \code{\link{http://damtp.cam.ac.uk/user/eglen/waverepo}}
+#' @seealso \url{http://damtp.cam.ac.uk/user/eglen/waverepo}
 
 
 
