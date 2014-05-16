@@ -1271,15 +1271,37 @@ make.animated.gif <- function (x, beg=1,
 
 }
 
+##' Generate a movie of MEA activity.
+##'
+##' The mean firing rate of each unit is computed and represented as a circle with
+##' the area proportional to the firing rate.  The sequence of frames are then
+##' coerced into a movie.
+##' 
+##' @param x 
+##' @param beg start time of the movie
+##' @param end end time of the movie
+##' @param outputdir directory to store the frames (no slash at end).
+##' If directory does not exist, it is created first.
+##' @param prefix prefix file name for frames
+##' @param show.frames Boolean -- do we show the frames on screen as well?
+##' @param seconds Boolean: draw the time above the plot?
+##' @param delete.first Boolean: delete the outputdir before starting?
+##' @param clean.after Boolean: delete the outputdir after finishing?
+##' @param anim.delay time (in seconds) delay between frames.  If delay is zero,
+##' do not convert movie.
+##' 
+##' @return NULL.
+##' 
+##' @author Stephen Eglen
 make.movieframes <- function (x, beg=1,
-                               end=dim(x$rates$rates)[1],
+                              end=dim(x$rates$rates)[1],
                               outputdir=dirname(tempfile()),
                               prefix="mea",
                               show.frames = interactive(),
                               seconds=TRUE,
                               delete.first=TRUE,
                               clean.after=FALSE,
-                              anim.delay=0) {
+                              anim.delay=5) {
 
   ## Loop over each frame, making a PNG (mono) file.
   ## The frame number normally has leading zeros (e.g. 00050 rather than
