@@ -1,13 +1,18 @@
 Package: sjemea
-Description: Functions for multi-electrode analysis
+Description: Multi-electrode analysis (St Louis, Sanger, Ncl, IIT, Axion)
 Title: Multi electrode analysis
 Version: 0.43
 Date: 2014-05-14
-Depends: R (>= 3.0.0)
-Suggests: R.matlab, RSQLite, rhdf5, testthat, knitr
+Depends:
+    R (>= 3.0.0)
+Suggests:
+    R.matlab,
+    RSQLite,
+    rhdf5,
+    testthat,
+    knitr
 Author: Stephen Eglen <sje30@cam.ac.uk>
 Maintainer: Stephen Eglen <sje30@cam.ac.uk>
-Description: Multi-electrode analysis (St Louis, Sanger, Ncl, IIT, Axion)
 License: GPL (>= 2)
 URL: http://www.damtp.cam.ac.uk/user/sje30/r
 VignetteBuilder: knitr
