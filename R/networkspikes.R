@@ -12,6 +12,57 @@
 ## 2007-07-27: Code merged in from second version, temp in
 ## ~/proj/sangermea/test_ns.R 
 
+##' Compute network spikes
+##' 
+##' Compute the network spikes in an MEA recording, by averaging over all the
+##' electrodes in the array.
+##' 
+##' To see the mean network spikes after they have computed, just look at the
+##' mean object.
+##' 
+##' If you wish to see the individual network spikes, try show.ns(ns, ...)
+##' where the remaining args are passed to the plot function.
+##' 
+##' @aliases compute.ns show.ns
+##' @param s MEA data structure
+##' @param ns.T Bin width (in seconds) for counting spikes.
+##' @param ns.N Threshold number of active electrodes required to make network
+##' spike.
+##' @param sur How many bins either side of peak to retain when computing the
+##' mean network spike (default 100 bins either side).
+##' @param whichcells An optional vector of electrode names.
+##' @param plot Set to TRUE to plot network spikes.
+##' @param ns A network spike data structure, returned by
+##' \code{\link{compute.ns}}
+##' @param ... Other plot arguments to pass to \code{\link{show.ns}}
+##' @return A list with the following elements: \item{counts}{vector giving the
+##' number of active electrodes in each bin; this can be very long!}
+##' \item{ns.N}{The value of ns.N used.} \item{ns.T}{the value of ns.T used.}
+##' \item{mean}{The profile of the mean network spike (this is a time series
+##' object)} \item{measures}{If N network spikes were found, this is a matrix
+##' with N rows, one per network spike.} \item{brief}{A short vector
+##' summarizing the network spikes.  n: number of spikes; peak.m, peak.sd: mean
+##' and sd of the peak height; durn.m, durn.sd: mean and sd of the duration of
+##' the network spike.}
+##' @author Stephen Eglen
+##' @seealso \code{\link{sanger.read.spikes}}
+##' @references Eytan and Marom (2006) J Neuroscience.
+##' @keywords Network spikes, MEA analysis
+##' @examples
+##' 
+##' data.file <- system.file("examples", "TC89_DIV15_A.nexTimestamps",
+##'                          package = "sjemea")
+##' s <- sanger.read.spikes( data.file, beg=400, end=700)
+##' s$ns <- compute.ns(s, ns.T=0.003, ns.N=10,sur=100)
+##' plot(s$ns, ylab='Count', xlab='Time (s)')
+##' plot(s$ns, xlim=c(450, 500),
+##'      xlab='Time (s)', ylab='Count')
+##' 
+##' plot(s$ns$mean, xlab='Time (s)', ylab='Count', main='Mean NS')
+##' summary(s$ns)
+##' s$ns$brief
+##' ## show.ns(s$ns)  # This shows each network spike!  Can take a long time.
+##' 
 compute.ns <- function(s, ns.T, ns.N, sur=100, whichcells=NULL,
                        plot=FALSE) {
   ## Main entrance function to compute network spikes.
