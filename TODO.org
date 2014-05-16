@@ -32,5 +32,16 @@ scripts in a piecemeal fashion.
 
 To prevent NAMESPACE file being overwritten, do
 
-require (devtools)
+require(devtools)
 devtools::document(pkg="~/langs/R/sjemea", roclets="rd")
+check_doc()
+
+although it seems now it doesn't overwrite NAMESPACE if it sees I've
+edited it?
+
+Chris Wallace lists some neat examples of this in use:
+
+http://cwcode.wordpress.com/2013/01/28/developing-r-packages-using-roxygen-and-devtools/
+
+in particular, the @inheritParams tag allows you to copy parameters
+from other functions.  This should save a lot of typing!
