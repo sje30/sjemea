@@ -11,12 +11,28 @@ chop <- function(v, counts) {
   tapply(v, ids, identity)
 }
 
-h5.read.spikes <- function(h5file, ids=NULL,
-                               time.interval=1, beg=NULL, end=NULL, corr.breaks,
-                           keep.meta=FALSE) {
-  # Read in a HDF5 file.
 
-  ## data$spikes is a 1d array, rather than a vector, so convert it to 1d vector below.
+##' Read in multielectrode data stored in HDF5.
+##'
+##' Read in the MEA data stored in the HDF5 format.  We can reduce the range
+##' of data both in time (by specifying the beg, end params) or reduce which
+##' units are read in using IDS.
+##'
+##' @param h5file The hdf5 file to read in.
+##' @param ids Vector containing names of units to keep (or reject).
+##' @param time.interval rate (in seconds) which firing rate is estimated.
+##' @param beg start time for recording (in seconds).
+##' @param end end time for recording (in seconds).
+##' @param corr.breaks vector describing distance binning for correlation matrix.
+##' @param keep.meta If TRUE, we keep metadata in the return object.
+##' @return An s object.
+##' @export
+h5.read.spikes <- function(h5file, ids=NULL,
+                           time.interval=1, beg=NULL, end=NULL, corr.breaks,
+                           keep.meta=FALSE) {
+
+  ## data$spikes is a 1d array, rather than a vector, so convert it to
+  ## 1d vector below.
   data <- h5read(path.expand(h5file),
                  name='/')       #read in all of data at once.
 
