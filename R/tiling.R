@@ -1,4 +1,16 @@
-
+##' Compute the tiling coefficient
+##'
+##' The tiling coefficient is computed for two spike trains A and B.  Spike
+##' trains must be sorted (smallest first.)
+##' @title 
+##' @param a first spike train (vector of spike times)
+##' @param b second spike train
+##' @param dt 
+##' @param rec.time 2-vector stating beg and end of recording.  If omitted
+##' we take the min(max) spike time as the beg(end).
+##' @return Tiling coefficient, which should be between -1 and 1.
+##' @author Catherine Cutts and Stephen Eglen
+##' @useDynLib sjemea, .registration=TRUE, .fixes = "C_"
 tiling.corr <- function(a, b, dt=0.05, rec.time=NULL) {
   ## Return the tiling correlation between two spike trains A and B.
   ## DT is the key parameter.
@@ -49,10 +61,15 @@ tiling.allpairwise.old <- function(s, dt=0.05) {
   indices
 }
 
+
+##' Compute tiling coefficient for an MEA recording.
+##'
+##' Given an s object, we return all pairwise correlations.
+##' @param s 
+##' @param dt 
+##' @return Upper triangular matrix of tiling coefficients.
+##' @author Stephen Eglen
 tiling.allpairwise <- function(s, dt=0.05) {
-  ## The matrix returned is upper triangular.
-  ## "dt" is the maximum time for seeing whether two spikes are coincident.
-  
   n <- length(s$spikes)
 
   all.spikes <- unlist(s$spikes)
