@@ -1,6 +1,10 @@
 ## Tell git which files to ignore
+.Rhistory
 TAGS
 no-RCS
 *~
+*.o
+*.so
 vignettes/cache
 vignettes/figure
+vignettes/auto
