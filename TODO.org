@@ -10,3 +10,21 @@ matrix.  See the code in iit.R where this is solved:
 
 this currently looks like an S3 method, calling "hist" on objects of
 class "ab".
+
+* updating documentation to roxygen2
+
+
+2014-05-16.  Started the process of converting documentation to
+roxygen.  The "Rd2roxygen" package on cran was great for this, as it
+converts .Rd files and guesses where to put the documentation in the R
+folder.  If it can't find a home, it puts it in the -package.R file.
+
+However, as I have been bad about adding documentation for everything,
+I couldn't get it to update the NAMESPACE file (which provides the
+exports).  I think the solution will be to do the updating of the R
+scripts in a piecemeal fashion.
+
+To prevent NAMESPACE file being overwritten, do
+
+require (devtools)
+devtools::document(pkg="~/langs/R/sjemea", roclets="rd")
