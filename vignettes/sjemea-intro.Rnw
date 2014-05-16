@@ -42,6 +42,17 @@ install.packages(c("sjemea"), type="source",
 vignette('sjemea-intro', package='sjemea')
 @
 
+Alternatively, if you want to get the latest version of the package,
+you can install it in the following manner:
+<<install-sjemea-github,eval=FALSE,echo=TRUE>>=
+install.package("devtools")
+require(devtools)
+install_github("sje30/sjemea")
+@ 
+You can browse the package sources via the URL
+\url{http://github.com/sje30/sjemea}.
+
+
 \section*{Setup}
 This file is a vignette, written in R, as a reproducible research
 document.
@@ -59,7 +70,8 @@ This is a short introduction to the abilities of the sjemea package
 for analysis of multielectrode array data.  It is not a comprehensive
 guide, but simply gives examples of what can be done with the package.
 The package contains some example data sets which are used here to
-demonstrate various routines.
+demonstrate various routines.  This package was used in our 2014 paper
+\citep{Eglen2014}.
 
 \subsection*{Help pages}
 A list of help pages associated with the package is given by
@@ -195,8 +207,37 @@ jay.data.file <- system.file("examples", "P9_CTRL_MY1_1A.txt",
                          package = "sjemea")
 jay.s <- jay.read.spikes( jay.data.file)
 plot.corr.index(jay.s)
-
 @
+
+\subsection*{Correlation analysis}
+
+We propose a new tiling-based measure for measuring the correlation
+between pairs of spike trains (ongoing work by Catherine Cutts).  Here
+is an example of how to compute a tiling correlation matrix for a
+group of spike trains.
+
+<<tiling-correlation>>=
+data.file <- system.file("examples", "P9_CTRL_MY1_1A.txt",
+                         package = "sjemea")
+s <- jay.read.spikes(data.file)
+t2 <- tiling.allpairwise(s)
+require(lattice); levelplot(t2)
+@ 
+
+
+
+
+\section*{Movie making}
+
+We have code to make movies of the MEA activity.  For example, see the
+supplementary information to our 2003 paper:
+\url{http://www.jneurosci.org/content/23/7/2851/suppl/DC1}.  The code
+makes a sequence of PNG frames (every 0.5 s by default).  It then uses
+an external unix tool (convert) to create the movie.
+
+
+
+
 
 \section*{Batch analysis}
 
@@ -226,7 +267,7 @@ that are available in the package.
 \item[jay.read.spikes] -- Used for Demas et al. (2003)  (Named ``jay''
   as the data was recorded by Jay Demas.)
 \item[h5.read.spikes] -- HDF5 format, as described in the current
-  ``waverepo'' project.
+  ``waverepo'' project \citep{Eglen2014}.
 \item[sql.read.spikes] -- Prototype using SQL to store data.
 \item[sanger.read.spikes] -- Multi-channel system from the Sanger
   Genes to Cognition project.
@@ -257,8 +298,7 @@ introduces an extra layer of abstraction into the geometry of the
 array, in that an electrode is part of a well, and there are many
 wells on one array (or ``plate'').
 
-
-\subsection*{Other features}
+\section*{Other features}
 
 Interactive facilities for viewing spike times were in earlier
 versions of the code, but Tk() widgets conflicted with the use of
