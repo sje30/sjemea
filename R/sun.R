@@ -1,15 +1,14 @@
+##' Read in Neuroxplorer data from the Sun et al (2008) papers
+##'
+##' This is a modified version of jay.read.spikes, as the file formats are
+##' very similar; the main difference being the way channels are
+##' named, and that electrodes are spaced 200um apart.
+##' @inheritParams jay.read.spikes
+##' @export
 sun.read.spikes <- function(filename, ids=NULL,
                             time.interval=1,
                             beg=NULL, end=NULL,
                             min.rate=0) {
-  ## Read in Sun's data sets.  (e.g. Sun et al, PNAS 2008: beta 2).
-
-  ## This is adaptred from jay.read.spikes, as the file formats are
-  ## very similar; the main difference being the way channels are
-  ## named, and that electrodes are spaced 200um apart.
-  
-  ## IDS is an optional vector of cell numbers that should be analysed
-  ## -- the other channels are read in but then ignored.
 
   ## Read in all the data at once, and then separate into channel
   ## names and spike times.

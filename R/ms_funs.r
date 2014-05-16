@@ -796,8 +796,8 @@ count.nab <- function(ta, tb, tmax=0.05) {
 ##' test.hist.ab()
 ##' 
 ##' 
-##' %% Following examples are not run since they either take a long time
-##' %% or require an "s" structure.
+## Following examples are not run since they either take a long time
+## or require an "s" structure.
 ##' \dontrun{
 ##' test.histograms.versus.r()
 ##' test.count.hist.nab()

@@ -12,6 +12,7 @@
 ##' @param channel.regexp Regular expression for finding the channel numbers.
 ##' @return An s object.
 ##' @author Stephen Eglen
+##' TODO: handle the other arguments that are normally provided?
 nex.read.spikes <- function(f, 
                             array.name='MCS_8x8_100um',
                             channel.regexp="_([0-9])([0-9])") {
