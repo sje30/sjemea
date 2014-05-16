@@ -9,7 +9,7 @@ make.movieframes(x, beg = 1, end = dim(x$rates$rates)[1],
   clean.after = FALSE, anim.delay = 5)
 }
 \arguments{
-\item{x}{}
+\item{x}{The "s" object.}
 
 \item{beg}{start time of the movie}
 

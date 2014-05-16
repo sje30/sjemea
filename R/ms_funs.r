@@ -268,7 +268,6 @@ make.jay.layout <- function(names) {
 ##' Read in .txt file and work out array positions...
 ##' 
 ##' 
-##' @aliases jay.read.spikes read.spikes
 ##' @param filename Name of the text file to be read in.
 ##' @param ids Optional vector of cell numbers that can be analysed, rather
 ##' than analysing all electrodes in the recording.  Warning: Not implemented
@@ -279,7 +278,6 @@ make.jay.layout <- function(names) {
 ##' @param end Optional end time.
 ##' @param min.rate Optional minimal firing rate for an electrode to be
 ##' accepted.
-##' @param reader Name of the reader function to use.
 ##' @param ... Remaining arguments that are passed to the appropriate reader.
 ##' @return Return the data structure 's'.
 ##' @section METHOD: No fancy tricks used here.  If the data file has
@@ -1398,7 +1396,7 @@ make.animated.gif <- function (x, beg=1,
 ##' the area proportional to the firing rate.  The sequence of frames are then
 ##' coerced into a movie.
 ##' 
-##' @param x 
+##' @param x The "s" object.
 ##' @param beg start time of the movie
 ##' @param end end time of the movie
 ##' @param outputdir directory to store the frames (no slash at end).

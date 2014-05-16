@@ -10,7 +10,7 @@ tiling.corr(a, b, dt = 0.05, rec.time = NULL)
 
 \item{b}{second spike train}
 
-\item{dt}{}
+\item{dt}{Time-window (in seconds) for coincident activity.}
 
 \item{rec.time}{2-vector stating beg and end of recording.  If omitted
 we take the min(max) spike time as the beg(end).}

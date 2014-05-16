@@ -6,9 +6,9 @@
 tiling.allpairwise(s, dt = 0.05)
 }
 \arguments{
-\item{s}{}
+\item{s}{The spike object.}
 
-\item{dt}{}
+\item{dt}{Time-window (in seconds) for coincident activity.}
 }
 \value{
 Upper triangular matrix of tiling coefficients.

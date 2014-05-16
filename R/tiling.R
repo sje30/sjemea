@@ -5,7 +5,7 @@
 ##
 ##' @param a first spike train (vector of spike times)
 ##' @param b second spike train
-##' @param dt 
+##' @param dt Time-window (in seconds) for coincident activity.
 ##' @param rec.time 2-vector stating beg and end of recording.  If omitted
 ##' we take the min(max) spike time as the beg(end).
 ##' @return Tiling coefficient, which should be between -1 and 1.
@@ -65,8 +65,8 @@ tiling.allpairwise.old <- function(s, dt=0.05) {
 ##' Compute tiling coefficient for an MEA recording.
 ##'
 ##' Given an s object, we return all pairwise correlations.
-##' @param s 
-##' @param dt 
+##' @param s  The spike object.
+##' @param dt Time-window (in seconds) for coincident activity.
 ##' @return Upper triangular matrix of tiling coefficients.
 ##' @author Stephen Eglen
 tiling.allpairwise <- function(s, dt=0.05) {

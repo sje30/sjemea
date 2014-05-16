@@ -25,7 +25,7 @@ data(litke1layout)
 \email{sje30@cam.ac.uk}
 }
 \seealso{
-\code{\link{http://damtp.cam.ac.uk/user/eglen/waverepo}}
+\url{http://damtp.cam.ac.uk/user/eglen/waverepo}
 Layout of the MEA provided by Alan Litke, as used in the 2009 Neuron paper.
 
 For each electrode name, the (x,y) location of the electrode (in units of
