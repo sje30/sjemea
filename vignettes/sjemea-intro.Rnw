@@ -258,7 +258,7 @@ used to analyse several hundreds of files simultaneously.
 \label{sec:input}
 
 The examples above have used example data stored within the package to
-read in data.  Here are the names of some (not all) other readsers
+read in data.  Here are the names of some (not all) other readers
 that are available in the package.
  
 \begin{description}
@@ -268,13 +268,13 @@ that are available in the package.
   as the data was recorded by Jay Demas.)
 \item[h5.read.spikes] -- HDF5 format, as described in the current
   ``waverepo'' project \citep{Eglen2014}.
-\item[sql.read.spikes] -- Prototype using SQL to store data.
+\item[sql.read.spikes] -- Prototype using SQL to store data.  This has
+  not been used for several years.
 \item[sanger.read.spikes] -- Multi-channel system from the Sanger
   Genes to Cognition project.
 \item[nex.read.spikes] -- Neuroexplorer timestamp files can be read
   in.  I have adapted the matlab code from
   \url{http://www.neuroexplorer.com/code.html} to work in R.
-
 \end{description}
 
 \subsection*{Handling new data}
