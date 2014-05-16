@@ -235,9 +235,42 @@ filter.channel.names <- function(spikes, ids) {
   spikes[ids]
 }
              
-  
 
 
+##' Read in a directory of spike times from Marla Feller and create a "spikes"
+##' data structure.
+##' 
+##' Marla Feller has provided MEA data from an hexagonal array.  The data from
+##' each electrode is stored in a separate file. This function reads those text
+##' files and creates a "spikes" data structure.
+##' 
+##' The data from each electrode is not in seconds; divide by 20000 to get the
+##' time in seconds.
+##' 
+##' @param filename Name of the text file to be read in.
+##' @param ids Which electrodes should be kept.
+##' @param time.interval How often to estimate the firing rate.
+##' @param beg Start time of the recording.
+##' @param end End time of the recording.
+##' @return Return the data structure 's'.
+##' @author Stephen Eglen
+##' @seealso \code{\link{jay.read.spikes}} \code{\link{sanger.read.spikes}}
+##' @examples
+##' 
+##' data.file <- system.file('examples', '2002-11-26-1', package='sjemea')
+##' s <- feller.read.spikes(data.file)
+##' ejcmealayout.check()
+##' fourplot(s)
+##' 
+##' ## This file contains the picture of the array for comparison
+##' system.file("examples/ejc_ElectrodeNumbering.jpg",package="sjemea")
+##' 
+##' ## next two examples show electrodes being rejected/accepted.
+##' s <- feller.read.spikes(data.file, ids=c('-', 'a7a', 'b1a', 'h2a'))
+##' s <- feller.read.spikes(data.file, ids=c(     'a7a', 'b1a', 'h2a'))
+##' 
+##' 
+##' @export feller.read.spikes
 feller.read.spikes <- function(filename, ids=NULL,
                                time.interval=1, beg=NULL, end=NULL) {
   ## Read in data from Marla Feller.
