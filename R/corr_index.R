@@ -3,8 +3,10 @@
 ## Copyright: GPL
 ## Sun 04 Mar 2007
 
-corr.index <- function(s, distance.breaks, dt=0.05, min.rate=0,
-                       corr.method = getOption("corr.method", default="CI")) {
+corr.index <- function(s, distance.breaks,
+                       dt=getOption("sjemea.corr.dt", default=0.05),
+                       min.rate=0,
+                       corr.method = getOption("sjemea.corr.method", default="CI")) {
   ## Make a correlation index object.
   ## MIN.RATE: if greater than zero, we analyse only spike trains whose
   ## firing rate is greater than this minimal rate.
