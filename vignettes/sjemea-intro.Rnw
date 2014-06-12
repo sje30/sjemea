@@ -233,7 +233,7 @@ options(sjemea.corr.dt = 0.05)          #default 50ms.
 data.file <- system.file("examples", "TC89_DIV15_A.nexTimestamps",
                          package = "sjemea")
 s <- sanger.read.spikes( data.file, beg=400, end=700)
-fourplot(s)
+plot.corr.index(s)
 @ 
 
 
