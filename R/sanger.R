@@ -62,7 +62,7 @@ make.sanger1.layout <- function(positions) {
   rownames(pos) <- positions
   
   layout <- list(xlim=xlim, ylim=ylim, spacing=spacing,
-                 pos=pos)
+                 pos=pos, array = "MCS_8x8_200um")
 
   class(layout) <- "mealayout"
 
