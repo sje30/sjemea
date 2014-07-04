@@ -54,7 +54,19 @@ h5.read.spikes <- function(h5file, ids=NULL,
   if(missing(corr.breaks)) {
     corr.breaks <-   arrayinfo$corr.breaks
   }
-  
+
+  ## If beg or end are missing, see if they are in /recordingtime
+  if ( is.numeric(data$recordingtime) && (length(data$recordingtime)==2) ) {
+    if (is.null(beg)) {
+      beg <- data$recordingtime[1]
+    }
+    if (is.null(end)) {
+      end <- data$recordingtime[2]
+    }
+  }
+
+
+
   s <- construct.s(spikes, ids, time.interval, beg, end, corr.breaks, layout, filename=h5file)
   if (keep.meta) {
     s$meta <- data$meta
