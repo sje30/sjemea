@@ -146,9 +146,11 @@ bin.distances <- function(dists, breaks) {
 
 plot.corr.index <- function(s, identify=FALSE,
                             main=NULL,
+                            show.method=TRUE,
                             dot.col='red',
                             show.fit=TRUE, show.ci=FALSE,
                             show.pts=NULL,
+                            ylabel="correlation",
                             xlabel=expression(paste("intercell distance (",
                                 mu, "m)")),
                             ...) {
@@ -171,7 +173,7 @@ plot.corr.index <- function(s, identify=FALSE,
   if (all(is.na(corrs))) {
     ## no correlation data to show, so just up empty plot.
     plot(NA, xlim=range(dists), ylim=c(1,10),
-         xlab=xlabel, ylab='correlation index',
+         xlab=xlabel, ylab=ylabel,
          main=paste(basenamepy(s$file)$base, ': no valid corrs'))
   } else {
     ## Some of these corrs may be NA if the firing rate is low, but they
@@ -187,7 +189,7 @@ plot.corr.index <- function(s, identify=FALSE,
     if (show.pts) {
       
       plot.default(dists, corrs, xlab=xlabel, ##log=log,
-                   ylab="correlation index", bty="n",
+                   ylab=ylabel, bty="n",
                    main=main, col=dot.col,
                    ...)
     } else {
@@ -196,7 +198,7 @@ plot.corr.index <- function(s, identify=FALSE,
       ylim <- c(0.001, max(upper.pts, na.rm=TRUE)) #sd could be NA
       
       plot.default(dists, corrs, xlab=xlabel, type='n',
-                   ylab="correlation index", bty="n",
+                   ylab=ylabel, bty="n",
                    main=main, ylim=ylim,
                    ...)
       show.ci <- TRUE                   #better show something.
@@ -212,12 +214,12 @@ plot.corr.index <- function(s, identify=FALSE,
     if (show.ci) 
       plotCI(s$corr$corr.id.means[,"mid"], s$corr$corr.id.means[,"mean"],
              s$corr$corr.id.means[,"sd"],
-             xlab=xlabel, ylab="correlation index", 
+             xlab=xlabel, ylab=ylabel,
              pch=19, add=TRUE)
     if (show.fit) 
       corr.do.fit(s$corr$corr.id,plot=TRUE)
 
-    if (!is.null(s$corr$method)) {
+    if (!is.null(s$corr$method) && show.method) {
       title(sub = s$corr$method)
     }
   }
