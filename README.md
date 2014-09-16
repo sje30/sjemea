@@ -13,7 +13,7 @@ To install this package in R you need the devtools package; skip the
 first line if you already have it installed:
 
 	install.packages("devtools")
-	devtools::install_github("sje30/g2chvc")
+	devtools::install_github("sje30/sjemea")
 
 Older versions of the package are available from my
 [home page](http://www.damtp.cam.ac.uk/user/sje30/r).
