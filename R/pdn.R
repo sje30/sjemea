@@ -11,7 +11,10 @@ pdn.init <- function() {
   ## and then delete this comment.
   guess.paths <- c("c:/mea2015", "~/path/for/ellese", "~/proj/mea2015")
   ## The first of the above folders that is readable will be used.
-  
+
+  ## the structure should include
+  ## data/timestamps -- raw data
+  ## data/hdf5 -- files that can be regenerated from data/timestamps
   valid.paths <- sapply(guess.paths, file.exists)
   first.valid <- which(valid.paths)[1]
   if (is.na(first.valid)) {
