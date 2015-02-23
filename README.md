@@ -5,7 +5,8 @@ Multielectrode array analysis in R
 
 Please see the
 [Gigascience](http://www.gigasciencejournal.com/content/3/1/3) paper
-for recent details.
+for recent details.  This package has also been used to analyse the
+data in our 2015 [Neural Development](http://www.neuraldevelopment.com/content/10/1/1) paper.
 
 # Installing this package
 
