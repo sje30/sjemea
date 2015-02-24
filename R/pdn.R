@@ -7,9 +7,7 @@ pdn.init <- function() {
 
   windows <- .Platform$OS.type !='unix'
 
-  ## Ellese - please set the 2nd function to the top level directory for you.
-  ## and then delete this comment.
-  guess.paths <- c("c:/mea2015", "~/path/for/ellese", "~/proj/mea2015")
+  guess.paths <- c("c:/mea2015", "~/Work/PhD/mea2015", "~/proj/mea2015")
   ## The first of the above folders that is readable will be used.
 
   ## the structure should include
