@@ -1087,6 +1087,12 @@ xcorr.plot <-  function(spikes.a, spikes.b,
   ## (X only, may not work on windows...)
   ## If PLOT is TRUE (default), show the resulting plot.  If FALSE, just return the
   ## cross-correlation values.
+
+  if (missing(spikes.b)  && autocorr) {
+    ## For autocorrelation, assume 2nd train is the first train.
+    spikes.b = spikes.a
+  }
+    
   if (bi) {
     x <- histbi.ab(spikes.a, spikes.b, xcorr.maxt, nbins)
   } else {
