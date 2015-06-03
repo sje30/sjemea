@@ -1065,16 +1065,13 @@ check.similarity <- function(s, tmax=0.001) {
   results
 }
 
-## Global variable that controls whether the xaxis of the xcorr plot
-## is shown.
-xcorr.plot.xaxistimes <- FALSE
-
 xcorr.plot <-  function(spikes.a, spikes.b,
                         plot.label='',
                         xcorr.maxt=4, bi= TRUE,
                         nbins=100,
                         show.poisson=TRUE,
                         autocorr=FALSE, page.label= date(),
+                        xcorr.plot.xaxistimes=FALSE,
                         pause=TRUE,
                         plot=TRUE) {
 
@@ -1949,7 +1946,10 @@ make.spikes.to.frate <- function(spikes,
   res
 }
 
-plot.meanfiringrate <- function (s, beg, end, main=NULL, lwd=0.2, ...) {
+plot.meanfiringrate <- function (s, beg, end, main=NULL,
+                                 xlab = "time (s)",
+                                 ylab = "mean firing rate (Hz)",
+                                 lwd=0.2, ...) {
   ## Plot the mean firing rate over all the cells at each time step.
   ## Can optionally specify the beginning (BEG) and end (END) time, in
   ## seconds.
@@ -1960,9 +1960,9 @@ plot.meanfiringrate <- function (s, beg, end, main=NULL, lwd=0.2, ...) {
   if (is.null(main))
     main = basename(s$file)
   
-  plot(s$rates$times, s$rates$av.rate, type = "h", xlab = "time (s)",
+  plot(s$rates$times, s$rates$av.rate, type = "h", xlab = xlab,
        xlim=c(beg,end), bty="n", lwd=lwd,
-       ylab = "mean firing rate (Hz)", main = main, ...)
+       ylab = ylab, main = main, ...)
 }
 
 "setrates<-" <- function(s, value) {
