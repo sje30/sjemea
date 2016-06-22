@@ -1912,7 +1912,7 @@ make.spikes.to.frate <- function(spikes,
   if (is.null(end))  end <-  spikes.range[2]
   
   time.breaks <- seq(from=beg, to=end, by=time.interval)
-  if (time.breaks[length(time.breaks)] < end) {
+  if (time.breaks[length(time.breaks)] <= end) {
     ## extra time bin needs adding.
     ## e.g seq(1,6, by = 3) == 1 4, so we need to add 7 ourselves.
     time.breaks <- c(time.breaks,
