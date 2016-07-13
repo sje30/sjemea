@@ -1,5 +1,6 @@
 # sjemea
 
+[![Build Status](https://travis-ci.org/sje30/sjemea.svg?branch=master)]
 
 Multielectrode array analysis in R
 
