@@ -109,7 +109,7 @@ construct.s <- function(spikes, ids, time.interval, beg, end,
   ## that only spikes that are left in the array are kept in the layout.
   channels <- names(spikes)
   keep <- match(channels, rownames(layout$pos))
-  layout$pos <- layout$pos[keep,]
+  layout$pos <- layout$pos[keep,, drop=FALSE]
   
   rec.time <- c(beg, end)
 
