@@ -5,3 +5,6 @@ sudo: false
 cache: packages
 
 bioc_packages: rhdf5
+
+warnings_are_errors: false
+
