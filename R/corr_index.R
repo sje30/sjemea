@@ -11,11 +11,14 @@ corr.index <- function(s, distance.breaks,
   ## MIN.RATE: if greater than zero, we analyse only spike trains whose
   ## firing rate is greater than this minimal rate.
   ## corr.method is which method to use.
-  dists = make.distances(s$layout$pos)
-  dists.bins = bin.distances(dists, distance.breaks)
 
   spikes = s$spikes
+
   if (length(spikes) > 1) {
+      
+    dists = make.distances(s$layout$pos)
+    dists.bins = bin.distances(dists, distance.breaks)
+
     ## SJE: 2010-03-17 -- try new version of corr index.
     ##corr.indexes = make.corr.indexes(spikes, dt, min.rate)
     corr.indexes = NULL
@@ -36,17 +39,24 @@ corr.index <- function(s, distance.breaks,
     dist.mids = diff(distance.breaks)/2 +
       distance.breaks[-(length(distance.breaks))]
     corr.id.means = corr.get.means(corr.id, dist.mids)
+
+    ## distance.breaks.strings used only by Mutual Information Code?
+    distance.breaks.strings =
+      levels(cut(0, distance.breaks, right=FALSE, include.lowest=TRUE))
+
+    valid = TRUE
   } else {
+    ## Only one spike train so cannot compute correlations.
     corr.indexes = NA
     corr.id = NA
     corr.id.means = NA
+    dist.mids = distance.breaks = distance.breaks.strings = NA
+    valid = FALSE
   }
 
-  ## distance.breaks.strings used only by Mutual Information Code?
-  distance.breaks.strings =
-    levels(cut(0, distance.breaks, right=FALSE, include.lowest=TRUE))
-
+  
   res = list(
+    valid = valid,
     ##dists=dists, dists.bins = dists.bins,
     ##corr.indexes = corr.indexes,
     dt = dt,
@@ -167,12 +177,15 @@ plot.corr.index <- function(s, identify=FALSE,
   ## SHOW.PTS: if TRUE, show individual CI values.  If NULL, the value
   ## is assumed TRUE iff number of cells recorded is less than 100.
   
-  dists = s$corr$corr.id[,"dist"]
-  corrs = s$corr$corr.id[,"corr"]
-  
-  if (all(is.na(corrs))) {
+
+  if (s$corr$valid) {
+    dists = s$corr$corr.id[,"dist"]
+    corrs = s$corr$corr.id[,"corr"]
+  }
+
+  if (!(s$corr$valid) || all(is.na(corrs))) {
     ## no correlation data to show, so just up empty plot.
-    plot(NA, xlim=range(dists), ylim=c(1,10),
+    plot(NA, xlim=c(1,10), ylim=c(1,10),
          xlab=xlabel, ylab=ylabel,
          main=paste(basenamepy(s$file)$base, ': no valid corrs'))
   } else {
@@ -489,7 +502,14 @@ corr.do.fit <- function(id, plot=TRUE, show.ci=FALSE, ...) {
   }
   x <- id[,1]
   y.log <- log(id[,2])
-  fit <- lm(y.log ~ x)
+
+  if (all(is.nan(y.log))) {
+    ##browser()
+    ## all entries of y are negative, so can't do fit.
+    warning("no positive values to do fit")
+    return(NULL)
+  }
+  fit <- lm(y.log ~ x)    
   if (show.ci) {
     ## TODO: why is 850 hard-coded in here?
     expt.new <- data.frame(x = seq(0, 850, 10))  #range of x for predictions.
