@@ -11,7 +11,8 @@ Suggests:
     rhdf5,
     testthat,
     lattice,
-    knitr
+    knitr,
+    MASS
 Author: Stephen Eglen <sje30@cam.ac.uk>
 Maintainer: Stephen Eglen <sje30@cam.ac.uk>
 License: GPL (>= 2)
