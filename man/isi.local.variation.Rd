@@ -2,9 +2,9 @@
 % Please edit documentation in R/isi.R
 \name{isi.local.variation}
 \alias{isi.local.variation}
-\title{Returns coefficient of local variation between consecutivie ISIs, computed 
+\title{Returns coefficient of local variation between consecutivie ISIs, computed
 with formula:
-Lv = 3 / (n - 1) \sum_{i=1}^{n-1} (ISI_i - ISI_{i+1}) ^ 2 
+Lv = 3 / (n - 1) sum_{i=1}^{n-1} (ISI_i - ISI_{i+1}) ^ 2
     / (ISI_i + ISI_{i+1})^2}
 \usage{
 isi.local.variation(spike.train)
