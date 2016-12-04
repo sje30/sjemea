@@ -101,7 +101,7 @@ isi.gamma <- function(spike.train, chunk.length=100) {
     index.start <- (i - 1) * chunk.length + 1
     index.end <- min(i * chunk.length, n)
     if (index.end - index.start >= 2) {
-      estimate <- fitdistr(isi[index.start:index.end], "gamma")$estimate
+      estimate <- fitdistr(isi[index.start:index.end], "gamma", lower=0.001)$estimate
       ret$logshape = ret$logshape + log(estimate[1]) / chunk.count
       ret$lograte = ret$lograte + log(estimate[2]) / chunk.count
     }
