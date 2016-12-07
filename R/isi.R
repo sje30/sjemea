@@ -1,6 +1,6 @@
 # Methods to compute firing regularity based on Inter Spike Intervals (ISI)
 
-##' Returns coefficient of local variation between consecutivie ISIs, computed
+##' Returns coefficient of local variation between consecutive ISIs, computed
 ##' with formula:
 ##' Lv = 3 / (n - 1) sum_{i=1}^{n-1} (ISI_i - ISI_{i+1}) ^ 2
 ##'     / (ISI_i + ISI_{i+1})^2
@@ -8,7 +8,7 @@
 ##' Coefficient has value 0 when there is no variation between ISI, and is close
 ##' to 1 for irregular ISI.
 ##'
-##' The measure prraoposod in:
+##' The measure proposed in:
 ##' Shinomoto S, Shima K, Tanji J (2003) Differences in spiking patterns among
 ##' cortical neurons. Neural Comput 15:2823–2842.
 ##' @param spike.train vector of spike times
@@ -32,8 +32,8 @@ isi.local.variation <- function(spike.train) {
 ##' split into chunks and the result is a mean of coefficients calculated per
 ##' each chunk.
 ##'
-##' The coefficient measures monotoicity of ISI, and is calculated according to
-##' formula:
+##' The coefficient measures monotonicity of ISI, and is calculated according
+##' to formula:
 ##' rho = n / (n - 1) * sum_{i=1}^{i=n-1} (r_i - mean(r)) * (r_{i+1} - mean(r))
 ##'     / sum_{i=1}^{i=n} (r_i - mean(r)^2)
 ##' where r_i is a rank order of ISI i, equal ISI ranks are assigned average
@@ -75,12 +75,12 @@ isi.spearman.rank.corr <- function(spike.train, chunk.length=100) {
 ##' The rate approximates mean firing rate, shape is a measure of firing
 ##' regularity:
 ##' - for firing in bursts: log(shape) < 1
-##' - for poisson distributed firing: log(shape) = 1
+##' - for Poisson distributed firing: log(shape) = 1
 ##' - for firing with peak of ISI: log(shape) > 1
 ##'
 ##' Calculation of the measure adopted from:
 ##' Y. Mochizuki et al., Similarity in neuronal firing regimes across mammalian
-##' species. Jounal of Neuroscience (2016) in press.
+##' species. Journal of Neuroscience (2016) in press.
 ##'
 ##' @param spike.train vector of spike times
 ##' @param chunk.length length of chunks used for estimation
