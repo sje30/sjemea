@@ -127,7 +127,7 @@ We have several routines implemented for burst analysis:
 Out of these, the most tested has been the MaxInterval method.
 <<bursts>>=
 data.file <- system.file("examples", "TC89_DIV15_A.nexTimestamps",
-package = "sjemea")
+                         package = "sjemea")
 s <- sanger.read.spikes(data.file)
 s$allb <- spikes.to.bursts.surprise(s)
 @
@@ -167,10 +167,59 @@ is also a generic ``bursts'' package:
 \url{http://cran.r-project.org/web/packages/bursts/bursts.pdf}.
 
 
-\subsection*{Log interspike intervals}
+\section*{Firing regularity}
+Firing regularity is another measure to charactarize individual spike trains.
+The following examples use Interspike Intervals to compute the firing
+regularity, a perfectly regular firing would have equal interspike intervals.
 
+\subsection*{Fitting Gamma distribution to Interspike Intervals (ISI)}
+By fitting Gamma Distribution to ISI we can distinguish between firing in
+bursts, sporadic but regular firing, and randomly distributed spikes following
+Poisson distribution.
+The estimated logshape = 0 of Gamma distribution describes Poisson distributed
+spikes and the greater the absolute value of logshape, the more regular spiking.
+For bursting logshape < 0 , for sporadic firing logshape > 0.
+
+In the plot below we see that the spike trains in the example come from a 
+bursting  network.
+
+<<gamma-dist, warning=FALSE>>=
+logshapes <- c()
+logrates <- c()
+for (i in 1:s$NCells) {
+  gamma.estimate <- isi.gamma(s$spikes[[i]], chunk.length = 1000)
+  logshapes[i] <- gamma.estimate$logshape
+  logrates[i] <- gamma.estimate$lograte
+}
+
+plot(logshapes, logrates)
+@
+
+\subsection*{Other measures of regularity}
+
+For each electrode we compute local variations of firing regularity. It is a
+measure of correlation between consecutive interspike intervals.
+<<local-variation>>=
+local.variations <- sapply(s$spikes, isi.local.variation)
+summary(unname(local.variations))
+@
+
+We can also compute Spearman's correlation coefficient on ranks.
+<<spearman-rank>>=
+spearman.ranks <- sapply(s$spikes, isi.spearman.rank.corr, chunk.length=100)
+summary(unname(spearman.ranks))
+@
+
+
+\subsection*{Log interspike intervals}
 To help determine burst parameters, it is often helpful to look at a
 histogram of the interspike interval, plotted on a log scale.  
+
+<<logisi>>=
+isi <- unlist(unname(sapply(s$spikes, diff)))
+hist(log(isi))
+@
+
 
 TODO: add this code from
 \url{~/proj/sangermea/pdn/logisi_condtable.R}.

@@ -2,9 +2,9 @@
 % Please edit documentation in R/isi.R
 \name{isi.local.variation}
 \alias{isi.local.variation}
-\title{Returns coefficient of local variation between consecutivie ISIs, computed 
+\title{Returns coefficient of local variation between consecutive ISIs, computed
 with formula:
-Lv = 3 / (n - 1) \sum_{i=1}^{n-1} (ISI_i - ISI_{i+1}) ^ 2 
+Lv = 3 / (n - 1) sum_{i=1}^{n-1} (ISI_i - ISI_{i+1}) ^ 2
     / (ISI_i + ISI_{i+1})^2}
 \usage{
 isi.local.variation(spike.train)
@@ -20,7 +20,7 @@ Coefficient has value 0 when there is no variation between ISI, and is close
 to 1 for irregular ISI.
 }
 \details{
-The measure prraoposod in:
+The measure proposed in:
 Shinomoto S, Shima K, Tanji J (2003) Differences in spiking patterns among
 cortical neurons. Neural Comput 15:2823–2842.
 }

@@ -15,19 +15,19 @@ isi.gamma(spike.train, chunk.length = 100)
 \item{chunk.length}{length of chunks used for estimation}
 }
 \value{
-list with log(shape) and log(rate) with the means of fitted gamma 
+list with log(shape) and log(rate) with the means of fitted gamma
     distributions
 }
 \description{
-The rate approximates mean firing rate, shape is a measure of firing 
+The rate approximates mean firing rate, shape is a measure of firing
 regularity:
 - for firing in bursts: log(shape) < 1
-- for poisson distributed firing: log(shape) = 1
+- for Poisson distributed firing: log(shape) = 1
 - for firing with peak of ISI: log(shape) > 1
 }
 \details{
 Calculation of the measure adopted from:
-Y. Mochizuki et al., Similarity in neuronal firing regimes across mammalian 
-species. Jounal of Neuroscience (2016) in press.
+Y. Mochizuki et al., Similarity in neuronal firing regimes across mammalian
+species. Journal of Neuroscience (2016) in press.
 }
 

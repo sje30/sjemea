@@ -2,7 +2,7 @@
 % Please edit documentation in R/isi.R
 \name{isi.spearman.rank.corr}
 \alias{isi.spearman.rank.corr}
-\title{Returns Spearman's rank correlation coefficient of ISI. The spike train is 
+\title{Returns Spearman's rank correlation coefficient of ISI. The spike train is
 split into chunks and the result is a mean of coefficients calculated per
 each chunk.}
 \usage{
@@ -17,11 +17,11 @@ isi.spearman.rank.corr(spike.train, chunk.length = 100)
 Spearman's rank correlation coefficient or 0 if not enough spikes
 }
 \description{
-The coefficient measures monotoicity of ISI, and is calculated according to 
-formula:
-rho = n / (n - 1) * \sum_{i=1}^{i=n-1} (r_i - mean(r)) * (r_{i+1} - mean(r)) 
-    / \sum_{i=1}^{i=n} (r_i - mean(r)^2)
-where r_i is a rank order of ISI i, equal ISI ranks are assigned average 
+The coefficient measures monotonicity of ISI, and is calculated according
+to formula:
+rho = n / (n - 1) * sum_{i=1}^{i=n-1} (r_i - mean(r)) * (r_{i+1} - mean(r))
+    / sum_{i=1}^{i=n} (r_i - mean(r)^2)
+where r_i is a rank order of ISI i, equal ISI ranks are assigned average
 rank
 }
 
