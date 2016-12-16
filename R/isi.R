@@ -47,11 +47,11 @@ isi.spearman.rank.corr <- function(spike.train, chunk.length=100) {
   n <- length(isi)
 
   chunk.count <- ceiling(n / chunk.length)
-  if (chunk.count == 0) {
+  if (n < 2) {
     return(0)
   }
 
-  rho <- c()
+  rho <- rep(0, chunk.count)
   for (i in 1:chunk.count) {
     index.start <- (i - 1) * chunk.length + 1
     index.end <- min(i * chunk.length, n)
