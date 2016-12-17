@@ -1,0 +1,26 @@
+MC_DataTool ASCII conversion
+
+t           	Spikes 2 21 	Unit
+[ms]        	[µV]
+
+
+t           	Spikes 2 31 	Unit
+[ms]        	[µV]
+66108.000   	-9.45       	0
+
+537128.560  	-9.45       	0
+
+
+t           	Spikes 2 41 	Unit
+[ms]        	[µV]
+102857.480  	-9.09       	0
+
+132812.600  	-9.09       	0
+
+218690.240  	-9.09       	0
+
+
+t           	Spikes 2 51 	Unit
+[ms]        	[µV]
+402256.720  	-9.82       	0
+
