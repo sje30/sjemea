@@ -1,5 +1,4 @@
 #include <R.h>
-#include <S.h>			/* for seed_in, seed_out */
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>	/* for DLL types */
 
