@@ -526,7 +526,7 @@ shuffle.spike.times <- function (s, noise.sd) {
 }
 
 
-fourplot <- function(s, names=FALSE, raster.time=NULL) {
+fourplot <- function(s, names=FALSE, raster.time=NULL, show.bursts=FALSE) {
   ## Simple 2x2 summary plot of an "s" structure.
   ## raster.time should be a 2-vector of (beg, end) time.
   old.par <- par(no.readonly = TRUE)
@@ -537,11 +537,13 @@ fourplot <- function(s, names=FALSE, raster.time=NULL) {
   plot(s$layout, use.names=names)                        #show layout of electrodes.
   plot.meanfiringrate(s, main='')
   if (is.null(raster.time)) {
-    plot(s, main='', label.cells=names, use.names=names)                      #plot the spikes.
+    plot(s, main='', label.cells=names,
+         show.bursts=show.bursts,
+         use.names=names)                      #plot the spikes.
   }
   else {
     plot(s, main='', label.cells=names, use.names=names,
-         beg=raster.time[1], end=raster.time[2])
+         beg=raster.time[1], end=raster.time[2], show.bursts=show.bursts)
   }
 
   ##   if	(!is.na(s$corr$corr.indexes[1])) {
