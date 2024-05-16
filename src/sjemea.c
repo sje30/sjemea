@@ -5,48 +5,48 @@
 
 void run_TM(int *N1v,int *N2v,double *dtv,double *Tv,double *index,double *spike_times_1,double *spike_times_2);
 
-void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
-		       Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+void ns_count_activity(double *allspikes, int *nspikes, int *pncells,
+		       double *pbeg, double *pend, double *pwid,
 		       int *pnbins,
 		       int *count);
 
-void frate(Sfloat *allspikes, int *nspikes, int *pncells,
-	   Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+void frate(double *allspikes, int *nspikes, int *pncells,
+	   double *pbeg, double *pend, double *pwid,
 	   int *pnbins,
 	   double *counts);
 
-void count_overlap_arr(Sfloat *spikes,
+void count_overlap_arr(double *spikes,
 		       int *pn,
 		       int *nspikes,
 		       int *first_spike,
 		       int *rates_ok,
 		       int    *pno_min,
-		       Sfloat *pt, /* duration of recording */
-		       Sfloat *pdt,
-		       Sfloat *corrs /* return array */);
+		       double *pt, /* duration of recording */
+		       double *pdt,
+		       double *corrs /* return array */);
 
-void coincident_arr(Sfloat *a, int *pna,
-		    Sfloat *bs, int *nb, int *pnchannels,
-		    int *close, Sfloat *pw);
+void coincident_arr(double *a, int *pna,
+		    double *bs, int *nb, int *pnchannels,
+		    int *close, double *pw);
 
-void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+void bin_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
 		 int *bins, int *pnbins);
 
-void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+void bin2_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
 		  int *bins, int *pnbins);
 
-void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+void count_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
 		   int *res);
 
-void tiling_arr(Sfloat *spikes,
+void tiling_arr(double *spikes,
 		int *pn,
 		int *nspikes,
 		int *first_spike,
 		int *rates_ok,
 		int    *pno_min,
-		Sfloat *rec_time, /* recording time */
-		Sfloat *pdt,
-		Sfloat *corrs /* return array */);
+		double *rec_time, /* recording time */
+		double *pdt,
+		double *corrs /* return array */);
 
 
 static R_NativePrimitiveArgType run_TM_t[7] =
@@ -137,7 +137,7 @@ void R_init_sjemea(DllInfo *info) {
  * POP-11 routine array_hist, included at the end of this file.
  */
   
-void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+void count_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
 		  int *res)
 {
   /* A[i] is the time of the ith spike in cell A.  A has *PNA spikes.
@@ -148,7 +148,7 @@ void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 
   int count=0;
   int sa, sb, low;
-  Sfloat alow, ahigh, dt;
+  double alow, ahigh, dt;
   int na, nb;
 
   na = *pna; nb = *pnb; dt=*pdt;
@@ -174,20 +174,20 @@ void count_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
   *res = count;
 }
 
-void count_overlap_arr(Sfloat *spikes,
+void count_overlap_arr(double *spikes,
 		       int *pn,
 		       int *nspikes,
 		       int *first_spike,
 		       int *rates_ok,
 		       int    *pno_min,
-		       Sfloat *pt, /* duration of recording */
-		       Sfloat *pdt,
-		       Sfloat *corrs /* return array */) {
+		       double *pt, /* duration of recording */
+		       double *pdt,
+		       double *corrs /* return array */) {
 
   int a, b, n, no_min, count;
-  Sfloat *sa, *sb; 		/* pointers to current spike trains  */
+  double *sa, *sb; 		/* pointers to current spike trains  */
   int n1, n2;
-  Sfloat k1, res;
+  double k1, res;
   int debug;
 
   debug = 0;
@@ -231,7 +231,7 @@ void count_overlap_arr(Sfloat *spikes,
   }
 }
 
-void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+void bin_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
 		 int *bins, int *pnbins)
 {
   /* bin_overlap is similar to count_overlap except that we return a
@@ -246,7 +246,7 @@ void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
    */
   
   int sa, sb, low;
-  Sfloat alow, ahigh, dt, delta_t, bin_wid, max_val;
+  double alow, ahigh, dt, delta_t, bin_wid, max_val;
   int na, nb;
   int bin_num, nbins;
 
@@ -283,7 +283,7 @@ void bin_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 }
 
 
-void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
+void bin2_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
 		 int *bins, int *pnbins)
 {
   /* bin2_overlap is a bidirectional version of bin_overlap.
@@ -294,7 +294,7 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
    */
 
   int sa, sb, low;
-  Sfloat alow, ahigh, dt, delta_t, bin_wid, min_val, max_val;
+  double alow, ahigh, dt, delta_t, bin_wid, min_val, max_val;
   int na, nb;
   int bin_num, nbins, bin_numi;
 
@@ -356,8 +356,8 @@ void bin2_overlap(Sfloat *a, int *pna, Sfloat *b, int *pnb, Sfloat *pdt,
 }
 
 
-void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
-		       Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+void ns_count_activity(double *allspikes, int *nspikes, int *pncells,
+		       double *pbeg, double *pend, double *pwid,
 		       int *pnbins,
 		       int *count)
 {
@@ -379,7 +379,7 @@ void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
    * only once (using the LAST flag below).
    */
   
-  Sfloat *p, beg, end, wid;
+  double *p, beg, end, wid;
   int ncells, last, b, n, unit, nbins;
   
   ncells = *pncells; beg = *pbeg; end = *pend; wid = *pwid;
@@ -410,8 +410,8 @@ void ns_count_activity(Sfloat *allspikes, int *nspikes, int *pncells,
 
 }
 
-void frate(Sfloat *allspikes, int *nspikes, int *pncells,
-	   Sfloat *pbeg, Sfloat *pend, Sfloat *pwid,
+void frate(double *allspikes, int *nspikes, int *pncells,
+	   double *pbeg, double *pend, double *pwid,
 	   int *pnbins,
 	   double *counts)
 {
@@ -470,8 +470,8 @@ void frate(Sfloat *allspikes, int *nspikes, int *pncells,
 }
 
 
-void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
-			Sfloat *pwid,
+void arraywide_autocorr(double *allspikes, int *nspikes, int *pncells,
+			double *pwid,
 			int *pnbins,
 			int *count)
 {
@@ -491,7 +491,7 @@ void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
    * train were within a certain time apart (of width WID).
    */
   
-  Sfloat wid, s_i;
+  double wid, s_i;
   int ncells, b, n, unit, nbins, i, j, looking;
   int first_spike, last_spike;		/* first, last spike index of any train. */
   ncells = *pncells; wid = *pwid;
@@ -535,12 +535,12 @@ void arraywide_autocorr(Sfloat *allspikes, int *nspikes, int *pncells,
 
 
 
-void coincident(Sfloat *a, int *pna, Sfloat *b, int *pnb, int *close,
-		 Sfloat *pw) {
+void coincident(double *a, int *pna, double *b, int *pnb, int *close,
+		 double *pw) {
   int i, j;
   int spikes_in_b, looking, res;
   int n_a, n_b;
-  Sfloat diff, t_a, w;
+  double diff, t_a, w;
 
   w = *pw;
   i = 0; j = 0;
@@ -579,9 +579,9 @@ void coincident(Sfloat *a, int *pna, Sfloat *b, int *pnb, int *close,
   }
 }
 
-void coincident_arr(Sfloat *a, int *pna,
-		    Sfloat *bs, int *nb, int *pnchannels,
-		    int *close, Sfloat *pw)
+void coincident_arr(double *a, int *pna,
+		    double *bs, int *nb, int *pnchannels,
+		    int *close, double *pw)
 {
   /* Compute overlap across all channels of the spikes.
    * It calls "coincident" for each spike train in BS.
@@ -599,7 +599,7 @@ void coincident_arr(Sfloat *a, int *pna,
    */
   int nchann;
   int j, n_a, n_b;
-  Sfloat *b;
+  double *b;
 
 
   /* We use pointer arithmetic in two ways here:
@@ -627,15 +627,15 @@ void coincident_arr(Sfloat *a, int *pna,
 #define MAX(X, Y)  ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y)  ((X) < (Y) ? (X) : (Y))
 
-void bci_calc(int *pn, Sfloat *beg, Sfloat *end,
+void bci_calc(int *pn, double *beg, double *end,
 	      int *nbursts, int *start,
-	      Sfloat *durn,
-	      Sfloat *res) {
+	      double *durn,
+	      double *res) {
   int n;
   int a, b;
 
-  Sfloat olap, this_olap;
-  Sfloat beg_a, end_a, beg_b, end_b;
+  double olap, this_olap;
+  double beg_a, end_a, beg_b, end_b;
   int ind_a, ind_b, a1, b1;
   int debug=0;
   
