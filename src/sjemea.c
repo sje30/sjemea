@@ -296,7 +296,7 @@ void bin2_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
   int sa, sb, low;
   double alow, ahigh, dt, delta_t, bin_wid, min_val, max_val;
   int na, nb;
-  int bin_num, nbins, bin_numi;
+  int bin_num, nbins;
 
   na = *pna; nb = *pnb; dt=*pdt; nbins = *pnbins;
   min_val = 0.0-dt;		/* smallest value that we will bin. */
@@ -320,21 +320,7 @@ void bin2_overlap(double *a, int *pna, double *b, int *pnb, double *pdt,
 	  /* need to bin this value. */
 	  delta_t = ( b[sb] - a[sa]);
 
-	  /* Compute bin number using both floor and casting to an
-	   * int.  This is temporary code as I think I found that
-	   * sometimes the "self spike" for auto-correlations was put
-	   * in the wrong bin.  If we get this error, we are in
-	   * trouble.
-	   */
-	  bin_numi = (int)((delta_t - min_val)/ bin_wid);
 	  bin_num = (int)floor((delta_t - min_val)/ bin_wid);
-	  /*
-	  if (bin_num != bin_numi) {
-	    Rprintf("XXX different bin numbers: dt %f min %f wid %f floor %d (int) %d %f\n",
-		    delta_t, min_val, bin_wid,
-		    bin_num, bin_numi, delta_t);
-	  }
-	  */
 	  if ( (bin_num == nbins) &&(fabs(delta_t - max_val) < SMALLVAL))
 	    bin_num--;		/* fits into largest bin. */
 	  if ( (bin_num <0 ) || (bin_num >= nbins))
