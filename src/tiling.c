@@ -135,20 +135,20 @@ void run_TM(int *N1v, int *N2v, double *dtv, double *Time,
 
 
 
-void tiling_arr(Sfloat *spikes,
+void tiling_arr(double *spikes,
 		int *pn,
 		int *nspikes,
 		int *first_spike,
-		Sfloat *rec_time, /* recording time */
-		Sfloat *pdt,
-		Sfloat *corrs /* return array */) {
+		double *rec_time, /* recording time */
+		double *pdt,
+		double *corrs /* return array */) {
 
   /* Compute all pairwise interactions, include self. */
   /* Elements on lower diagonal are not touched, so those should remain NA. */
   int a, b, n, count;
-  Sfloat *sa, *sb; 		/* pointers to current spike trains  */
+  double *sa, *sb; 		/* pointers to current spike trains  */
   int n1, n2;
-  Sfloat k1, res;
+  double k1, res;
   int debug;
 
   n = *pn;
