@@ -419,10 +419,10 @@ void frate(double *allspikes, int *nspikes, int *pncells,
    * COUNTS is a long vector of size (NBINS*NCELLS)
    */
   
-  double *p, beg, end, wid, *count;
+  double *p, beg, wid, *count;
   int ncells, b, n, unit, nbins, skip;
   
-  ncells = *pncells; beg = *pbeg; end = *pend; wid = *pwid;
+  ncells = *pncells; beg = *pbeg; wid = *pwid;
   nbins = *pnbins;
 
   p = allspikes;
