@@ -365,10 +365,10 @@ void ns_count_activity(double *allspikes, int *nspikes, int *pncells,
    * only once (using the LAST flag below).
    */
   
-  double *p, beg, end, wid;
+  double *p, beg, wid;
   int ncells, last, b, n, unit, nbins;
   
-  ncells = *pncells; beg = *pbeg; end = *pend; wid = *pwid;
+  ncells = *pncells; beg = *pbeg; wid = *pwid;
   nbins = *pnbins;
 
   p = allspikes;
